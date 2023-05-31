@@ -28,7 +28,7 @@ function [friction_field] = f_solve_inverse_problem(para, mode)
     md.geometry.base = md.geometry.surface-md.geometry.thickness;
 
     % setup parameters for inversion
-    md = setup_inversion(md);
+    md = f_setup_inversion(md);
 
     %Go solve
     md.cluster=generic('name',oshostname,'np',8);

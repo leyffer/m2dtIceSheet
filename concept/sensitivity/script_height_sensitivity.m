@@ -7,7 +7,7 @@ mode = 2;
 % 4: given field (not implemented in this script yet)
 
 % how many samples to take
-n_para = 200;
+n_para = 500;
 % 200: approximately 217 min = 3.6 h
 
 %% variations
@@ -25,16 +25,16 @@ height = cell(n_para);
 
 for i = 1:n_para
     fprintf("%i", i);
-    friction{i} = my_inversion(list_para(i), mode);
-    [vel, h] = my_transient(friction{i});
+    friction{i} = f_solve_inverse_problem(list_para(i), mode);
+    [vel, h] = f_solve_transient_problem(friction{i});
     velocity{i} = vel;
     height{i} = h;
 end
 
 %% ground truth
 
-friction_0 = my_inversion(0, mode);
-[vel_0, height_0] = my_transient(friction_0);
+friction_0 = f_solve_inverse_problem(0, mode);
+[vel_0, height_0] = f_solve_transient_problem(friction_0);
 
 % question:
 % friction_0, vel_0, height_0 are used below to as reference for computing
@@ -42,6 +42,10 @@ friction_0 = my_inversion(0, mode);
 % or should these be replaced with the mean over the samples?
 
 toc;
+
+%% save some things
+
+save('./data/sensitivity', 'friction_0', 'vel_0', 'height_0', 'n_para', 'list_para', 'height', 'velocity', 'friction')
 
 %% compute how much the friction changes for the different parameters
 
@@ -82,7 +86,7 @@ figure(2);
 plot(100*ordered_para, change_vel)
 xlabel("ice thickness error [%]")
 ylabel("relative error")
-title("velocity change [%] vs ice thickness error")
+title("velocity change [%, after 10 years] vs ice thickness error")
 legend("||v-v0||/||v0||")
 
 
@@ -134,7 +138,7 @@ figure(4);
 
 semilogy([1:n_para], D_friction)
 
-%title('gramian eigenvalue decay')
+title('gramian eigenvalue decay')
 xlim([1, n_para])
 xlabel("eigenvalue number")
 ylabel("eigenvalue")
@@ -148,8 +152,8 @@ for i = 1:n_para
 end
 
 figure(5);
-plot([1:n_para], energy)
-xlim([1, n_para])
+plot([1:50], energy(1:50))
+xlim([1, 50])
 xlabel("number of modes")
 ylabel("captured energy")
 title('captured energy vs number of included modes (friction)')
@@ -178,8 +182,8 @@ for i = 1:n_para
 end
 
 figure(5);
-plot([1:n_para], energy)
-xlim([1, n_para])
+plot([1:50], energy(1:50))
+xlim([1, 50])
 xlabel("number of modes")
 ylabel("captured energy")
 title("captured energy vs number of included modes (velocity)")
@@ -193,8 +197,8 @@ for i = 1:n_para
 end
 
 figure(5);
-plot([1:n_para], energy)
-xlim([1, n_para])
+plot([1:50], energy(1:50))
+xlim([1, 50])
 xlabel("number of modes")
 ylabel("captured energy")
 title("captured energy vs number of included modes (thickness)")
