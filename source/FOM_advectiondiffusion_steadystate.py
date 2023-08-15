@@ -38,7 +38,13 @@ class FOM_advectiondiffusion_steadystate(FOM_advectiondiffusion):
         return sol
 
     def assemble_forcing(self, para):
-        return para[0] * self.default_forcing
+        if para.shape[0] == 1:
+            return para[0] * self.default_forcing
+
+        m = para[0] * self.m_parameterized[0]
+        for i in range(1, para.shape[0]):
+            m = m + para[i] * self.m_parameterized[i]
+        return m
 
     def solve(self, para, grid_t=None):
         forcing = self.assemble_forcing(para)

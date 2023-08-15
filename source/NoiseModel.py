@@ -20,6 +20,7 @@ class NoiseModel():
 
         self.diffusion_matrix = self.compute_diffusion_matrix()
         self.mass_matrix = self.compute_mass_matrix()
+        self.mass_matrix_sqrt = self.compute_mass_sqrt()
 
     def compute_diffusion_matrix(self):
         dt = self.grid_t[1] - self.grid_t[0]
@@ -51,6 +52,12 @@ class NoiseModel():
 
         return M
 
+    def compute_mass_sqrt(self):
+        # todo: implement matrix square root for sparse matrices instead (this is a workaround for small matrices only)
+
+        M = self.mass_matrix.todense()
+        return la.sqrtm(M)
+
     def sample(self, n_samples=1):
 
         LHS = self.c_scaling * (self.c_diffusion * self.diffusion_matrix + self.mass_matrix)
@@ -61,7 +68,7 @@ class NoiseModel():
         for i in range(n_samples):
             # unfortunately we need the loop because the sparse solvers usually don't accept matrices as rhs
 
-            rhs = self.mass_matrix @ np.random.normal(size=(self.K,))
+            rhs = self.mass_matrix_sqrt @ np.random.normal(size=(self.K,))
             sample = sla.spsolve(LHS, rhs)
 
             if n_samples == 1:
@@ -71,6 +78,22 @@ class NoiseModel():
 
         return Samples
 
+    def compute_noisenorm2(self, d):
+        return d.T @ self.apply_covar_inv(d)
+
+    def apply_covar_inv(self, d):
+
+        LHS = self.c_scaling * (self.c_diffusion * self.diffusion_matrix + self.mass_matrix)
+        Kd = LHS @ d
+
+        if len(Kd.shape) == 1:
+            Minv_Kd = sla.spsolve(self.mass_matrix, Kd)
+        else:
+            Minv_Kd = np.empty(Kd.shape)
+            for i in range(Kd.shape[1]):
+                Minv_Kd[:, i] = sla.spsolve(self.mass_matrix, Kd[:, i])
+
+        return LHS.T @ Minv_Kd
 
 
 

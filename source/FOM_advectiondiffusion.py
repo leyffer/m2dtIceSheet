@@ -39,7 +39,10 @@ class FOM_advectiondiffusion:
 
         # true initial condition
         m_true = 'exp(-100 * ((x[0]-0.35)*(x[0]-0.35) + (x[1]-0.7)*(x[1]-0.7)))'
-        self.m_true = dl.Expression('min(0.5, {})'.format(m_true), degree=3)
+        self.m_true = dl.interpolate(dl.Expression('min(0.5, {})'.format(m_true), degree=3), self.V)
+
+        # parameters
+        self.m_parameterized = self.set_parameter_functions()
 
         # equation setup
         self.kappa = kappa
@@ -51,6 +54,17 @@ class FOM_advectiondiffusion:
         self.I = self.inner_product_matrix()
 
         self.set_defaults(**kwargs)
+
+    def set_parameter_functions(self):
+        m = np.zeros(5, dtype=object)
+        centers = [[0.35, 0.7], [0.8, 0.2], [0.7, 0.5], [0.1, 0.9], [0.1, 0.2]]
+
+        for i in range(5):
+            m_str = 'exp(-100 * ((x[0]-{})*(x[0]-{}) + (x[1]-{})*(x[1]-{})))'.format(centers[i][0], centers[i][0], centers[i][1], centers[i][1])
+            yolo = dl.Expression('min(0.5, {})'.format(m_str), degree=1)
+            m[i] = dl.interpolate(yolo, self.V)
+
+        return m
 
     def set_defaults(self, **kwargs):
         return
@@ -203,12 +217,14 @@ class FOM_advectiondiffusion:
             if dt is None: dt=self.dt
             if final_time is None: final_time = self.final_time
             if kappa is None: kappa = self.kappa
-            grid_t = np.linspace(0, 4, int(final_time / dt + 1))
+            grid_t = np.linspace(0, final_time, int(final_time / dt + 1))
 
         # todo: instead of writing the time stepping method here, we should make one file with functions we can call on
         sol = np.empty(grid_t.shape, dtype=object)
-        sol[0] = dl.Function(self.V)
-        sol[0].interpolate(m_init)
+
+        # sol[0] = dl.Function(self.V)
+        # sol[0].interpolate(m_init)
+        sol[0] = m_init
 
         for k in range(1, sol.shape[0]):
             sol[k] = self.find_next(sol[k - 1], dt=grid_t[k]-grid_t[k-1], kappa=kappa)
@@ -218,8 +234,14 @@ class FOM_advectiondiffusion:
     def assemble_initial_condition(self, para):
         # todo: outsource the parameterization into a different class for playing around better
 
-        # this is a very simple parameterization where the true initial condition is just scaled by a scalar
-        return para[0] * self.m_true
+        if para.shape[0] == 1:
+            # this is a very simple parameterization where the true initial condition is just scaled by a scalar
+            return para[0] * self.m_true
+
+        m = para[0] * self.m_parameterized[0]
+        for i in range(1, para.shape[0]):
+            m = m + para[i] * self.m_parameterized[i]
+        return m
 
     def solve(self, para, grid_t=None):
         m_init = self.assemble_initial_condition(para)
