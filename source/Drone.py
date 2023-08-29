@@ -31,6 +31,9 @@ class Drone():
 
         raise RuntimeError("Invalid fly_mode={} provided".format(self.fly_mode))
 
+    def set_default_flying_parameters(self, flying_parameters):
+        self.flying_parameters = flying_parameters
+
     def get_trajectory(self, flying_parameters = None, grid_t=None):
 
         if flying_parameters is None:
