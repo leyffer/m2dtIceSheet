@@ -23,6 +23,8 @@ The firedrake download page outlines the installation instructions: [https://www
    python3 firedrake-install --help
    ```
 
+   The installation script will create a directory `firedrake` containing a virtual environment within the directory it is in.
+
 5. When I had to reinstall firedrake, I had trouble with the installation script (the creation of the virtual environment was not successful due to a problem with the `venv` creation call). This required modifying the script to skip the creation of the virtual environment (line 1719) and creating the virtual environment separately using
 
    ```bash
@@ -75,4 +77,10 @@ The firedrake download page outlines the installation instructions: [https://www
 
    ```bash
    source firedrake/bin/activate
+   ```
+
+   or
+
+   ```bash
+   . firedrake/bin/activate
    ```
