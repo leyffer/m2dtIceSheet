@@ -10,7 +10,7 @@ The firedrake download page outlines the installation instructions: [https://www
    curl -O https://raw.githubusercontent.com/firedrakeproject/firedrake/master/scripts/firedrake-install
    ```
 
-2. If anaconda/miniconda/etc. is installed, you will need to comment out any code from `~/.bashrc`/`~/.zshrc`/etc. between the `# >>> conda initialize >>>` and `# <<< conda initialize <<<`.
+2. If anaconda/miniconda/etc. is installed, you will need to comment out any code from `~/.bashrc`/`~/.zshrc`/etc. between the `# >>> conda initialize >>>` and `# <<< conda initialize <<<`. This can (probably) be uncommented after installation.
 3. Run the installation script:
 
    ```bash
