@@ -37,7 +37,7 @@ The firedrake download page outlines the installation instructions: [https://www
    if mode == "install":
     if os.path.exists(firedrake_env):
         log.warning("Specified venv '%s' already exists", firedrake_env)
-        # quit("Can't install into existing venv '%s'" % firedrake_env)
+        # quit("Can't install into existing venv '%s'" % firedrake_env) # We now allow for continuing if the venv already exists.
         os.environ["VIRTUAL_ENV"] = firedrake_env
     else:
         log.info("Creating firedrake venv in '%s'." % firedrake_env)
@@ -49,17 +49,10 @@ The firedrake download page outlines the installation instructions: [https://www
         try:
             import ensurepip        # noqa: F401
             with_pip = True
-            print("ensurepip imported successfully")
         except ImportError:
             with_pip = False
-            print("ensurepip import failed")
         import venv
-        # raise Exception("Just stop here. see what's going on.")
-        try:
-            venv.EnvBuilder().create(firedrake_env)
-        except Exception as e:
-            print(f"Exception occurred during venv creation: {e}")
-            raise e
+        venv.EnvBuilder().create(firedrake_env) # Problematic line for my installation
         if not with_pip:
             import urllib.request
             log.debug("ensurepip unavailable, bootstrapping pip using get-pip.py")
