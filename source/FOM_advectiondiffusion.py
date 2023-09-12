@@ -19,10 +19,11 @@ import numpy as np  # For standard array manipulation
 import scipy.sparse as sparse  # For sparse matrices and linear algebra
 from makeMesh import makeMesh
 from mpi4py import MPI  # For parallelization
-from Parameter import \
-    Parameter  # For the parameterization via the FEniCS Expression class
+if not using_firedrake:
+    from Parameter import \
+        Parameter  # For the parameterization via the FEniCS Expression class
 
-# Initialize MPI communications
+# Initialize MPI communications for mesh generation using mshr
 comm = MPI.COMM_SELF
 rank = comm.Get_rank()
 nproc = comm.Get_size()
@@ -122,8 +123,8 @@ class FOM_advectiondiffusion:
             for i, _ in enumerate(m):
                 m_str = f'exp(-100 * ((x[0]-{centers[i][0]})*(x[0]-{centers[i][0]})' \
                     + f' + (x[1]-{centers[i][1]})*(x[1]-{centers[i][1]})))'
-                m_min_expr = dl.Expression(f'min(0.5, {m_str})', degree=1)
-                m[i] = dl.interpolate(m_min_expr, self.V)
+                m_truncated = dl.Expression(f'min(0.5, {m_str})', degree=1)
+                m[i] = dl.interpolate(m_truncated, self.V)
 
         return m
 
@@ -146,7 +147,8 @@ class FOM_advectiondiffusion:
             return A + self.M
         else:
             A.a += self.M.a  # Add the bilinear forms from the two matrices
-            A.bcs = list(A.bcs) + list(self.M.bcs)
+            # TODO - Should boundary conditions also be combined somehow? The boundary conditions for these matrices are zero here
+            # A.bcs = list(A.bcs) + list(self.M.bcs)  # Combine boundary conditions
             return A
 
     def apply_inner_product(self, u:dl.Function, v:dl.Function) -> dl.matrix.Matrix:
@@ -312,6 +314,7 @@ class FOM_advectiondiffusion:
 
         # TODO: distinguish between different types of u
         # TODO: include more plotting parameters, such as vmax
+        # TODO: make firedrake compatible
 
         if not using_firedrake:
             if isinstance(u, str):
@@ -321,9 +324,14 @@ class FOM_advectiondiffusion:
             c = dl.plot(u, mesh=self.mesh)
             plt.colorbar(c)
         else:
-            dl.tripcolor(u)
+            if isinstance(u, dl.Function):
+                dl.tripcolor(u)
+            elif str(type(u)) == "<class 'ufl.tensors.ListTensor'>":
+                dl.quiver(u)
+            elif isinstance(u, dl.MeshGeometry):
+                dl.triplot(u)
 
-    def find_next(self, u_old:dl.Function, dt:float, kappa:float) -> dl.Function:
+    def find_next(self, u_old:dl.Function, dt:float, kappa:float = None) -> dl.Function:
         """! Apply implicit Euler to the initial condition u_old with step size
         dt and diffusion parameter self.kappa to get an updated u
             @param u_old  Initial condition
@@ -331,6 +339,8 @@ class FOM_advectiondiffusion:
             @param kappa  Diffusion parameter (not used, self.kappa is used instead)
             @return  The updated u function
         """
+        if kappa is None:
+            kappa = self.kappa
 
         u = dl.Function(self.V)
         v = dl.TestFunction(self.V)
@@ -338,7 +348,7 @@ class FOM_advectiondiffusion:
         # Define variational form for the advection-diffusion equation
         F = dl.inner(u, v) * dl.dx \
             - dl.inner(u_old, v) * dl.dx \
-            + dl.Constant(dt * self.kappa) * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
+            + dl.Constant(dt * kappa) * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
             + dl.Constant(dt) * dl.inner(v * self.velocity, dl.grad(u)) * dl.dx
 
         # Solve the problem
