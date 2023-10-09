@@ -20,7 +20,7 @@ class NoiseModel():
 
         self.diffusion_matrix = self.compute_diffusion_matrix()
         self.mass_matrix = self.compute_mass_matrix()
-        self.mass_matrix_sqrt = self.compute_mass_sqrt()
+        #self.mass_matrix_sqrt = self.compute_mass_sqrt()
 
     def compute_diffusion_matrix(self):
         dt = self.grid_t[1] - self.grid_t[0]
@@ -81,20 +81,22 @@ class NoiseModel():
     def compute_noisenorm2(self, d):
         return d.T @ self.apply_covar_inv(d)
 
-    def apply_covar_inv(self, d):
+    def apply_covar_inv(self, d, d_left=None):
 
         LHS = self.c_scaling * (self.c_diffusion * self.diffusion_matrix + self.mass_matrix)
         Kd = LHS @ d
 
-        if len(Kd.shape) == 1:
-            Minv_Kd = sla.spsolve(self.mass_matrix, Kd)
-        else:
-            Minv_Kd = np.empty(Kd.shape)
-            for i in range(Kd.shape[1]):
-                Minv_Kd[:, i] = sla.spsolve(self.mass_matrix, Kd[:, i])
+        # if len(Kd.shape) == 1:
+        #     Minv_Kd = sla.spsolve(self.mass_matrix, Kd)
+        # else:
+        #     Minv_Kd = np.empty(Kd.shape)
+        #     for i in range(Kd.shape[1]):
+        #         Minv_Kd[:, i] = sla.spsolve(self.mass_matrix, Kd[:, i])
+        #
+        # yolo = LHS.T @ Minv_Kd
+        # return yolo
 
-        return LHS.T @ Minv_Kd
-
+        return Kd
 
 
 

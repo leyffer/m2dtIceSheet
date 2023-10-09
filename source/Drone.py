@@ -12,7 +12,7 @@ class Drone():
 
         self.eval_mode = eval_mode
         self.fly_mode = fly_mode
-        self.grid_t = grid_t if grid_t is not None else np.arange(0, 1, 1e-2)
+        self.grid_t = grid_t if grid_t is not None else np.arange(0, 1+1e-2, 1e-2)
 
         self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
         self.radius_uniform = kwargs.get("radius_uniform", 0.1)
@@ -53,6 +53,11 @@ class Drone():
 
         return pos, grid_t
 
+    def get_position(self, t, flying_parameters=None):
+
+        pos, __ = self.get_trajectory(flying_parameters=flying_parameters, grid_t=t*np.ones((1,)))
+        return pos[0, :]
+
     def measure(self, flightpath, state, mode=None, **kwargs):
 
         mode = mode if mode is not None else self.eval_mode
@@ -91,8 +96,10 @@ class Drone():
                                                                                              self.sigma_gaussian ** 2)
 
             # cut off after twice the standard deviation (truncated normal)
-            weight_fct = dl.Expression('max({}, {})'.format(-np.exp(-1), weight),
+            weight_fct = dl.Expression('max({}, {})'.format(-np.exp(-2), weight),
                                        degree=1)  # ideally should use higher degree too
+
+            # todo: I don't think the function is actually cut off :(
 
             # re-weight such that the integral is = 1
             val_integral = dl.assemble(weight_fct * dl.Measure('dx', self.fom.mesh))
