@@ -309,19 +309,21 @@ class FOM_advectiondiffusion:
         dl.solve(F == 0, w, bcs = bcW)
         return u
 
-    def plot(self, u):
+    def plot(self, u, mesh:dl.MeshGeometry=None):
         """! Plot the state u"""
 
         # TODO: distinguish between different types of u
         # TODO: include more plotting parameters, such as vmax
         # TODO: make firedrake compatible
 
+        if mesh is None:
+            mesh = self.mesh
         if not using_firedrake:
             if isinstance(u, str):
                 u = dl.Expression(f'{u}', degree=3)
 
             plt.figure()
-            c = dl.plot(u, mesh=self.mesh)
+            c = dl.plot(u, mesh=mesh)
             plt.colorbar(c)
         else:
             if isinstance(u, dl.Function):

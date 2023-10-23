@@ -51,7 +51,7 @@ class Drone():
 
         self.eval_mode = eval_mode
         self.fly_mode = fly_mode
-        self.grid_t = grid_t if grid_t is not None else np.arange(0, 1, 1e-2)
+        self.grid_t = grid_t if grid_t is not None else np.arange(0, 1 + 1e-2, 1e-2)
 
         self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
         self.radius_uniform = kwargs.get("radius_uniform", 0.1)
@@ -69,6 +69,17 @@ class Drone():
             return flying_parameters
 
         raise RuntimeError(f"Invalid fly_mode={self.fly_mode} provided")
+
+    def get_position(self, t:float, flying_parameters:dict=None):
+        """! Get the position of the drone given the time and flying parameters
+        
+            @param t  The time to evaluate the position of the drone
+            @param flying_parameters  The parameters of the flight path and
+            measurement
+            @return  Position of the drone (x, y)
+            """
+        pos, __ = self.get_trajectory(flying_parameters=flying_parameters, grid_t=t*np.ones((1,)))
+        return pos[0, :]
 
     def set_default_flying_parameters(self, flying_parameters:dict):
         """! Change flying parameters to the supplied parameters"""
@@ -261,10 +272,16 @@ class Drone():
                 pos_x, pos_y = flightpath[k, :]
                 x, y = dl.SpatialCoordinate(self.fom.mesh)
                 weight = dl.Function(self.fom.V)
-                # Use an ugly version of x/abs(x) to get a step function
+                # Use a simple conditional instead of the ugly step function
                 weight_fct = weight.interpolate(
-                    0.5 + 0.5 * (self.radius_uniform ** 2 - (pow(x - pos_x, 2) + pow(y - pos_y, 2))) \
-                        / abs(self.radius_uniform ** 2 - (pow(x - pos_x, 2) + pow(y - pos_y, 2)))
+                    dl.conditional(
+                        dl.gt(
+                            self.radius_uniform ** 2,
+                            (pow(x - pos_x, 2) + pow(y - pos_y, 2))
+                        ),
+                        1,
+                        0
+                    )
                 )
 
             # Re-weight such that the integral is = 1
