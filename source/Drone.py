@@ -163,9 +163,9 @@ class Drone():
 
         if isinstance(state, np.ndarray):
             # TODO: For some reason, the flightpath needs to be recreated as an array with firedrake
-            return [state[k](np.array(flightpath[k, :])) for k in range(flightpath.shape[0])]
+            return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
 
-        return np.array([state(np.array(flightpath[k, :])) for k in range(flightpath.shape[0])])
+        return np.array([state.at(*flightpath[k, :]) for k in range(flightpath.shape[0])])
 
     def measure_gaussian(
         self,
