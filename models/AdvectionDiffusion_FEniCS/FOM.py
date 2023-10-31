@@ -358,12 +358,14 @@ class FOM(FullOrderModel):
             m = m + para[i] * self.m_parameterized[i]
         return m
 
-    def solve(self, para, grid_t=None):
+    def solve(self, parameter: np.ndarray, *kwargs) -> State:
         """! Solve the transient problem
-            @param para  Parameters for the initial condition
-            @param grid_t  Grid for time integration
+            @param parameter of interest
+            @param kwargs should contain:
+                "grid_t" for transient problems
         """
-        m_init = self.assemble_initial_condition(para)
+        m_init = self.assemble_initial_condition(parameter)
+        grid_t = kwargs.get("grid_t", None)
         sol, grid_t, other_identifiers = self.implicit_Euler(m_init=m_init, grid_t=grid_t)
 
         state = State(fom=self, state=sol, bool_is_transient=True, parameter=para, other_identifiers=other_identifiers)

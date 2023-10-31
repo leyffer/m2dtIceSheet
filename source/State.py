@@ -1,5 +1,3 @@
-from FullOrderModel import FullOrderModel as FOM
-
 class State():
     """! State class
 
@@ -18,7 +16,7 @@ class State():
     bool_is_transient = None  # whether the solution is time dependent
     grid_t = None  # time discretization of the state solution
 
-    def __init__(self, fom : FOM, state, bool_is_transient, parameter, other_identifiers, *kwargs) -> None:
+    def __init__(self, fom, state, bool_is_transient, parameter, other_identifiers, *kwargs) -> None:
         """! Initialization for State class
 
         @param fom: FullOrderModel instance

@@ -30,7 +30,7 @@ class Brain():
 
         # solve for state
         if state is None:
-            state, grid_t_fom = self.fom.solve(para=para, grid_t=grid_t)
+            state, grid_t_fom = self.fom.solve(parameter=para, grid_t=grid_t)
         else:
             grid_t_fom = kwargs.get("grid_t_fom")
 
