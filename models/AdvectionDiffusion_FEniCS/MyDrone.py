@@ -31,7 +31,7 @@ class MyDrone(Drone):
         super().__init__(fom)
 
         self.eval_mode = eval_mode
-        self.grid_t = grid_t if grid_t is not None else np.arange(0, 1 + 1e-2, 1e-2)
+        self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-2, 1e-2)
 
         # todo: get parameterization for other eval modes, in partiuclar give them a common name, not individual ones:
         # self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
