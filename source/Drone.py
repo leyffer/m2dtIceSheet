@@ -15,6 +15,7 @@ class Drone():
         """
         # TODO: are there any other setup parameters?
         self.fom = fom
+        self.n_parameters = fom.n_parameters
 
     # TODO: specify and describe other functions the general drone class has to have
 
@@ -44,3 +45,16 @@ class Drone():
         @param state  The state which the drone shall measure, State object
         """
         raise NotImplementedError("Drone.measure: Needs to be implemented in subclass")
+
+    def d_position_d_control(self, alpha, flightpath, grid_t):
+        """
+        computes the derivative of the flightpath with respect to the control parameters in alpha.
+        This class is problem specific and needs to be written by the user.
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @return:
+        """
+        raise NotImplementedError("Drone.d_position_d_control: Needs to be implemented in subclass")
+

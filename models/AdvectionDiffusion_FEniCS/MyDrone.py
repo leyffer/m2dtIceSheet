@@ -60,6 +60,31 @@ class MyDrone(Drone):
 
         return pos, grid_t
 
+    def d_position_d_control(self, alpha, flightpath, grid_t):
+        """
+        computes the derivative of the flightpath with respect to the control parameters in alpha.
+        This class is problem specific and needs to be written by the user.
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @return:
+        """
+        # for the Drone class
+
+        radius = alpha[0]
+        speed = alpha[1]
+
+        round_trip_time = 2 * np.pi * radius / speed
+        angles = (grid_t * 2 * np.pi) / round_trip_time
+
+        d_speed = (np.vstack([-np.sin(angles), np.cos(angles)]) * grid_t)
+
+        d_radius = np.vstack([np.cos(angles), np.sin(angles)])
+        d_radius = d_radius - (np.vstack([-np.sin(angles), np.cos(angles)]) * (grid_t * speed)) / radius
+
+        return np.array([d_radius, d_speed])
+
     def measure(self, flightpath, grid_t, state) -> np.ndarray:
         """! Method to take a measurement
 
@@ -94,5 +119,43 @@ class MyDrone(Drone):
             # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
 
         return np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
+
+    def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
+        """
+        derivative of the measurement function for a given flightpath in control direction alpha
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @param state:
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        """
+
+        # parts of the chain rule (only compute once)
+        grad_p = self.d_position_d_control(alpha, flightpath, grid_t)  # derivative of position
+        Du = state.get_derivative()  # spatial derivative of the state
+
+        # initialization
+        D_data_d_alpha = np.empty((grid_t.shape[0], alpha.shape[0]))
+
+        if self.eval_mode == "point-eval":
+
+            for i in range(grid_t.shape[0]):
+                # the FEniCS evaluation of the Du at a position unfortunately doesn't work with multiple positions
+                # that's why we can't get rid of this loop
+
+                # apply chain rule
+                D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
+
+                # todo: make compatible with transient setting
+
+                return D_data_d_alpha
+
+        raise NotImplementedError("still need to do the maths for other measurement types")
+
+
+
+
+
 
 

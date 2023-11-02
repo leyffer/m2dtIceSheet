@@ -2,7 +2,7 @@ from FOM import FOM
 
 import sys
 sys.path.insert(0, "../source/")
-from State import State
+from myState import myState as State
 
 import fenics as dl
 dl.set_log_level(30)

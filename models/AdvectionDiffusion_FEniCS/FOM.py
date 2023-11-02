@@ -10,7 +10,7 @@ from mpi4py import MPI  # For parallelization
 import sys
 sys.path.insert(0, "../source/")
 from FullOrderModel import FullOrderModel
-from State import State
+from myState import myState as State
 
 # Initialize MPI communications for mesh generation using mshr
 comm = MPI.COMM_SELF

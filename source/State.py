@@ -15,6 +15,7 @@ class State():
 
     bool_is_transient = None  # whether the solution is time dependent
     grid_t = None  # time discretization of the state solution
+    Du = None
 
     def __init__(self, fom, state, bool_is_transient, parameter, other_identifiers, *kwargs) -> None:
         """! Initialization for State class
@@ -37,5 +38,16 @@ class State():
         self.state = state
         self.parameter = parameter
         self.other_identifiers = other_identifiers
+
+    def get_derivative(self):
+        """
+        computes and saves the spatial derivative of the state
+        @return:
+        """
+        raise NotImplementedError("user must implement State.get_derivative in subclass")
+
+
+
+
 
 
