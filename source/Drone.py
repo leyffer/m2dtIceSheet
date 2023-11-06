@@ -58,3 +58,16 @@ class Drone():
         """
         raise NotImplementedError("Drone.d_position_d_control: Needs to be implemented in subclass")
 
+    def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
+        """
+        derivative of the measurement function for a given flightpath in control direction alpha
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @param state:
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        """
+        # todo: I think we can generalize the code from myDrone in models/AdvectionDiffusion_FEniCS such that the user
+        #  doesn't need to write this function themselves.
+        raise NotImplementedError("Drone.d_measurement_d_control: Needs to be implemented in subclass")

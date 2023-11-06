@@ -31,7 +31,7 @@ class MyDrone(Drone):
         super().__init__(fom)
 
         self.eval_mode = eval_mode
-        self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-2, 1e-2)
+        self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-4, 1e-4)
 
         # todo: get parameterization for other eval modes, in partiuclar give them a common name, not individual ones:
         # self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
@@ -133,6 +133,7 @@ class MyDrone(Drone):
 
         # parts of the chain rule (only compute once)
         grad_p = self.d_position_d_control(alpha, flightpath, grid_t)  # derivative of position
+        # todo: optimize this computation such that we don't repeat it as often
         Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
@@ -149,7 +150,7 @@ class MyDrone(Drone):
 
                 # todo: make compatible with transient setting
 
-                return D_data_d_alpha
+            return D_data_d_alpha
 
         raise NotImplementedError("still need to do the maths for other measurement types")
 
