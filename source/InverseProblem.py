@@ -17,8 +17,8 @@ class InverseProblem():
     Note: the details on the last part are not clear yet
     """
 
-    c_scaling = 100
-    c_diffusion = 1
+    c_scaling = 1e+3
+    c_diffusion = 0.01
 
     states = None
     Basis = None

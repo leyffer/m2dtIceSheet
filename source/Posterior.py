@@ -99,6 +99,7 @@ class Posterior():
             # todo: replace with solve that uses the action of the inverse posterior covariance instead
 
         else:
+            # can't compute the posterior mean without data
             mean = None
 
         return mean, data
@@ -150,8 +151,9 @@ class Posterior():
         #  covariance matrix.
 
         if self.covar_inv is None:
+            # only compute once
 
-            G = self.get_para2obs()
+            G = self.get_para2obs() # parameter-to-observable map
             self.invNoiseCovG = self.inversion.apply_noise_covar_inv(G)  # save for use in derivative computation
             yolo = G.T @ self.invNoiseCovG  # squared noise norm
             self.covar_inv = yolo + la.inv(self.prior.prior_covar)
@@ -170,8 +172,12 @@ class Posterior():
         # todo: optimize the code so that we can get rid of this function (if necessary, replace with action of the
         #  posterior covariance
 
+        # todo: the name is misleading, it should problaby be a get command
+
         if self.covar is None:
+            # only compute once
             self.covar = la.inv(self.compute_inverse_covariance())
+
         return self.covar
 
     def apply_inverse_covariance(self, parameter):
@@ -199,10 +205,16 @@ class Posterior():
         @return: eigenvalues
         """
         if self.eigvals is None:
+            # only compute once
 
+            # get the inverse posterior covariance matrix
             covar_inv = self.compute_inverse_covariance()
+
+            # solve eigenvalue probblem
             eigvals, eigvecs = la.eigh(covar_inv)
             # todo: switch to the action of the inverse covariance matrix instead
+
+            # convert to eigenvalues of the posterior covariance matrix (instead of its inverse)
             self.eigvals = 1/eigvals
 
         return self.eigvals
@@ -218,9 +230,12 @@ class Posterior():
         """
 
         if self.covar_inv_derivative is not None:
+            # avoid re-computation
             return self.covar_inv_derivative
 
-        dG = np.empty((self.K, self.n_parameters, self.n_controls))
+        # derivative of the parameter-to-observable map
+        dG = np.empty((self.K, self.n_parameters, self.n_controls)) # initialization
+
         for i in range(self.n_parameters):
             # todo: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
             dG[:, i, :] = self.drone.d_measurement_d_control(alpha=self.alpha,
@@ -228,12 +243,11 @@ class Posterior():
                                                              grid_t=self.grid_t,
                                                              state=self.inversion.states[i])
 
-        self.dG = dG
+        self.dG = dG  # save for future use, e.g., testing
 
-        prior_covar_inv = la.inv(self.prior.prior_covar)
-        self.covar_inv_derivative = [dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i] + prior_covar_inv for i in range(self.n_controls)]
+        # apply chain rule
+        self.covar_inv_derivative = [dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i] for i in range(self.n_controls)]
 
-        # todo: get rid of call to la.inv
         # todo: this list is very inefficient. There's probably a smarter way using tensor multiplications
 
         # sanity check:
@@ -242,7 +256,7 @@ class Posterior():
 
             # instead of casting into the correct format we raise an error, because at this point I expect the code
             # to be optimized enough that everything gets the correct shape just from being initialized correctly
-            raise RuntimeError("invalid shape = {} for d_invPostCov_d_speed".format(d_invPostCov_d_speed[0].shape))
+            raise RuntimeError("invalid shape = {} for d_invPostCov_d_speed".format(self.covar_inv_derivative[0].shape))
 
         return self.covar_inv_derivative
 
@@ -255,44 +269,10 @@ class Posterior():
 
         @return: list containing the matrix derivative of self.covar w.r.t. each control parameter
         """
+        # get the posterior covariance matrix and its derivative
         PostCov = self.compute_covariance()
         covar_inv_derivative = self.d_invPostCov_d_control()
+
+        # apply chain rule (matrix form) to get the derivative (be careful about the order!)
         return [-PostCov @ covar_inv_derivative[i] @ PostCov for i in range(self.n_controls)]
-
-
-    # def d_PostCov_d_control(self, flying_parameters=flying_parameters):
-    #
-    #     # initialization
-    #     drone = Drone(fom, flying_parameters=flying_parameters, eval_mode=eval_mode, grid_t=grid_t)
-    #     pos, __ = drone.get_trajectory(flying_parameters=flying_parameters)
-    #
-    #     BU = np.empty((grid_t.shape[0], n_para))
-    #     for i in range(n_para):
-    #         BU[:, i] = drone.measure(flightpath=pos, state=sol_steadystate[i])
-    #
-    #     invCovBU = noise_model.apply_covar_inv(BU)
-    #     invPostCov = BU.T @ invCovBU + prior.covar_inv
-    #
-    #     # get derivative of inverse posterior covariance matrix
-    #     dBU = np.empty((grid_t.shape[0], n_para, n_controls))
-    #     for k in range(grid_t.shape[0]):
-    #         dBU[k, :, :] = d_measurement_d_control(t=grid_t[k], flying_parameters=flying_parameters)
-    #
-    #     d_invPostCov_d_speed = [dBU[:, :, i].T @ invCovBU + invCovBU.T @ dBU[:, :, i] for i in range(n_controls)]
-    #
-    #     # sanity check:
-    #     if len(d_invPostCov_d_speed[0].shape) == 0:
-    #         # d_invPostCov_d_speed = np.array(np.array([d_invPostCov_d_speed]))
-    #
-    #         # instead of casting into the correct format we raise an error, because at this point I expect the code
-    #         # to be optimized enough that everything gets the correct shape just from being initialized correctly
-    #         raise RuntimeError("invalid shape = {} for d_invPostCov_d_speed".format(d_invPostCov_d_speed[0].shape))
-    #
-    #     PostCov = la.inv(invPostCov)
-    #     derivative = [-PostCov @ d_invPostCov_d_speed[i] @ PostCov for i in range(n_controls)]
-    #     # todo: I'm using la.inv here because I also want to return the matrix below. However, when we adapt this
-    #     # into the source code we need to replace it with a proper linear system solve, maybe even just return
-    #     # the inverse posterior covarianc matrix
-    #
-    #     return derivative, PostCov
 
