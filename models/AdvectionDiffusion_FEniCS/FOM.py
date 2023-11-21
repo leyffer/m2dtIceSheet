@@ -116,8 +116,8 @@ class FOM(FullOrderModel):
         A = dl.as_backend_type(A).mat()  # PETSc matrix
         A = sparse.csr_matrix(A.getValuesCSR()[::-1], shape=A.size)
 
-        # todo: is it correct that we don't need to apply boundary conditions?
-        # todo: use the function apply_inner_product to avoid double-definitions
+        # TODO: is it correct that we don't need to apply boundary conditions?
+        # TODO: use the function apply_inner_product to avoid double-definitions
 
         return A + self.M
 
@@ -125,14 +125,14 @@ class FOM(FullOrderModel):
         """! Apply the inner product matrix
             @return  Matrix for inner product of u, v
         """
-        # todo: add valid type hint
+        # TODO: add valid type hint
         return dl.assemble(dl.inner(dl.grad(u), dl.grad(v)) * dl.dx) + self.apply_mass_matrix(u, v)
 
     def mass_matrix(self): #-> dl.matrix.Matrix:
         """! Return the mass matrix
             @return  Mass matrix
         """
-        # todo: add valid type hint
+        # TODO: add valid type hint
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
 
@@ -142,8 +142,8 @@ class FOM(FullOrderModel):
         A = dl.as_backend_type(A).mat()  # PETSc matrix
         A = sparse.csr_matrix(A.getValuesCSR()[::-1], shape=A.size)
 
-        # todo: is it correct that we don't need to apply boundary conditions?
-        # todo: use the function apply_mass_matrix to avoid double-definitions
+        # TODO: is it correct that we don't need to apply boundary conditions?
+        # TODO: use the function apply_mass_matrix to avoid double-definitions
 
         return A
 
@@ -204,7 +204,7 @@ class FOM(FullOrderModel):
                 if 0.6 <= mp[0] and mp[0] <= 0.75:
                     boundary[f] = 4
 
-        # todo: account for the case where we have no houses
+        # TODO: account for the case where we have no houses
 
         return boundary
 
@@ -259,7 +259,7 @@ class FOM(FullOrderModel):
             u = dl.Expression(f'{u}', degree=3)
         if isinstance(u, State):
             u = u.state
-            # todo: make compatible with time-dependent states
+            # TODO: make compatible with time-dependent states
 
         plt.figure()
         c = dl.plot(u, mesh=mesh)
@@ -306,7 +306,7 @@ class FOM(FullOrderModel):
             @param grid_t  Array containing time values for integration
             @return  Tuple containing (numpy array with solutions to time integration; time grid)
         """
-        # todo: add valid type hint
+        # TODO: add valid type hint
 
         # Set defaults
         if grid_t is None:

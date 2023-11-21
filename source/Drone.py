@@ -1,17 +1,24 @@
+"""!
+Drone parent class
+"""
 import numpy as np
 
-class Drone():
+
+class Drone:
     """!
     This is a general parent class for the drones.
-    For any particular model the user should create a subclass and specify the functions below.
+    For any particular model the user should create a subclass and specify the
+    functions below.
     """
 
     def __init__(self, fom):
         """! Initialization for the drone class
-        In this call we specify the main setup parameters that the drone class has to have.
-        The user needs to specify their own __init__ call, and call super().__init__ for the setup here.
+        In this call we specify the main setup parameters that the drone class
+        has to have. The user needs to specify their own __init__ call, and call
+        super().__init__ for the setup here.
 
-        @param fom  Full-order-model (FOM) object. The drone needs to measure states computed by the FOM
+        @param fom  Full-order-model (FOM) object. The drone needs to measure
+        states computed by the FOM
         """
         # TODO: are there any other setup parameters?
         self.fom = fom
@@ -29,13 +36,17 @@ class Drone():
         pos, __ = self.get_trajectory(alpha=alpha, grid_t=t * np.ones((1,)))
         return pos[0, :]
 
-    def get_trajectory(self, alpha: np.ndarray, grid_t: np.ndarray=None) -> tuple[np.ndarray, np.ndarray]:
+    def get_trajectory(
+        self, alpha: np.ndarray, grid_t: np.ndarray = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
         @param alpha The specified flight parameters
         @param grid_t the time grid on which the drone position shall be computed
         @return  Tuple of (position over flight path, corresponding time for each position)
         """
-        raise NotImplementedError("Drone.get_trajectory: Needs to be implemented in subclass")
+        raise NotImplementedError(
+            "Drone.get_trajectory: Needs to be implemented in subclass"
+        )
 
     def measure(self, flightpath, grid_t, state) -> np.ndarray:
         """! Method to take a measurement
@@ -56,7 +67,9 @@ class Drone():
         @param grid_t:
         @return:
         """
-        raise NotImplementedError("Drone.d_position_d_control: Needs to be implemented in subclass")
+        raise NotImplementedError(
+            "Drone.d_position_d_control: Needs to be implemented in subclass"
+        )
 
     def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
         """
@@ -66,8 +79,11 @@ class Drone():
         @param flightpath:
         @param grid_t:
         @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
-        # todo: I think we can generalize the code from myDrone in models/AdvectionDiffusion_FEniCS such that the user
-        #  doesn't need to write this function themselves.
-        raise NotImplementedError("Drone.d_measurement_d_control: Needs to be implemented in subclass")
+        # TODO: I think we can generalize the code from myDrone in
+        #  models/AdvectionDiffusion_FEniCS such that the user doesn't need to
+        #  write this function themselves.
+        raise NotImplementedError(
+            "Drone.d_measurement_d_control: Needs to be implemented in subclass"
+        )

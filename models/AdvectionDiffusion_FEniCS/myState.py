@@ -13,7 +13,7 @@ class myState(State):
         """
         if self.Du is None:
             if self.bool_is_transient:
-                # todo: implement derivative for time dependent states (it's easy, I'm just lazy)
+                # TODO: implement derivative for time dependent states (it's easy, I'm just lazy)
                 raise RuntimeError("spatial derivative for transient state still needs to be implemented")
 
             else:

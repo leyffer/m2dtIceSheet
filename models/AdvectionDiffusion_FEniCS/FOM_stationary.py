@@ -25,7 +25,7 @@ class FOM_stationary(FOM):
 
         self.default_forcing = self.m_true
         self.default_para = [0.1, 20, 0.01]
-        # todo: rename to kappa
+        # TODO: rename to kappa
 
     def solve_steady(self, forcing: dl.Function=None, kappa: list[float]=None) -> dl.Function:
         """! Solve the steady state advection-diffusion equation
@@ -56,7 +56,7 @@ class FOM_stationary(FOM):
         bc_top_bottom = dl.DirichletBC(self.V, 0, boundary, 3)
         bc_houses     = dl.DirichletBC(self.V, 0, boundary, 4)
         bcs = [bc_left, bc_right, bc_top_bottom, bc_houses]
-        # todo: catch the case without houses
+        # TODO: catch the case without houses
 
         # solve the steadystate equation
         dl.solve(a == f, sol, bcs = bcs)

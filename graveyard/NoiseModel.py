@@ -43,7 +43,7 @@ class NoiseModel():
             @return  diffusion matrix
         """
         dt = self.grid_t[1] - self.grid_t[0]
-        #TODO: don't assume uniform timestepping
+        # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
 
         # diffusion matrix
@@ -69,7 +69,7 @@ class NoiseModel():
             @return  mass matrix
         """
         dt = self.grid_t[1] - self.grid_t[0]
-        #TODO: don't assume uniform timestepping
+        # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
 
         # mass matrix
@@ -94,7 +94,7 @@ class NoiseModel():
         
             @return  the (dense) matrix square root of the mass matrix
         """
-        #TODO: implement matrix square root for sparse matrices instead (this is
+        # TODO: implement matrix square root for sparse matrices instead (this is
         #a workaround for small matrices only)
 
         M = self.mass_matrix.todense()
