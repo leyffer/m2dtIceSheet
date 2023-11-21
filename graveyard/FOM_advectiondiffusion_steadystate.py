@@ -33,9 +33,9 @@ class FOM_advectiondiffusion_steadystate(FOM_advectiondiffusion):
 
     def solve_steady(
         self,
-        forcing:dl.Function=None,
+        forcing:dl.fem.Function=None,
         para:list[float]=None
-        ) -> dl.Function:
+        ) -> dl.fem.Function:
         """! Solve the steady state advection-diffusion equation
             @param forcing  The forcing function
             @param para  The equation parameters
@@ -45,50 +45,50 @@ class FOM_advectiondiffusion_steadystate(FOM_advectiondiffusion):
 
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
-        sol = dl.Function(self.V)
+        sol = dl.fem.Function(self.V)
 
-        a = para[0] * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
-            + para[1] * dl.inner(v * self.velocity, dl.grad(u)) * dl.dx \
-            + para[2] * dl.inner(u, v) * dl.dx
+        a = para[0] * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx \
+            + para[1] * ufl.inner(v * self.velocity, ufl.grad(u)) * ufl.dx \
+            + para[2] * ufl.inner(u, v) * ufl.dx
 
-        f = dl.inner(forcing, v) * dl.dx
+        f = ufl.inner(forcing, v) * ufl.dx
 
         if using_firedrake:
             if self.mesh_shape == "square":
                 ## Square mesh using gmsh (numbering is specified by makeMesh)
-                # bc_bottom = dl.DirichletBC(self.V, 0, 1)
-                # bc_right  = dl.DirichletBC(self.V, 0, 2)
-                # bc_top    = dl.DirichletBC(self.V, 0, 3)
-                # bc_left   = dl.DirichletBC(self.V, 0, 4)
+                # bc_bottom = dl.fem.DirichletBC(self.V, 0, 1)
+                # bc_right  = dl.fem.DirichletBC(self.V, 0, 2)
+                # bc_top    = dl.fem.DirichletBC(self.V, 0, 3)
+                # bc_left   = dl.fem.DirichletBC(self.V, 0, 4)
 
                 ## Square mesh using UnitSquareMesh (numbering is specified by UnitSquareMesh)
-                bc_left   = dl.DirichletBC(self.V, 0, 1)
-                bc_right  = dl.DirichletBC(self.V, 0, 2)
-                bc_bottom = dl.DirichletBC(self.V, 0, 3)
-                bc_top    = dl.DirichletBC(self.V, 0, 4)
+                bc_left   = dl.fem.DirichletBC(self.V, 0, 1)
+                bc_right  = dl.fem.DirichletBC(self.V, 0, 2)
+                bc_bottom = dl.fem.DirichletBC(self.V, 0, 3)
+                bc_top    = dl.fem.DirichletBC(self.V, 0, 4)
                 # Since all bcs are zero, order does not matter
                 bcs = [bc_bottom, bc_right, bc_top, bc_left]
 
             if self.mesh_shape == "houses":
                 ## Houses boundary conditions (numbering is specified by makeMesh)
-                bc_bottom = dl.DirichletBC(self.V, 0, 1)
-                bc_right  = dl.DirichletBC(self.V, 0, 2)
-                bc_top    = dl.DirichletBC(self.V, 0, 3)
-                bc_left   = dl.DirichletBC(self.V, 0, 4)
-                bc_houses = dl.DirichletBC(self.V, 0, 5)
+                bc_bottom = dl.fem.DirichletBC(self.V, 0, 1)
+                bc_right  = dl.fem.DirichletBC(self.V, 0, 2)
+                bc_top    = dl.fem.DirichletBC(self.V, 0, 3)
+                bc_left   = dl.fem.DirichletBC(self.V, 0, 4)
+                bc_houses = dl.fem.DirichletBC(self.V, 0, 5)
                 bcs = [bc_left, bc_right, bc_top, bc_bottom, bc_houses]
         else:
             boundary = self.boundary_marker
-            bc_left       = dl.DirichletBC(self.V, 0, boundary, 1)
-            bc_right      = dl.DirichletBC(self.V, 0, boundary, 2)
-            bc_top_bottom = dl.DirichletBC(self.V, 0, boundary, 3)
-            bc_houses     = dl.DirichletBC(self.V, 0, boundary, 4)
+            bc_left       = dl.fem.DirichletBC(self.V, 0, boundary, 1)
+            bc_right      = dl.fem.DirichletBC(self.V, 0, boundary, 2)
+            bc_top_bottom = dl.fem.DirichletBC(self.V, 0, boundary, 3)
+            bc_houses     = dl.fem.DirichletBC(self.V, 0, boundary, 4)
             bcs = [bc_left, bc_right, bc_top_bottom, bc_houses]
 
         dl.solve(a == f, sol, bcs = bcs)
         return sol
 
-    def assemble_forcing(self, para:list[float]) -> dl.Function:
+    def assemble_forcing(self, para:list[float]) -> dl.fem.Function:
         """! Assemble the forcing function given parameters para
 
         The forcing function is composed of functions that are scaled by the provided parameters
@@ -107,7 +107,7 @@ class FOM_advectiondiffusion_steadystate(FOM_advectiondiffusion):
             m = m + para[i] * self.m_parameterized[i]
         return m
 
-    def solve(self, para:list[float], grid_t:Any=None) -> dl.Function:
+    def solve(self, para:list[float], grid_t:Any=None) -> dl.fem.Function:
         """! Solve the steady state equation with the parameterized forcing
             @param para  Forcing parameters
             @param grid_t  Time grid (not used in any computation)

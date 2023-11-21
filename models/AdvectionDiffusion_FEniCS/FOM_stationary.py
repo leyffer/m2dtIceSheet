@@ -4,8 +4,7 @@ import sys
 sys.path.insert(0, "../source/")
 from myState import myState as State
 
-import fenics as dl
-dl.set_log_level(30)
+import dolfinx as dl
 
 import numpy as np
 
@@ -27,7 +26,7 @@ class FOM_stationary(FOM):
         self.default_para = [0.1, 20, 0.01]
         # todo: rename to kappa
 
-    def solve_steady(self, forcing: dl.Function=None, kappa: list[float]=None) -> dl.Function:
+    def solve_steady(self, forcing: dl.fem.Function=None, kappa: list[float]=None) -> dl.fem.Function:
         """! Solve the steady state advection-diffusion equation
             @param forcing  The forcing function
             @param kappa  The equation parameters
@@ -39,22 +38,22 @@ class FOM_stationary(FOM):
         # set up trial and test functions
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
-        sol = dl.Function(self.V)
+        sol = dl.fem.Function(self.V)
 
         # set up bilinear form
-        a = kappa[0] * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
-            + kappa[1] * dl.inner(v * self.velocity, dl.grad(u)) * dl.dx \
-            + kappa[2] * dl.inner(u, v) * dl.dx
+        a = kappa[0] * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx \
+            + kappa[1] * ufl.inner(v * self.velocity, ufl.grad(u)) * ufl.dx \
+            + kappa[2] * ufl.inner(u, v) * ufl.dx
 
         # set up forcing term
-        f = dl.inner(forcing, v) * dl.dx
+        f = ufl.inner(forcing, v) * ufl.dx
 
         # set boundary conditions
         boundary = self.boundary_marker
-        bc_left       = dl.DirichletBC(self.V, 0, boundary, 1)
-        bc_right      = dl.DirichletBC(self.V, 0, boundary, 2)
-        bc_top_bottom = dl.DirichletBC(self.V, 0, boundary, 3)
-        bc_houses     = dl.DirichletBC(self.V, 0, boundary, 4)
+        bc_left       = dl.fem.DirichletBC(self.V, 0, boundary, 1)
+        bc_right      = dl.fem.DirichletBC(self.V, 0, boundary, 2)
+        bc_top_bottom = dl.fem.DirichletBC(self.V, 0, boundary, 3)
+        bc_houses     = dl.fem.DirichletBC(self.V, 0, boundary, 4)
         bcs = [bc_left, bc_right, bc_top_bottom, bc_houses]
         # todo: catch the case without houses
 
@@ -67,7 +66,7 @@ class FOM_stationary(FOM):
 
         return sol, other_identifiers
 
-    def assemble_forcing(self, parameter:np.ndarray) -> dl.Function:
+    def assemble_forcing(self, parameter:np.ndarray) -> dl.fem.Function:
         """! Assemble the forcing function given parameters para
 
         The forcing function is composed of functions that are scaled by the provided parameters

@@ -1,8 +1,11 @@
+"""!
+State of the digital twin
+"""
 import sys
 sys.path.insert(0, "../source/")
 from State import State
 
-import fenics as dl
+import dolfinx as dl
 
 class myState(State):
 
@@ -17,7 +20,7 @@ class myState(State):
                 raise RuntimeError("spatial derivative for transient state still needs to be implemented")
 
             else:
-                Du = dl.grad(self.state)
+                Du = ufl.grad(self.state)
                 self.Du = dl.project(Du)
 
         return self.Du

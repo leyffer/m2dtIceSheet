@@ -1,13 +1,21 @@
-import fenics as dl
-dl.set_log_level(30)
-import mshr
+"""!
+Full order model
+"""
+import sys
+
+import dolfinx as dl
+import ufl
+
+try:
+    import mshr
+except ImportError:
+    print("mshr not installed")
 
 import matplotlib.pyplot as plt  # For plotting
 import numpy as np  # For standard array manipulation
-import scipy.sparse as sparse  # For sparse matrices and linear algebra
+from scipy import sparse  # For sparse matrices and linear algebra
 from mpi4py import MPI  # For parallelization
 
-import sys
 sys.path.insert(0, "../source/")
 from FullOrderModel import FullOrderModel
 from myState import myState as State
@@ -17,26 +25,27 @@ comm = MPI.COMM_SELF
 rank = comm.Get_rank()
 nproc = comm.Get_size()
 
-class FOM(FullOrderModel):
 
+class FOM(FullOrderModel):
     def __init__(
-            self,
-            meshDim: int = 50,
-            polyDim: int = 1,
-            bool_mpi: bool = False,
-            kappa: float = 1e-3,
-            dt: float = 0.1,
-            final_time: float = 4,
-            mesh_shape: str = "houses",
-            **kwargs):
+        self,
+        meshDim: int = 50,
+        polyDim: int = 1,
+        bool_mpi: bool = False,
+        kappa: float = 1e-3,
+        dt: float = 0.1,
+        final_time: float = 4,
+        mesh_shape: str = "houses",
+        **kwargs,
+    ):
         """! Initializer for the Full-order-model (FOM)
-            @param meshDim  Integer number of mesh nodes on each boundary
-            @param polyDim  Polynomial dimension of test and trial function space
-            @param bool_mpi  Boolean indicating MPI communications for mesh generation
-            @param kappa  Advection-diffusion equation parameter
-            @param dt  Time step size for transient solves
-            @param final_time  Final time for transient solutions
-            @param **kwargs  Keyword arguments passed to set_defaults
+        @param meshDim  Integer number of mesh nodes on each boundary
+        @param polyDim  Polynomial dimension of test and trial function space
+        @param bool_mpi  Boolean indicating MPI communications for mesh generation
+        @param kappa  Advection-diffusion equation parameter
+        @param dt  Time step size for transient solves
+        @param final_time  Final time for transient solutions
+        @param **kwargs  Keyword arguments passed to set_defaults
         """
 
         # call initialization of parent class
@@ -56,14 +65,16 @@ class FOM(FullOrderModel):
         self.velocity = self.create_velocity_field()
 
         # Trial and test space for advection-diffusion eq ('P' == Polynomial)
-        self.V = dl.FunctionSpace(self.mesh, 'P', polyDim)
+        self.V = dl.fem.FunctionSpace(self.mesh, "P", polyDim)
 
         # Finite-element dimension
         self.nFE = self.V.dim()
 
         # True initial condition
-        m_true = 'exp(-100 * ((x[0]-0.35)*(x[0]-0.35) + (x[1]-0.7)*(x[1]-0.7)))'
-        self.m_true = dl.interpolate(dl.Expression(f'min(0.5, {m_true})', degree=3), self.V)
+        m_true = "exp(-100 * ((x[0]-0.35)*(x[0]-0.35) + (x[1]-0.7)*(x[1]-0.7)))"
+        self.m_true = dl.interpolate(
+            dl.Expression(f"min(0.5, {m_true})", degree=3), self.V
+        )
 
         # Parameters
         self.m_parameterized = self.set_parameter_functions()
@@ -79,7 +90,7 @@ class FOM(FullOrderModel):
 
         self.set_defaults(**kwargs)
 
-    def set_parameter_functions(self):  # -> np.ndarray[dl.Function]:
+    def set_parameter_functions(self):  # -> np.ndarray[dl.fem.Function]:
         """! Initialize the parameterized functions used with the provided
         parameters to make the initial condition
             @return  Numpy array of separate initial condition elements that we
@@ -91,9 +102,11 @@ class FOM(FullOrderModel):
         centers = [[0.35, 0.7], [0.8, 0.2], [0.7, 0.5], [0.1, 0.9], [0.1, 0.2]]
 
         for i, _ in enumerate(m):
-            m_str = f'exp(-100 * ((x[0]-{centers[i][0]})*(x[0]-{centers[i][0]})' \
-                    + f' + (x[1]-{centers[i][1]})*(x[1]-{centers[i][1]})))'
-            m_truncated = dl.Expression(f'min(0.5, {m_str})', degree=1)
+            m_str = (
+                f"exp(-100 * ((x[0]-{centers[i][0]})*(x[0]-{centers[i][0]})"
+                + f" + (x[1]-{centers[i][1]})*(x[1]-{centers[i][1]})))"
+            )
+            m_truncated = dl.Expression(f"min(0.5, {m_str})", degree=1)
             m[i] = dl.interpolate(m_truncated, self.V)
 
         return m
@@ -102,15 +115,15 @@ class FOM(FullOrderModel):
         """! Function for setting default values. Not implemented"""
         return
 
-    def inner_product_matrix(self): #-> dl.matrix.Matrix:
+    def inner_product_matrix(self):  # -> dl.matrix.Matrix:
         """! Return an inner product matrix
-            @return  Matrix for inner product of u, v
+        @return  Matrix for inner product of u, v
         """
         # TODO: add valid type hint
 
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
-        a = dl.inner(dl.grad(u), dl.grad(v)) * dl.dx
+        a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
 
         A = dl.assemble(a)
         A = dl.as_backend_type(A).mat()  # PETSc matrix
@@ -121,22 +134,26 @@ class FOM(FullOrderModel):
 
         return A + self.M
 
-    def apply_inner_product(self, u: dl.Function, v: dl.Function): # -> dl.matrix.Matrix:
+    def apply_inner_product(
+        self, u: dl.fem.Function, v: dl.fem.Function
+    ):  # -> dl.matrix.Matrix:
         """! Apply the inner product matrix
-            @return  Matrix for inner product of u, v
+        @return  Matrix for inner product of u, v
         """
         # todo: add valid type hint
-        return dl.assemble(dl.inner(dl.grad(u), dl.grad(v)) * dl.dx) + self.apply_mass_matrix(u, v)
+        return dl.assemble(
+            ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+        ) + self.apply_mass_matrix(u, v)
 
-    def mass_matrix(self): #-> dl.matrix.Matrix:
+    def mass_matrix(self):  # -> dl.matrix.Matrix:
         """! Return the mass matrix
-            @return  Mass matrix
+        @return  Mass matrix
         """
         # todo: add valid type hint
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
 
-        a = dl.inner(u, v) * dl.dx
+        a = ufl.inner(u, v) * ufl.dx
 
         A = dl.assemble(a)
         A = dl.as_backend_type(A).mat()  # PETSc matrix
@@ -147,24 +164,26 @@ class FOM(FullOrderModel):
 
         return A
 
-    def apply_mass_matrix(self, u: dl.Function, v: dl.Function): #-> dl.matrix.Matrix:
+    def apply_mass_matrix(
+        self, u: dl.fem.Function, v: dl.fem.Function
+    ):  # -> dl.matrix.Matrix:
         """! Return the mass matrix
-            @return  Mass matrix
+        @return  Mass matrix
         """
         # TODO: add valid type hint
-        return dl.assemble(dl.inner(u, v) * dl.dx)
+        return dl.assemble(ufl.inner(u, v) * ufl.dx)
 
-    def create_mesh(self, meshDim: int) -> dl.MeshGeometry:
+    def create_mesh(self, meshDim: int) -> dl.mesh.Mesh:
         """! Create the mesh for the FOM. Mesh is either:
-            - "houses": 2D unit square with two cutouts to simulate houses
-            - "square": 2D unit square
+        - "houses": 2D unit square with two cutouts to simulate houses
+        - "square": 2D unit square
 
-            @param meshDim An approximate for how many nodes should be placed on
-            the boundary in each direction. Total number of nodes will be in the
-            order of meshDim * meshDim
-            @return  Mesh geometry
+        @param meshDim An approximate for how many nodes should be placed on
+        the boundary in each direction. Total number of nodes will be in the
+        order of meshDim * meshDim
+        @return  Mesh geometry
         """
-        together = mshr.Rectangle(dl.Point(0.0, 0.0), dl.Point(1.0, 1.0))
+        together = mshr.Rectangle(dl.mesh.Point(0.0, 0.0), dl.Point(1.0, 1.0))
 
         if self.mesh_shape == "houses":
             r2 = mshr.Rectangle(dl.Point(0.25, 0.15), dl.Point(0.5, 0.4))
@@ -177,7 +196,7 @@ class FOM(FullOrderModel):
 
     def create_boundary_marker(self):
         """! Create the markers for the boundary
-            @return  Mesh indicators for the boundary elements
+        @return  Mesh indicators for the boundary elements
         """
         mesh = self.mesh
 
@@ -208,7 +227,7 @@ class FOM(FullOrderModel):
 
         return boundary
 
-    def create_velocity_field(self) -> dl.Function:
+    def create_velocity_field(self) -> dl.fem.Function:
         """! Creation of velocity field for the advection term in the advection-diffusion equation
 
         The velocity field is modeled as the solution to a steady state Navier
@@ -221,33 +240,38 @@ class FOM(FullOrderModel):
         boundary = self.boundary_marker
 
         # initialize function spaces
-        V = dl.VectorElement("P", mesh.ufl_cell(), 2)  # H^1_0(Omega)^2, Velocity function space
-        Q = dl.FiniteElement("P", mesh.ufl_cell(), 1)  # L^2(Omega)
-        TH = dl.MixedElement([V, Q])
-        W = dl.FunctionSpace(mesh, TH)
+        V = dl.fem.VectorFunctionSpace(
+            mesh, ("P", 2)
+        )  # H^1_0(Omega)^2, Velocity function space
+        Q = dl.fem.FunctionSpace(mesh, ("P", 1))  # L^2(Omega)
+        TH = ufl.MixedElement([V, Q])
+        W = dl.fem.FunctionSpace(mesh, TH)
 
         # Boundary conditions on velocity (V)
-        bc_left = dl.DirichletBC(W.sub(0), (0, 1), boundary, 1)
-        bc_right = dl.DirichletBC(W.sub(0), (0, -1), boundary, 2)
-        bc_top_bottom = dl.DirichletBC(W.sub(0), (0, 0), boundary, 3)
-        bc_houses = dl.DirichletBC(W.sub(0), (0, 0), boundary, 4)
+        bc_left = dl.fem.dirichletbc(W.sub(0), (0, 1), boundary, 1)
+        bc_right = dl.fem.dirichletbc(W.sub(0), (0, -1), boundary, 2)
+        bc_top_bottom = dl.fem.dirichletbc(W.sub(0), (0, 0), boundary, 3)
+        bc_houses = dl.fem.dirichletbc(W.sub(0), (0, 0), boundary, 4)
         bcW = [bc_left, bc_right, bc_top_bottom, bc_houses]
 
         # initialize trial and test functions
-        v, q = dl.TestFunctions(W)
-        w = dl.Function(W)
-        u, p = dl.split(w)
+        v, q = ufl.TestFunctions(W)
+        w = dl.fem.Function(W)
+        u, p = ufl.split(w)
 
         # Define variational form for Navier-Stokes
-        F = dl.Constant(1 / 50) * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
-            + dl.dot(dl.dot(dl.grad(u), u), v) * dl.dx \
-            - p * dl.div(v) * dl.dx - q * dl.div(u) * dl.dx
+        F = (
+            dl.fem.Constant(mesh, 1 / 50) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+            + ufl.dot(ufl.dot(ufl.grad(u), u), v) * ufl.dx
+            - p * ufl.div(v) * ufl.dx
+            - q * ufl.div(u) * ufl.dx
+        )
 
         # Solve the problem
         dl.solve(F == 0, w, bcs=bcW)
         return u
 
-    def plot(self, u, mesh: dl.MeshGeometry = None, **kwargs):
+    def plot(self, u, mesh: dl.mesh.Mesh = None, **kwargs):
         """! Plot the state u"""
 
         # TODO: distinguish between different types of u
@@ -256,7 +280,7 @@ class FOM(FullOrderModel):
         if mesh is None:
             mesh = self.mesh
         if isinstance(u, str):
-            u = dl.Expression(f'{u}', degree=3)
+            u = dl.Expression(f"{u}", degree=3)
         if isinstance(u, State):
             u = u.state
             # todo: make compatible with time-dependent states
@@ -265,7 +289,9 @@ class FOM(FullOrderModel):
         c = dl.plot(u, mesh=mesh)
         plt.colorbar(c)
 
-    def find_next(self, u_old: dl.Function, dt: float, kappa: float = None) -> dl.Function:
+    def find_next(
+        self, u_old: dl.fem.Function, dt: float, kappa: float = None
+    ) -> dl.fem.Function:
         """! Apply implicit Euler to the initial condition u_old with step size
         dt and diffusion parameter self.kappa to get an updated u
             @param u_old  Initial condition
@@ -276,14 +302,16 @@ class FOM(FullOrderModel):
         if kappa is None:
             kappa = self.kappa
 
-        u = dl.Function(self.V)
+        u = dl.fem.Function(self.V)
         v = dl.TestFunction(self.V)
 
         # Define variational form for the advection-diffusion equation
-        F = dl.inner(u, v) * dl.dx \
-            - dl.inner(u_old, v) * dl.dx \
-            + dl.Constant(dt * kappa) * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
-            + dl.Constant(dt) * dl.inner(v * self.velocity, dl.grad(u)) * dl.dx
+        F = (
+            ufl.inner(u, v) * ufl.dx
+            - ufl.inner(u_old, v) * ufl.dx
+            + dl.Constant(dt * kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+            + dl.Constant(dt) * ufl.inner(v * self.velocity, ufl.grad(u)) * ufl.dx
+        )
 
         # Solve the problem
         dl.solve(F == 0, u)
@@ -291,20 +319,20 @@ class FOM(FullOrderModel):
         return u
 
     def implicit_Euler(
-            self,
-            m_init: dl.Function,
-            dt: float = None,
-            final_time: float = None,
-            kappa: float = None,
-            grid_t: np.ndarray = None,
-    ):# -> tuple[np.ndarray[dl.Function], np.ndarray]:
+        self,
+        m_init: dl.fem.Function,
+        dt: float = None,
+        final_time: float = None,
+        kappa: float = None,
+        grid_t: np.ndarray = None,
+    ):  # -> tuple[np.ndarray[dl.fem.Function], np.ndarray]:
         """! Perform implicit Euler repeatedly to integrate the transient problem over time
-            @param m_init  Initial condition
-            @param dt  Time step size for implicit Euler
-            @param final_time  Final time to integrate to
-            @param kappa  Diffusion coefficient
-            @param grid_t  Array containing time values for integration
-            @return  Tuple containing (numpy array with solutions to time integration; time grid)
+        @param m_init  Initial condition
+        @param dt  Time step size for implicit Euler
+        @param final_time  Final time to integrate to
+        @param kappa  Diffusion coefficient
+        @param grid_t  Array containing time values for integration
+        @return  Tuple containing (numpy array with solutions to time integration; time grid)
         """
         # todo: add valid type hint
 
@@ -322,22 +350,21 @@ class FOM(FullOrderModel):
         #  one file with functions we can call on
         sol = np.empty(grid_t.shape, dtype=object)
 
-        # sol[0] = dl.Function(self.V)
+        # sol[0] = dl.fem.Function(self.V)
         # sol[0].interpolate(m_init)
         sol[0] = m_init
 
         # Integrate in time over the time grid
         for k in range(1, sol.shape[0]):
-            sol[k] = self.find_next(sol[k - 1], dt=grid_t[k] - grid_t[k - 1],
-                                    kappa=kappa)
+            sol[k] = self.find_next(
+                sol[k - 1], dt=grid_t[k] - grid_t[k - 1], kappa=kappa
+            )
 
-        other_identifiers = {
-            "kappa" : kappa
-        }
+        other_identifiers = {"kappa": kappa}
 
         return sol, grid_t, other_identifiers
 
-    def assemble_initial_condition(self, para: list[float]) -> dl.Function:
+    def assemble_initial_condition(self, para: list[float]) -> dl.fem.Function:
         """! Assemble the initial condition given parameters para
 
         The initial condition is composed of functions that are scaled by the provided parameters
@@ -358,15 +385,21 @@ class FOM(FullOrderModel):
             m = m + para[i] * self.m_parameterized[i]
         return m
 
-    def solve(self, parameter: np.ndarray, *kwargs) -> State:
+    def solve(self, parameter: np.ndarray, grid_t:np.ndarray = None) -> State:
         """! Solve the transient problem
-            @param parameter of interest
-            @param kwargs should contain:
-                "grid_t" for transient problems
+        @param parameter of interest
+        @param grid_t  time grid of transient problem (if transient)
         """
         m_init = self.assemble_initial_condition(parameter)
-        grid_t = kwargs.get("grid_t", None)
-        sol, grid_t, other_identifiers = self.implicit_Euler(m_init=m_init, grid_t=grid_t)
+        sol, grid_t, other_identifiers = self.implicit_Euler(
+            m_init=m_init, grid_t=grid_t
+        )
 
-        state = State(fom=self, state=sol, bool_is_transient=True, parameter=para, other_identifiers=other_identifiers)
+        state = State(
+            fom=self,
+            state=sol,
+            bool_is_transient=True,
+            parameter=para,
+            other_identifiers=other_identifiers,
+        )
         return state

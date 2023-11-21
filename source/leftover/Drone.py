@@ -120,7 +120,7 @@ class Drone():
     def measure(
         self,
         flightpath:np.ndarray[float],
-        state:np.ndarray[dl.Function],
+        state:np.ndarray[dl.fem.Function],
         mode:str=None,
         **kwargs
         ) -> np.ndarray[float]:
@@ -151,7 +151,7 @@ class Drone():
     def measure_pointwise(
         self,
         flightpath:np.ndarray[float],
-        state:np.ndarray[dl.Function],
+        state:np.ndarray[dl.fem.Function],
         ) -> np.ndarray[float]:
         """! Get measurements along the flight path at the drone location
 
@@ -170,7 +170,7 @@ class Drone():
     def measure_gaussian(
         self,
         flightpath:np.ndarray[float],
-        state=np.ndarray[dl.Function]
+        state=np.ndarray[dl.fem.Function]
         ) -> np.ndarray[float]:
         """! Get measurements along the flight path from a Gaussian centered at
         the drone location
@@ -200,7 +200,7 @@ class Drone():
                 weight_fct = dl.Expression(f'max({0}, {weight})', degree=1)
             else:
                 x, y = dl.SpatialCoordinate(self.fom.mesh)
-                weight = dl.Function(self.fom.V)
+                weight = dl.fem.Function(self.fom.V)
                 # Use a conditional instead of a max function
                 weight_fct = weight.interpolate(
                     dl.conditional(
@@ -219,9 +219,9 @@ class Drone():
             val_integral = dl.assemble(weight_fct * dl.Measure('dx', self.fom.mesh))
 
             if bool_transient:
-                val = dl.assemble(dl.inner(weight_fct, state[k]) * dl.dx) / val_integral
+                val = dl.assemble(ufl.inner(weight_fct, state[k]) * ufl.dx) / val_integral
             else:
-                val = dl.assemble(dl.inner(weight_fct, state) * dl.dx) / val_integral
+                val = dl.assemble(ufl.inner(weight_fct, state) * ufl.dx) / val_integral
             data[k] = val
 
         return data
@@ -229,7 +229,7 @@ class Drone():
     def measure_uniform(
         self,
         flightpath:np.ndarray[float],
-        state=np.ndarray[dl.Function]
+        state=np.ndarray[dl.fem.Function]
         ) -> np.ndarray[float]:
         """! Get measurements along the flight path from a uniform circle
         centered at the drone location
@@ -271,7 +271,7 @@ class Drone():
             else:
                 pos_x, pos_y = flightpath[k, :]
                 x, y = dl.SpatialCoordinate(self.fom.mesh)
-                weight = dl.Function(self.fom.V)
+                weight = dl.fem.Function(self.fom.V)
                 # Use a simple conditional instead of the ugly step function
                 weight_fct = weight.interpolate(
                     dl.conditional(
@@ -293,9 +293,9 @@ class Drone():
             # theoretical limit since our FE solution is continuous)
 
             if bool_transient:
-                val = dl.assemble(dl.inner(weight_fct, state[k]) * dl.dx) / val_integral
+                val = dl.assemble(ufl.inner(weight_fct, state[k]) * ufl.dx) / val_integral
             else:
-                val = dl.assemble(dl.inner(weight_fct, state) * dl.dx) / val_integral
+                val = dl.assemble(ufl.inner(weight_fct, state) * ufl.dx) / val_integral
             data[k] = val
 
         return data

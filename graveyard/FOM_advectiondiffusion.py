@@ -64,7 +64,7 @@ class FOM_advectiondiffusion:
         self.velocity = self.create_velocity_field()
 
         # Trial and test space for advection-diffusion eq ('P' == Polynomial)
-        self.V = dl.FunctionSpace(self.mesh, 'P', polyDim)
+        self.V = dl.fem.FunctionSpace(self.mesh, 'P', polyDim)
 
         # Finite-element dimension
         self.nFE = self.V.dim()
@@ -72,7 +72,7 @@ class FOM_advectiondiffusion:
         # True initial condition
         if using_firedrake:
             x, y = dl.SpatialCoordinate(self.mesh)
-            self.m_true = dl.Function(self.V).interpolate(
+            self.m_true = dl.fem.Function(self.V).interpolate(
                 dl.exp(-100 * (pow(x - 0.35, 2)  + pow(y - 0.7, 2)))
             )
         else:
@@ -93,7 +93,7 @@ class FOM_advectiondiffusion:
 
         self.set_defaults(**kwargs)
 
-    def set_parameter_functions(self) -> np.ndarray[dl.Function]:
+    def set_parameter_functions(self) -> np.ndarray[dl.fem.Function]:
         """! Initialize the parameterized functions used with the provided
         parameters to make the initial condition
             @return  Numpy array of separate initial condition elements that we
@@ -106,7 +106,7 @@ class FOM_advectiondiffusion:
             # We have to use a conditional statement with Firedrake instead of a max function
             x, y = dl.SpatialCoordinate(self.mesh)
             for i, _ in enumerate(m):
-                m_i = dl.Function(self.V)
+                m_i = dl.fem.Function(self.V)
                 m[i] = m_i.interpolate(
                     dl.conditional(
                         dl.gt(  # If a greater than b
@@ -138,7 +138,7 @@ class FOM_advectiondiffusion:
         """
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
-        a = dl.inner(dl.grad(u), dl.grad(v)) * dl.dx
+        a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
 
         A = dl.assemble(a)
         if not using_firedrake:
@@ -151,11 +151,11 @@ class FOM_advectiondiffusion:
             # A.bcs = list(A.bcs) + list(self.M.bcs)  # Combine boundary conditions
             return A
 
-    def apply_inner_product(self, u:dl.Function, v:dl.Function) -> dl.matrix.Matrix:
+    def apply_inner_product(self, u:dl.fem.Function, v:dl.fem.Function) -> dl.matrix.Matrix:
         """! Apply the inner product matrix
             @return  Matrix for inner product of u, v
         """
-        return dl.assemble(dl.inner(dl.grad(u), dl.grad(v)) * dl.dx) + self.apply_mass_matrix(u, v)
+        return dl.assemble(ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx) + self.apply_mass_matrix(u, v)
 
     def mass_matrix(self) -> dl.matrix.Matrix:
         """! Return the mass matrix
@@ -164,7 +164,7 @@ class FOM_advectiondiffusion:
         u = dl.TrialFunction(self.V)
         v = dl.TestFunction(self.V)
 
-        a = dl.inner(u, v) * dl.dx
+        a = ufl.inner(u, v) * ufl.dx
 
         A = dl.assemble(a)
         if not using_firedrake:
@@ -172,13 +172,13 @@ class FOM_advectiondiffusion:
             A = sparse.csr_matrix(A.getValuesCSR()[::-1], shape=A.size)
         return A
 
-    def apply_mass_matrix(self, u:dl.Function, v:dl.Function) -> dl.matrix.Matrix:
+    def apply_mass_matrix(self, u:dl.fem.Function, v:dl.fem.Function) -> dl.matrix.Matrix:
         """! Return the mass matrix
             @return  Mass matrix
         """
-        return dl.assemble(dl.inner(u, v) * dl.dx)
+        return dl.assemble(ufl.inner(u, v) * ufl.dx)
 
-    def create_mesh(self, meshDim:int) -> dl.MeshGeometry:
+    def create_mesh(self, meshDim:int) -> dl.mesh.Mesh:
         """! Create the mesh for the FOM. Mesh is either:
             - "houses": 2D unit square with two cutouts to simulate houses
             - "square": 2D unit square
@@ -239,7 +239,7 @@ class FOM_advectiondiffusion:
         return boundary
 
 
-    def create_velocity_field(self) -> dl.Function:
+    def create_velocity_field(self) -> dl.fem.Function:
         """! Creation of velocity field for the advection term in the advection-diffusion equation
 
         The velocity field is modeled as the solution to a steady state Navier
@@ -256,29 +256,29 @@ class FOM_advectiondiffusion:
         Q = dl.FiniteElement("P", mesh.ufl_cell(), 1)  # L^2(Omega)
         TH = dl.MixedElement([V, Q])
 
-        W = dl.FunctionSpace(mesh, TH)
+        W = dl.fem.FunctionSpace(mesh, TH)
         if not using_firedrake:
             # Boundary conditions on velocity (V)
-            bc_left       = dl.DirichletBC(W.sub(0), (0, 1), boundary, 1)
-            bc_right      = dl.DirichletBC(W.sub(0), (0,-1), boundary, 2)
-            bc_top_bottom = dl.DirichletBC(W.sub(0), (0, 0), boundary, 3)
-            bc_houses     = dl.DirichletBC(W.sub(0), (0, 0), boundary, 4)
+            bc_left       = dl.fem.DirichletBC(W.sub(0), (0, 1), boundary, 1)
+            bc_right      = dl.fem.DirichletBC(W.sub(0), (0,-1), boundary, 2)
+            bc_top_bottom = dl.fem.DirichletBC(W.sub(0), (0, 0), boundary, 3)
+            bc_houses     = dl.fem.DirichletBC(W.sub(0), (0, 0), boundary, 4)
             bcW = [bc_left, bc_right, bc_top_bottom, bc_houses]
         else:
             if self.mesh_shape == "square":
                 # Boundary conditions on velocity (V)
 
                 ## Square mesh using gmsh (numbering is specified by makeMesh)
-                # bc_bottom = dl.DirichletBC(W.sub(0), (0, 0), 1)
-                # bc_right  = dl.DirichletBC(W.sub(0), (0,-1), 2)
-                # bc_top    = dl.DirichletBC(W.sub(0), (0, 0), 3)
-                # bc_left   = dl.DirichletBC(W.sub(0), (0, 1), 4)
+                # bc_bottom = dl.fem.DirichletBC(W.sub(0), (0, 0), 1)
+                # bc_right  = dl.fem.DirichletBC(W.sub(0), (0,-1), 2)
+                # bc_top    = dl.fem.DirichletBC(W.sub(0), (0, 0), 3)
+                # bc_left   = dl.fem.DirichletBC(W.sub(0), (0, 1), 4)
 
                 ## Square mesh using UnitSquareMesh (numbering is specified by UnitSquareMesh)
-                bc_left   = dl.DirichletBC(W.sub(0), (0, 1), 1)
-                bc_right  = dl.DirichletBC(W.sub(0), (0,-1), 2)
-                bc_bottom = dl.DirichletBC(W.sub(0), (0, 0), 3)
-                bc_top    = dl.DirichletBC(W.sub(0), (0, 0), 4)
+                bc_left   = dl.fem.DirichletBC(W.sub(0), (0, 1), 1)
+                bc_right  = dl.fem.DirichletBC(W.sub(0), (0,-1), 2)
+                bc_bottom = dl.fem.DirichletBC(W.sub(0), (0, 0), 3)
+                bc_top    = dl.fem.DirichletBC(W.sub(0), (0, 0), 4)
 
                 # Since the boundary conditions are singular at the corners, the
                 # order of bcs must end with the zero conditions to regularize,
@@ -286,30 +286,30 @@ class FOM_advectiondiffusion:
                 bcW = [bc_left, bc_right, bc_top, bc_bottom]
             if self.mesh_shape == "houses":
                 # Boundary conditions on velocity (V)
-                bc_bottom = dl.DirichletBC(W.sub(0), (0, 0), 1)
-                bc_right  = dl.DirichletBC(W.sub(0), (0,-1), 2)
-                bc_top    = dl.DirichletBC(W.sub(0), (0, 0), 3)
-                bc_left   = dl.DirichletBC(W.sub(0), (0, 1), 4)
-                bc_houses = dl.DirichletBC(W.sub(0), (0, 0), 5)
+                bc_bottom = dl.fem.DirichletBC(W.sub(0), (0, 0), 1)
+                bc_right  = dl.fem.DirichletBC(W.sub(0), (0,-1), 2)
+                bc_top    = dl.fem.DirichletBC(W.sub(0), (0, 0), 3)
+                bc_left   = dl.fem.DirichletBC(W.sub(0), (0, 1), 4)
+                bc_houses = dl.fem.DirichletBC(W.sub(0), (0, 0), 5)
 
                 # Since the boundary conditions are singular at the corners, we
                 # need the zero conditions after the left/right
                 bcW = [bc_left, bc_right, bc_top, bc_bottom, bc_houses]
 
         v, q = dl.TestFunctions(W)
-        w = dl.Function(W)
+        w = dl.fem.Function(W)
         u, p = dl.split(w)
 
         # Define variational form for Navier-Stokes
-        F = dl.Constant(1 / 50) * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx\
-            + dl.dot(dl.dot(dl.grad(u), u), v) * dl.dx \
-            - p * dl.div(v) * dl.dx - q * dl.div(u) * dl.dx
+        F = dl.Constant(1 / 50) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx\
+            + ufl.dot(ufl.dot(ufl.grad(u), u), v) * ufl.dx \
+            - p * dl.div(v) * ufl.dx - q * dl.div(u) * ufl.dx
 
         # Solve the problem
         dl.solve(F == 0, w, bcs = bcW)
         return u
 
-    def plot(self, u, mesh:dl.MeshGeometry=None):
+    def plot(self, u, mesh:dl.mesh.Mesh=None):
         """! Plot the state u"""
 
         # TODO: distinguish between different types of u
@@ -326,14 +326,14 @@ class FOM_advectiondiffusion:
             c = dl.plot(u, mesh=mesh)
             plt.colorbar(c)
         else:
-            if isinstance(u, dl.Function):
+            if isinstance(u, dl.fem.Function):
                 dl.tripcolor(u)
             elif str(type(u)) == "<class 'ufl.tensors.ListTensor'>":
                 dl.quiver(u)
-            elif isinstance(u, dl.MeshGeometry):
+            elif isinstance(u, dl.mesh.Mesh):
                 dl.triplot(u)
 
-    def find_next(self, u_old:dl.Function, dt:float, kappa:float = None) -> dl.Function:
+    def find_next(self, u_old:dl.fem.Function, dt:float, kappa:float = None) -> dl.fem.Function:
         """! Apply implicit Euler to the initial condition u_old with step size
         dt and diffusion parameter self.kappa to get an updated u
             @param u_old  Initial condition
@@ -344,14 +344,14 @@ class FOM_advectiondiffusion:
         if kappa is None:
             kappa = self.kappa
 
-        u = dl.Function(self.V)
+        u = dl.fem.Function(self.V)
         v = dl.TestFunction(self.V)
 
         # Define variational form for the advection-diffusion equation
-        F = dl.inner(u, v) * dl.dx \
-            - dl.inner(u_old, v) * dl.dx \
-            + dl.Constant(dt * kappa) * dl.inner(dl.grad(u), dl.grad(v)) * dl.dx \
-            + dl.Constant(dt) * dl.inner(v * self.velocity, dl.grad(u)) * dl.dx
+        F = ufl.inner(u, v) * ufl.dx \
+            - ufl.inner(u_old, v) * ufl.dx \
+            + dl.Constant(dt * kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx \
+            + dl.Constant(dt) * ufl.inner(v * self.velocity, ufl.grad(u)) * ufl.dx
 
         # Solve the problem
         dl.solve(F == 0, u)
@@ -360,12 +360,12 @@ class FOM_advectiondiffusion:
 
     def implicit_Euler(
         self,
-        m_init:dl.Function,
+        m_init:dl.fem.Function,
         dt:float=None,
         final_time:float=None,
         kappa:float=None,
         grid_t:np.ndarray[float]=None,
-        ) -> tuple[np.ndarray[dl.Function], np.ndarray]:
+        ) -> tuple[np.ndarray[dl.fem.Function], np.ndarray]:
         """! Perform implicit Euler repeatedly to integrate the transient problem over time
             @param m_init  Initial condition
             @param dt  Time step size for implicit Euler
@@ -389,7 +389,7 @@ class FOM_advectiondiffusion:
         # one file with functions we can call on
         sol = np.empty(grid_t.shape, dtype = object)
 
-        # sol[0] = dl.Function(self.V)
+        # sol[0] = dl.fem.Function(self.V)
         # sol[0].interpolate(m_init)
         sol[0] = m_init
 
@@ -400,7 +400,7 @@ class FOM_advectiondiffusion:
 
         return sol, grid_t
 
-    def assemble_initial_condition(self, para:list[float]) -> dl.Function:
+    def assemble_initial_condition(self, para:list[float]) -> dl.fem.Function:
         """! Assemble the initial condition given parameters para
         
         The initial condition is composed of functions that are scaled by the provided parameters
