@@ -1,6 +1,7 @@
 import numpy as np
 
-class Drone():
+
+class Drone:
     """!
     This is a general parent class for the drones.
     For any particular model the user should create a subclass and specify the functions below.
@@ -29,13 +30,17 @@ class Drone():
         pos, __ = self.get_trajectory(alpha=alpha, grid_t=t * np.ones((1,)))
         return pos[0, :]
 
-    def get_trajectory(self, alpha: np.ndarray, grid_t: np.ndarray=None) -> tuple[np.ndarray, np.ndarray]:
+    def get_trajectory(
+        self, alpha: np.ndarray, grid_t: np.ndarray = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
         @param alpha The specified flight parameters
         @param grid_t the time grid on which the drone position shall be computed
         @return  Tuple of (position over flight path, corresponding time for each position)
         """
-        raise NotImplementedError("Drone.get_trajectory: Needs to be implemented in subclass")
+        raise NotImplementedError(
+            "Drone.get_trajectory: Needs to be implemented in subclass"
+        )
 
     def measure(self, flightpath, grid_t, state) -> np.ndarray:
         """! Method to take a measurement
@@ -56,7 +61,9 @@ class Drone():
         @param grid_t:
         @return:
         """
-        raise NotImplementedError("Drone.d_position_d_control: Needs to be implemented in subclass")
+        raise NotImplementedError(
+            "Drone.d_position_d_control: Needs to be implemented in subclass"
+        )
 
     def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
         """
@@ -68,6 +75,8 @@ class Drone():
         @param state:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
         """
-        # todo: I think we can generalize the code from myDrone in models/AdvectionDiffusion_FEniCS such that the user
+        # TODO: I think we can generalize the code from myDrone in models/AdvectionDiffusion_FEniCS such that the user
         #  doesn't need to write this function themselves.
-        raise NotImplementedError("Drone.d_measurement_d_control: Needs to be implemented in subclass")
+        raise NotImplementedError(
+            "Drone.d_measurement_d_control: Needs to be implemented in subclass"
+        )

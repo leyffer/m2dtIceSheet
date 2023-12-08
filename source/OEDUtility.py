@@ -2,9 +2,10 @@ from InverseProblem import InverseProblem
 import numpy as np
 import scipy.linalg as la
 
-from .Posterior import Posterior
+from Posterior import Posterior
 
-class OEDUtility():
+
+class OEDUtility:
     """! OEDUtility class
     In this class we provide all information about the OED utility function (for A-, D-, and E-optimal experimental
     design). In particular, we provide:
@@ -14,9 +15,9 @@ class OEDUtility():
     - evaluate the gradient of the utility function
     """
 
-    # todo: decide if we should outsource the different OED modes into subclasses
+    # TODO: decide if we should outsource the different OED modes into subclasses
 
-    def __init__(self, inversion : InverseProblem, default_mode : str = None) -> None:
+    def __init__(self, inversion: InverseProblem, default_mode: str = None) -> None:
         """! initialization for OEDUtility class
 
         @param inversion: inverse problem for which the OED utility shall be computed
@@ -31,7 +32,7 @@ class OEDUtility():
     # TODO: specifiy all function call names that this class needs to have to interact with the other classes
     # TODO: from the old source files, copy over all computations
 
-    def eval_utility(self, posterior:Posterior, mode=None):
+    def eval_utility(self, posterior: Posterior, mode=None):
         """
         computes the OED-utility of the posterior covariance matrix for a provided posterior (assuming a linear model).
         Available OED-utility functions are: A, D, E, and "D-inverse" to compute the determinant of the inverse
@@ -59,7 +60,7 @@ class OEDUtility():
 
         raise RuntimeError("Invalid oed_mode encountered: {}".format(mode))
 
-    def eval_utility_A(self, posterior:Posterior):
+    def eval_utility_A(self, posterior: Posterior):
         """
         A-OED utility criterion: trace of the posterior covariance matrix.
 
@@ -68,27 +69,27 @@ class OEDUtility():
         """
         return sum(posterior.get_eigenvalues())
 
-    def eval_utility_D(self, posterior:Posterior):
+    def eval_utility_D(self, posterior: Posterior):
         """
         A-OED utility criterion: determinant of the posterior covariance matrix.
 
         @param posterior:
         @return:
         """
-        # todo: should we compute the inverse or the log instead? The values get very big
+        # TODO: should we compute the inverse or the log instead? The values get very big
         return np.prod(posterior.get_eigenvalues())
 
-    def eval_utility_Dinv(self, posterior:Posterior):
+    def eval_utility_Dinv(self, posterior: Posterior):
         """
         determinant of the inverse posterior covariance matrix.
 
         @param posterior:
         @return:
         """
-        # todo: I think we have 1/ twice now in all the computations, optimize it out
-        return np.prod(1/posterior.get_eigenvalues())
+        # TODO: I think we have 1/ twice now in all the computations, optimize it out
+        return np.prod(1 / posterior.get_eigenvalues())
 
-    def eval_utility_E(self, posterior:Posterior):
+    def eval_utility_E(self, posterior: Posterior):
         """
         E-OED criterion: maximum eigenvalue of posterior covariance matrix
         @param posterior:
@@ -96,7 +97,7 @@ class OEDUtility():
         """
         return np.max(posterior.get_eigenvalues())
 
-    def d_utility_d_control(self, posterior:Posterior, mode=None):
+    def d_utility_d_control(self, posterior: Posterior, mode=None):
         """
         computes the derivative of the OED-utility function for the given posterior w.r.t. the control parameters.
         @param posterior:
@@ -122,7 +123,7 @@ class OEDUtility():
 
         raise RuntimeError("Invalid oed_mode encountered: {}".format(mode))
 
-    def d_utilA_d_control(self, posterior:Posterior):
+    def d_utilA_d_control(self, posterior: Posterior):
         """
         computes the derivative of the A-OED utility function
         Psi(X) = trace(X) where X is the posterior covariance matrix
@@ -145,7 +146,7 @@ class OEDUtility():
 
         return gradient
 
-    def d_utilD_d_control(self, posterior:Posterior):
+    def d_utilD_d_control(self, posterior: Posterior):
         """
         computes the derivative of the D-OED utility function
         Psi(X) = det(X) where X is the posterior covariance matrix
@@ -171,19 +172,20 @@ class OEDUtility():
 
         # only compute the determinant once
         det = la.det(posterior.compute_covariance())
-        # todo: only compute once, save as property within the posterior
+        # TODO: only compute once, save as property within the posterior
 
         gradient = np.zeros((posterior.n_controls,))
         for i in range(posterior.n_controls):
-
             # sanity check
             if len(der[i].shape) == 1:
-                raise RuntimeError("invalid shape = {} for derivative matrix".format(der[i].shape))
+                raise RuntimeError(
+                    "invalid shape = {} for derivative matrix".format(der[i].shape)
+                )
 
             # apply transposed cofactor matrix
             yolo = det * la.solve(posterior.covar.T, der[i])
-            # todo: just apply inverse posterior covariance matrix (or its action)
-            # todo: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
+            # TODO: just apply inverse posterior covariance matrix (or its action)
+            # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
             # I don't think the posterior covariance matrix can become singular unless the prior or the noise covariance
             # matrices are degenerate. We might want to catch that case though.
 
@@ -192,7 +194,7 @@ class OEDUtility():
 
         return gradient
 
-    def d_utilDinv_d_control(self, posterior:Posterior):
+    def d_utilDinv_d_control(self, posterior: Posterior):
         """
         computes the derivative of the inverse D-OED utility function
         Psi(X) = det(X^{-1}) where X is the posterior covariance matrix
@@ -208,19 +210,20 @@ class OEDUtility():
         # only compute the determinant once
         covar_inv = posterior.compute_inverse_covariance()
         det = la.det(covar_inv)
-        # todo: only compute once, save as property within the posterior
+        # TODO: only compute once, save as property within the posterior
 
         gradient = np.zeros((posterior.n_controls,))
         for i in range(posterior.n_controls):
-
             # sanity check
             if len(der[i].shape) == 1:
-                raise RuntimeError("invalid shape = {} for derivative matrix".format(der[i].shape))
+                raise RuntimeError(
+                    "invalid shape = {} for derivative matrix".format(der[i].shape)
+                )
 
             # apply transposed cofactor matrix
             yolo = det * la.solve(covar_inv.T, der[i])
-            # todo: just apply inverse posterior covariance matrix (or its action)
-            # todo: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
+            # TODO: just apply inverse posterior covariance matrix (or its action)
+            # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
             # I don't think the posterior covariance matrix can become singular unless the prior or the noise covariance
             # matrices are degenerate. We might want to catch that case though.
 
@@ -229,5 +232,7 @@ class OEDUtility():
 
         return gradient
 
-    def d_utilE_d_control(self, posterior:Posterior):
-        raise NotImplementedError("OEDUtility.d_utilE_d_control: still need to understand how to get the eigenvalue derivative")
+    def d_utilE_d_control(self, posterior: Posterior):
+        raise NotImplementedError(
+            "OEDUtility.d_utilE_d_control: still need to understand how to get the eigenvalue derivative"
+        )

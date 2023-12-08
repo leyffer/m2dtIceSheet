@@ -1,6 +1,7 @@
 from OEDUtility import OEDUtility
 
-class Optimization():
+
+class Optimization:
     """! Optimization class
     In this class we solve the flight path optimization problem. In particular, we:
 
@@ -10,7 +11,7 @@ class Optimization():
 
     """
 
-    def __init__(self, utility : OEDUtility) -> None:
+    def __init__(self, utility: OEDUtility) -> None:
         """! Initialization for Optimization class
 
         @param utility: OEDUtility object, includes the information about the utility function, its gradient, etc.

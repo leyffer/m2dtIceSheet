@@ -1,15 +1,16 @@
 import sys
+
 sys.path.insert(0, "../source/")
 
 import numpy as np
 
 from Drone import Drone
 
+
 class MyDrone(Drone):
+    center = np.array([0.75 / 2, 0.55 / 2])
 
-    center = np.array([0.75/2, 0.55/2])
-
-    def __init__(self, fom, eval_mode, grid_t = None, **kwargs):
+    def __init__(self, fom, eval_mode, grid_t=None, **kwargs):
         """! Initializer for the drone class
         @param fom  Full-order-model (FOM) object. The drone takes
         measurements from this
@@ -33,11 +34,13 @@ class MyDrone(Drone):
         self.eval_mode = eval_mode
         self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-2, 1e-2)
 
-        # todo: get parameterization for other eval modes, in partiuclar give them a common name, not individual ones:
+        # TODO: get parameterization for other eval modes, in partiuclar give them a common name, not individual ones:
         # self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
         # self.radius_uniform = kwargs.get("radius_uniform", 0.1)
 
-    def get_trajectory(self, alpha: np.ndarray, grid_t: np.ndarray=None) -> tuple[np.ndarray, np.ndarray]:
+    def get_trajectory(
+        self, alpha: np.ndarray, grid_t: np.ndarray = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
         @param alpha The specified flight parameters
         @param grid_t the time grid on which the drone position shall be computed
@@ -78,10 +81,13 @@ class MyDrone(Drone):
         round_trip_time = 2 * np.pi * radius / speed
         angles = (grid_t * 2 * np.pi) / round_trip_time
 
-        d_speed = (np.vstack([-np.sin(angles), np.cos(angles)]) * grid_t)
+        d_speed = np.vstack([-np.sin(angles), np.cos(angles)]) * grid_t
 
         d_radius = np.vstack([np.cos(angles), np.sin(angles)])
-        d_radius = d_radius - (np.vstack([-np.sin(angles), np.cos(angles)]) * (grid_t * speed)) / radius
+        d_radius = (
+            d_radius
+            - (np.vstack([-np.sin(angles), np.cos(angles)]) * (grid_t * speed)) / radius
+        )
 
         return np.array([d_radius, d_speed])
 
@@ -114,11 +120,15 @@ class MyDrone(Drone):
         @param state  The state which the drone shall measure, State object
         """
         if state.bool_is_transient:
-            raise NotImplementedError("In MyDrone.measure_pointwise: still need to bring over code for transient measurements")
+            raise NotImplementedError(
+                "In MyDrone.measure_pointwise: still need to bring over code for transient measurements"
+            )
             # old code:
             # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
 
-        return np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
+        return np.array(
+            [state.state(flightpath[k, :]) for k in range(flightpath.shape[0])]
+        )
 
     def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
         """
@@ -132,15 +142,16 @@ class MyDrone(Drone):
         """
 
         # parts of the chain rule (only compute once)
-        grad_p = self.d_position_d_control(alpha, flightpath, grid_t)  # derivative of position
-        # todo: optimize this computation such that we don't repeat it as often
+        grad_p = self.d_position_d_control(
+            alpha, flightpath, grid_t
+        )  # derivative of position
+        # TODO: optimize this computation such that we don't repeat it as often
         Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
         D_data_d_alpha = np.empty((grid_t.shape[0], alpha.shape[0]))
 
         if self.eval_mode == "point-eval":
-
             for i in range(grid_t.shape[0]):
                 # the FEniCS evaluation of the Du at a position unfortunately doesn't work with multiple positions
                 # that's why we can't get rid of this loop
@@ -148,17 +159,12 @@ class MyDrone(Drone):
                 # apply chain rule
                 D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
 
-                # todo: make compatible with transient setting
+                # TODO: make compatible with transient setting
 
             return D_data_d_alpha
 
-        # todo: put in other measurement types
+        # TODO: put in other measurement types
 
-        raise NotImplementedError("still need to do the maths for other measurement types")
-
-
-
-
-
-
-
+        raise NotImplementedError(
+            "still need to do the maths for other measurement types"
+        )

@@ -5,7 +5,8 @@ from Posterior import Posterior
 import scipy.sparse as sparse
 import numpy as np
 
-class InverseProblem():
+
+class InverseProblem:
     """! InverseProblem class
     In this class we provide all functions needed for handling the inverse problem, starting from its setup to its
     solution. In particular, for the OED problem, we provide:
@@ -17,7 +18,7 @@ class InverseProblem():
     Note: the details on the last part are not clear yet
     """
 
-    c_scaling = 1e+3
+    c_scaling = 1e3
     c_diffusion = 0.01
 
     states = None
@@ -39,7 +40,7 @@ class InverseProblem():
         self.K = self.grid_t.shape[0]
         self.diffusion_matrix = self.compute_diffusion_matrix()
         self.mass_matrix = self.compute_mass_matrix()
-        # todo: right now it's somewhat unclear what the noise model actually is - we are just using the mass matrix.
+        # TODO: right now it's somewhat unclear what the noise model actually is - we are just using the mass matrix.
         #  double check in the literature what we should be using exactly
 
     # TODO: write other functions required for this class
@@ -66,15 +67,15 @@ class InverseProblem():
     def compute_diffusion_matrix(self) -> sparse.csr_matrix:
         """! Diffusion matrix
 
-            @return  diffusion matrix (piece-wise linear finite elements)
+        @return  diffusion matrix (piece-wise linear finite elements)
         """
         dt = self.grid_t[1] - self.grid_t[0]
-        #TODO: don't assume uniform timestepping
+        # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
 
-        A = sparse.diags([1, -1], offsets = [0, 1], shape=(self.K,self.K))
+        A = sparse.diags([1, -1], offsets=[0, 1], shape=(self.K, self.K))
         A = sparse.csr_matrix(A + A.T)
-        A[0, 0]  = 1
+        A[0, 0] = 1
         A[-1, -1] = 1
         A /= dt
 
@@ -83,16 +84,16 @@ class InverseProblem():
     def compute_mass_matrix(self) -> sparse.csr_matrix:
         """! Mass matrix
 
-            @return  mass matrix (piecewise linear finite elements)
+        @return  mass matrix (piecewise linear finite elements)
         """
         dt = self.grid_t[1] - self.grid_t[0]
-        #TODO: don't assume uniform timestepping
+        # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
 
-        M = sparse.diags(np.array([2, 1])/6, offsets=[0, 1], shape = (self.K, self.K))
+        M = sparse.diags(np.array([2, 1]) / 6, offsets=[0, 1], shape=(self.K, self.K))
         M = sparse.csr_matrix(M + M.T)
         M[0, 0] /= 2
-        M[-1,-1] /= 2
+        M[-1, -1] /= 2
         M *= dt
 
         return M
@@ -100,18 +101,20 @@ class InverseProblem():
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
         """! Method for sampling
 
-            @param n_samples  number of samples to draw
-            @return  The samples
+        @param n_samples  number of samples to draw
+        @return  The samples
         """
-        # todo: sampling the noise model is just for show, it's not necessarily needed. However, it's a very nice show
+        # TODO: sampling the noise model is just for show, it's not necessarily needed. However, it's a very nice show
         #  and helps visualiziing the data a lot, so ... implement it!
-        raise NotImplementedError("InverseProblem.sample: still need to check how exactly we are setting up the noise model")
+        raise NotImplementedError(
+            "InverseProblem.sample: still need to check how exactly we are setting up the noise model"
+        )
 
     def compute_noisenorm2(self, d):
         """! Computes the noise norm squared
 
-            @param d  measured values
-            @return  noise norm squared
+        @param d  measured values
+        @return  noise norm squared
         """
         b = self.apply_noise_covar_inv(d)
         return d.T @ b
@@ -119,12 +122,14 @@ class InverseProblem():
     def apply_noise_covar_inv(self, d):
         """! Apply the inverse noise covariance matrix to the observations d
 
-            @param d  measured values
-            @return  the inverse noise covariance matrix applied to the observations d
+        @param d  measured values
+        @return  the inverse noise covariance matrix applied to the observations d
         """
-        LHS = self.c_scaling * (self.c_diffusion * self.diffusion_matrix + self.mass_matrix)
+        LHS = self.c_scaling * (
+            self.c_diffusion * self.diffusion_matrix + self.mass_matrix
+        )
         Kd = LHS @ d
-        # todo: still need to bring this parameterization together with the interpretation of the noise model
+        # TODO: still need to bring this parameterization together with the interpretation of the noise model
         return Kd
 
     def apply_para2obs(self, parameter, state=None, flightpath=None, **kwargs):
@@ -146,12 +151,16 @@ class InverseProblem():
 
         # determine flight path
         if flightpath is None:
-            flightpath, grid_t_drone = self.drone.get_trajectory(grid_t=kwargs.get("alpha"))
+            flightpath, grid_t_drone = self.drone.get_trajectory(
+                grid_t=kwargs.get("alpha")
+            )
         else:
             grid_t_drone = kwargs.get("grid_t_drone")
 
         # fly out and measure
-        observation = self.drone.measure(flightpath=flightpath, grid_t=grid_t_drone, state=state)
+        observation = self.drone.measure(
+            flightpath=flightpath, grid_t=grid_t_drone, state=state
+        )
 
         return observation, flightpath, grid_t_drone, state
 
@@ -165,7 +174,9 @@ class InverseProblem():
         @param data: measurement data (optional)
         @return: posterior
         """
-        posterior = Posterior(inversion=self, alpha=alpha, data=data, flightpath=flightpath, grid_t=grid_t)
+        posterior = Posterior(
+            inversion=self, alpha=alpha, data=data, flightpath=flightpath, grid_t=grid_t
+        )
         return posterior
 
     def compute_states(self, parameters, Basis=None):
@@ -201,7 +212,7 @@ class InverseProblem():
 
         # compute each state
         for i in range(self.n_parameters):
-            # todo: parallelize
+            # TODO: parallelize
             states[i] = self.fom.solve(parameter=parameters[:, i])
 
         return states
@@ -214,13 +225,12 @@ class InverseProblem():
         """
 
         if self.states is None:
-            print("WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the states.")
+            print(
+                "WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the states."
+            )
             print("this is ok, but it is error prone.")
 
             # precompute states assuming unit basis
             self.compute_states(parameters=np.eye(self.n_parameters))
 
         return self.states
-
-
-

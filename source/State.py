@@ -1,4 +1,4 @@
-class State():
+class State:
     """! State class
 
     The state class is a generic way of passing state solutions of the full-order model around without accounting for
@@ -6,6 +6,7 @@ class State():
     are set up for the general case (only one state, can be transient or stationary), but the user might want to
     overwrite this class for their specific needs.
     """
+
     state = None  # where the state variable gets saved, e.g. as np.ndarray
     parameter = None  # the parameter sample for which the solution was obtained, if any
 
@@ -17,7 +18,9 @@ class State():
     grid_t = None  # time discretization of the state solution
     Du = None
 
-    def __init__(self, fom, state, bool_is_transient, parameter, other_identifiers, *kwargs) -> None:
+    def __init__(
+        self, fom, state, bool_is_transient, parameter, other_identifiers, *kwargs
+    ) -> None:
         """! Initialization for State class
 
         @param fom: FullOrderModel instance
@@ -44,10 +47,6 @@ class State():
         computes and saves the spatial derivative of the state
         @return:
         """
-        raise NotImplementedError("user must implement State.get_derivative in subclass")
-
-
-
-
-
-
+        raise NotImplementedError(
+            "user must implement State.get_derivative in subclass"
+        )
