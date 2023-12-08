@@ -2,6 +2,8 @@ from InverseProblem import InverseProblem
 import numpy as np
 import scipy.linalg as la
 
+from .Posterior import Posterior
+
 class OEDUtility():
     """! OEDUtility class
     In this class we provide all information about the OED utility function (for A-, D-, and E-optimal experimental
@@ -29,7 +31,7 @@ class OEDUtility():
     # TODO: specifiy all function call names that this class needs to have to interact with the other classes
     # TODO: from the old source files, copy over all computations
 
-    def eval_utility(self, posterior, mode=None):
+    def eval_utility(self, posterior:Posterior, mode=None):
         """
         computes the OED-utility of the posterior covariance matrix for a provided posterior (assuming a linear model).
         Available OED-utility functions are: A, D, E, and "D-inverse" to compute the determinant of the inverse
@@ -57,7 +59,7 @@ class OEDUtility():
 
         raise RuntimeError("Invalid oed_mode encountered: {}".format(mode))
 
-    def eval_utility_A(self, posterior):
+    def eval_utility_A(self, posterior:Posterior):
         """
         A-OED utility criterion: trace of the posterior covariance matrix.
 
@@ -66,7 +68,7 @@ class OEDUtility():
         """
         return sum(posterior.get_eigenvalues())
 
-    def eval_utility_D(self, posterior):
+    def eval_utility_D(self, posterior:Posterior):
         """
         A-OED utility criterion: determinant of the posterior covariance matrix.
 
@@ -76,7 +78,7 @@ class OEDUtility():
         # todo: should we compute the inverse or the log instead? The values get very big
         return np.prod(posterior.get_eigenvalues())
 
-    def eval_utility_Dinv(self, posterior):
+    def eval_utility_Dinv(self, posterior:Posterior):
         """
         determinant of the inverse posterior covariance matrix.
 
@@ -86,7 +88,7 @@ class OEDUtility():
         # todo: I think we have 1/ twice now in all the computations, optimize it out
         return np.prod(1/posterior.get_eigenvalues())
 
-    def eval_utility_E(self, posterior):
+    def eval_utility_E(self, posterior:Posterior):
         """
         E-OED criterion: maximum eigenvalue of posterior covariance matrix
         @param posterior:
@@ -94,7 +96,7 @@ class OEDUtility():
         """
         return np.max(posterior.get_eigenvalues())
 
-    def d_utility_d_control(self, posterior, mode=None):
+    def d_utility_d_control(self, posterior:Posterior, mode=None):
         """
         computes the derivative of the OED-utility function for the given posterior w.r.t. the control parameters.
         @param posterior:
@@ -120,7 +122,7 @@ class OEDUtility():
 
         raise RuntimeError("Invalid oed_mode encountered: {}".format(mode))
 
-    def d_utilA_d_control(self, posterior):
+    def d_utilA_d_control(self, posterior:Posterior):
         """
         computes the derivative of the A-OED utility function
         Psi(X) = trace(X) where X is the posterior covariance matrix
@@ -143,7 +145,7 @@ class OEDUtility():
 
         return gradient
 
-    def d_utilD_d_control(self, posterior):
+    def d_utilD_d_control(self, posterior:Posterior):
         """
         computes the derivative of the D-OED utility function
         Psi(X) = det(X) where X is the posterior covariance matrix
@@ -190,7 +192,7 @@ class OEDUtility():
 
         return gradient
 
-    def d_utilDinv_d_control(self, posterior):
+    def d_utilDinv_d_control(self, posterior:Posterior):
         """
         computes the derivative of the inverse D-OED utility function
         Psi(X) = det(X^{-1}) where X is the posterior covariance matrix
@@ -227,5 +229,5 @@ class OEDUtility():
 
         return gradient
 
-    def d_utilE_d_control(self, posterior):
+    def d_utilE_d_control(self, posterior:Posterior):
         raise NotImplementedError("OEDUtility.d_utilE_d_control: still need to understand how to get the eigenvalue derivative")
