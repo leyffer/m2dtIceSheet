@@ -2,7 +2,7 @@ from InverseProblem import InverseProblem
 import numpy as np
 import scipy.linalg as la
 
-from .Posterior import Posterior
+from Posterior import Posterior
 
 class OEDUtility():
     """! OEDUtility class
