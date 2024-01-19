@@ -10,12 +10,15 @@ TODO - ensure consistent behavior when dealing with single time values (instead
 of arrays of time values)
 """
 
+import array
 import numpy as np
-from typing import Dict
+from typing import Dict, Any
+
+from numpy import ndarray
 
 
 class Path:
-    def __init__(self, alpha, initial_time: float = 0.0):
+    def __init__(self, alpha: np.ndarray | Dict, initial_time: float = 0.0):
         """
         Path defined by parameters:
         - `"initial x"` : initial position in `x` coordinate
@@ -35,13 +38,13 @@ class Path:
             }
         self.initial_time = initial_time
 
-    def relative_position(self, t) -> np.ndarray:
+    def relative_position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Relative position must be implemented by the specified path
         """
         raise NotImplementedError
 
-    def position(self, t) -> np.ndarray:
+    def position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Get the position (x, y) given the parameters and time(s) t
 
@@ -54,7 +57,7 @@ class Path:
 
         return positions
 
-    def d_position_d_initial_x(self, t) -> np.ndarray:
+    def d_position_d_initial_x(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Derivative of positions with repsect to the initial x position at time(s) t
         """
@@ -65,7 +68,7 @@ class Path:
         deriv[:, 1] = 0
         return deriv
 
-    def d_position_d_initial_y(self, t) -> np.ndarray:
+    def d_position_d_initial_y(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Derivative of positions with repsect to the initial x position at time(s) t
         """
@@ -76,7 +79,7 @@ class Path:
         deriv[:, 0] = 0
         return deriv
 
-    def d_position_d_initial_heading(self, t) -> np.ndarray:
+    def d_position_d_initial_heading(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Derivative of positions with respect to the initial heading at time(s) t
         """
@@ -89,13 +92,13 @@ class Path:
         deriv[:, 1] = rel_pos[:, 0]
         return deriv
 
-    def d_position_d_alpha(self, t):
+    def d_position_d_alpha(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of positions with respect to parameters alpha at time(s) t
         """
         raise NotImplementedError
 
-    def heading(self, t):
+    def heading(self, t: float | np.ndarray[float, Any]):
         """
         Heading in radians at time(s) t
         """
@@ -103,7 +106,7 @@ class Path:
         headings = t * self.alpha["angular velocity"] + self.alpha["initial heading"]
         return headings
 
-    def heading_vector(self, t):
+    def heading_vector(self, t: float | np.ndarray[float, Any]):
         """
         Unit vector of the heading at time(s) t
         """
@@ -124,7 +127,10 @@ class CircularPath(Path):
     """
 
     def __init__(
-        self, alpha, linear_tolerance: float = 1e-14, initial_time: float = 0.0
+        self,
+        alpha: np.ndarray | Dict,
+        linear_tolerance: float = 1e-14,
+        initial_time: float = 0.0,
     ):
         """
         Path defined by parameters:
@@ -145,8 +151,20 @@ class CircularPath(Path):
             self.alpha["radius"] = (
                 self.alpha["velocity"] / self.alpha["angular velocity"]
             )
+            self.alpha["center x"] = self.alpha["initial x"] - self.alpha[
+                "radius"
+            ] * np.sin(self.alpha["initial heading"])
+            self.alpha["center y"] = self.alpha["initial y"] + self.alpha[
+                "radius"
+            ] * np.cos(self.alpha["initial heading"])
         else:
             self.alpha["radius"] = np.inf
+            self.alpha["center x"] = np.inf
+            self.alpha["center y"] = np.inf
+
+        self.alpha["round trip time"] = (
+            2 * np.pi * self.alpha["radius"] / self.alpha["velocity"]
+        )
 
     @property
     def linear(self) -> bool:
@@ -156,7 +174,7 @@ class CircularPath(Path):
         """
         return np.abs(self.alpha["angular velocity"]) <= self.linear_tolerance
 
-    def relative_position(self, t) -> np.ndarray:
+    def relative_position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Get the position (x, y) relative to the initial position (at the initial time)
         given the parameters and time(s) t
@@ -201,7 +219,7 @@ class CircularPath(Path):
 
         return positions
 
-    def d_position_d_velocity(self, t) -> np.ndarray:
+    def d_position_d_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Derivative of position with respect to velocity at time(s) t
         """
@@ -211,7 +229,7 @@ class CircularPath(Path):
         deriv = self.relative_position(t) / self.alpha["velocity"]
         return deriv
 
-    def d_position_d_angular_velocity(self, t) -> np.ndarray:
+    def d_position_d_angular_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Derivative of position with respect to angular velocity at time(s) t
         """
@@ -278,7 +296,9 @@ class CircularPath(Path):
             )
         return deriv
 
-    def d_position_d_alpha(self, t) -> Dict["str", np.ndarray]:
+    def d_position_d_alpha(
+        self, t: float | np.ndarray[float, Any]
+    ) -> Dict["str", np.ndarray]:
         """
         Derivative of position with respect to control parameters alpha at time(s) t
         """
@@ -307,6 +327,7 @@ class CombinedCircularPath:
     TODO - inheritance from the Path class would be helpful, but that class
     currently has unecessarily specific paramters
     """
+
     def __init__(
         self,
         initial_x: float,
@@ -365,7 +386,7 @@ class CombinedCircularPath:
                 )
             )
 
-    def position(self, t):
+    def position(self, t: float | np.ndarray[float, Any]):
         """
         Unlike the constituent paths, it is simpler to construct the absolute
         positions for this composite path and then get the relative positions
@@ -384,7 +405,7 @@ class CombinedCircularPath:
         positions[indicator] = self.paths[-1].position(t[indicator])
         return positions
 
-    def relative_position(self, t):
+    def relative_position(self, t: float | np.ndarray[float, Any]):
         """
         Positions relative to the initial position
         """
@@ -393,7 +414,7 @@ class CombinedCircularPath:
         rel_positions[:, 1] -= self.initial_y
         return rel_positions
 
-    def d_position_d_initial_x(self, t):
+    def d_position_d_initial_x(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of position with respect to initial x position at time(s) t
         """
@@ -404,7 +425,7 @@ class CombinedCircularPath:
         deriv[:, 1] = 0
         return deriv
 
-    def d_position_d_initial_y(self, t):
+    def d_position_d_initial_y(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of position with respect to initial y position at time(s) t
         """
@@ -415,7 +436,7 @@ class CombinedCircularPath:
         deriv[:, 0] = 0
         return deriv
 
-    def d_position_d_initial_heading(self, t):
+    def d_position_d_initial_heading(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of heading with respect to initial heading at time(s) t
         """
@@ -428,7 +449,7 @@ class CombinedCircularPath:
         deriv[:, 1] = rel_pos[:, 0]
         return deriv
 
-    def d_position_d_velocitys(self, t):
+    def d_position_d_velocitys(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of position with respect the various velocities provided at time(s) t
         """
@@ -449,7 +470,7 @@ class CombinedCircularPath:
 
         return deriv
 
-    def d_position_d_angular_velocitys(self, t):
+    def d_position_d_angular_velocitys(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of position with respect the various angular velocities provided at time(s) t
         """
@@ -476,7 +497,7 @@ class CombinedCircularPath:
 
         return deriv
 
-    def d_position_d_paramters(self, t):
+    def d_position_d_paramters(self, t: float | np.ndarray[float, Any]):
         derivs = {}
         if not isinstance(t, np.ndarray):
             t = np.array([t])
@@ -493,16 +514,101 @@ class CombinedCircularPath:
         derivs["angular velocity"] = self.d_position_d_angular_velocitys(t)
         return derivs
 
+
 # TODO - add radius derivative to the CircularPath class and then add a call to
 # that for the derivative calculation for this class
-class CirclePath:
+class CirclePath(CircularPath):
     """
     Speed and radius version of the circular path
 
     Similar to the CircularPath but uses the radius as a parameter instead of
     angular velocity: radius is equal to velocity/angular velocity
 
-    Currently implemented in the code somewhere else
+    Angular velocity is a derived parameter. The circle center is fixed (for derivatives).
     """
-    def __init__():
-        raise NotImplementedError
+
+    def __init__(
+        self,
+        alpha: np.ndarray,
+        center: np.ndarray = np.array([0.75 / 2, 0.55 / 2]),
+        grid_t: np.ndarray = np.arange(0, 4 + 1e-2, 1e-2),
+    ):
+        """
+        alpha is [0] radius and [1] speed
+        initial location is along x-axis from center
+        """
+        # "initial x" : initial position in x coordinate
+        # "initial y" : initial position in y coordinate
+        # "initial heading" : initital heading direction (in radians)
+        # "velocity" : constant velocity parameter (spatial units per time)
+        # "angular velocity" : constant angular velocity (radians per time)
+
+        self.grid_t = grid_t
+
+        radius = alpha[0]
+        velocity = alpha[1]
+        converted_alpha = {
+            "initial x": center[0] + radius * np.cos(self.grid_t[0] * 2 * np.pi),
+            "initial y": center[1] + radius * np.sin(self.grid_t[0] * 2 * np.pi),
+            "initial heading": np.pi / 2,
+            "velocity": velocity,
+            "angular velocity": velocity / radius,
+        }
+        super(CirclePath, self).__init__(
+            alpha=converted_alpha, initial_time=self.grid_t[0]
+        )
+
+    def d_position_d_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+        """
+        Derivative of position with respect to velocity at time(s) t
+        """
+        if t is None:
+            t = self.grid_t
+        if not isinstance(t, np.ndarray):
+            t = np.array([t])
+
+        deriv = np.empty((t.shape[0], 2))
+        deriv[:, 0] = np.cos(
+            self.alpha["initial heading"]
+            + self.alpha["angular velocity"] * (t - self.initial_time)
+        ) * (t - self.initial_time)
+        deriv[:, 1] = np.sin(
+            self.alpha["initial heading"]
+            + self.alpha["angular velocity"] * (t - self.initial_time)
+        ) * (t - self.initial_time)
+        return deriv
+
+    def d_position_d_radius(self, t: float | np.ndarray[float, Any]):
+        """
+        Derivative of position with repect to radius at time(s) t
+        """
+        if t is None:
+            t = self.grid_t
+        if not isinstance(t, np.ndarray):
+            t = np.array([t])
+
+        deriv = np.empty((t.shape[0], 2))
+        theta = self.alpha["angular velocity"] * (t - self.initial_time)
+        c = np.cos(self.alpha["initial heading"] + theta)
+        s = np.sin(self.alpha["initial heading"] + theta)
+        deriv[:, 0] = s - c * theta
+        deriv[:, 1] = -c - s * theta
+        return deriv
+
+    def d_position_d_alpha(self, t: float | np.ndarray[float, Any]) -> Dict[str, np.ndarray]:
+        """
+        Derivative of position with respect to control parameters alpha at time(s) t
+        """
+        derivs = {}
+        if t is None:
+            t = self.grid_t
+        if not isinstance(t, np.ndarray):
+            t = np.array([t])
+
+        # alpha[0] is radius
+        derivs["radius"] = self.d_position_d_radius(t)
+
+        # alpha[1] is velocity
+        derivs["velocity"] = self.d_position_d_velocity(t)
+
+        return derivs
