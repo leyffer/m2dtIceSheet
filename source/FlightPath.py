@@ -301,18 +301,6 @@ class CircularPath(Path):
 
         return derivs
 
-class CirclePath:
-    """
-    Speed and radius version of the circular path
-
-    Similar to the CircularPath but uses the radius as a parameter instead of
-    angular velocity: radius is equal to velocity/angular velocity
-
-    Currently implemented in the code somewhere else
-    """
-    def __init__():
-        raise NotImplementedError
-
 
 class CombinedCircularPath:
     """
@@ -504,3 +492,17 @@ class CombinedCircularPath:
         derivs["velocity"] = self.d_position_d_velocitys(t)
         derivs["angular velocity"] = self.d_position_d_angular_velocitys(t)
         return derivs
+
+# TODO - add radius derivative to the CircularPath class and then add a call to
+# that for the derivative calculation for this class
+class CirclePath:
+    """
+    Speed and radius version of the circular path
+
+    Similar to the CircularPath but uses the radius as a parameter instead of
+    angular velocity: radius is equal to velocity/angular velocity
+
+    Currently implemented in the code somewhere else
+    """
+    def __init__():
+        raise NotImplementedError
