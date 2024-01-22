@@ -535,7 +535,12 @@ class CirclePath(CircularPath):
     ):
         """
         alpha is [0] radius and [1] speed
-        initial location is along x-axis from center
+
+        Initial location is along x-axis from center (determined by initial `t`
+        value)
+
+        The alpha parameters are converted into the parameters used by the
+        `CircularPath` class. Angular velocity is now a derived quantity.
         """
         # "initial x" : initial position in x coordinate
         # "initial y" : initial position in y coordinate
