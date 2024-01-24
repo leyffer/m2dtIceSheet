@@ -1,6 +1,9 @@
 import numpy as np
 import scipy.linalg as la
+from functools import cached_property
+from typing import ForwardRef
 
+inverseproblem = ForwardRef("InverseProblem.InverseProblem")
 
 class Posterior:
     """! Posterior distribution (Gaussian)
@@ -23,12 +26,10 @@ class Posterior:
     covar_inv_derivative = (
         None  # derivative of the inverse posterior covariance matrix w.r.t. the control
     )
-    para2obs = None
-    eigvals = None
 
     # TODO: these variable names are HORRIBLE!
 
-    def __init__(self, inversion, alpha, data, **kwargs):
+    def __init__(self, inversion, alpha: np.ndarray, data: np.ndarray, **kwargs):
         """
         initialization of the posterior distribution.
 
@@ -77,7 +78,7 @@ class Posterior:
         self.K = self.grid_t.shape[0]  # number of time steps
 
         # information about the posterior covariance
-        self.para2obs = self.get_para2obs()
+        self.para2obs = self.para2obs
 
         # information about the posterior mean
         self.mean, self.data = self.compute_mean(data)  # compute the posterior mean
@@ -95,7 +96,7 @@ class Posterior:
 
         if data is not None:
             # follow [Stuart, 2010], 2.17a
-            G = self.get_para2obs()
+            G = self.para2obs
             yolo = self.inversion.apply_noise_covar_inv(data)
             mean = G.T @ yolo + la.solve(self.prior.prior_covar, self.prior.prior_mean)
 
@@ -109,7 +110,8 @@ class Posterior:
 
         return mean, data
 
-    def get_para2obs(self):
+    @cached_property
+    def para2obs(self):
         """
         Computes the parameter-to-observable map, assuming a unit basis for the parameters. The parameter-to-observable
         map gets saved for future use, and won't be computed again if this function is called twice.
@@ -118,19 +120,15 @@ class Posterior:
         """
         # TODO: generalize to non-unit-vector basis for compatibility with parameter reduction setting
 
-        # don't go through the effort of computing this twice
-        if self.para2obs is not None:
-            return self.para2obs
-
         # initialization
         parameter = np.eye(self.prior.n_parameters)  # basis for parameters
-        G = np.empty((self.K, self.prior.n_parameters))
+        observations = np.empty((self.K, self.prior.n_parameters))
         states = self.inversion.get_states()
 
         # iterate over parameter basis
         for i in range(self.prior.n_parameters):
             # compute the measurements for the given parameter
-            G[:, i], flightpath, __, __ = self.inversion.apply_para2obs(
+            observations[:, i], flightpath, grid_t_drone, state = self.inversion.apply_para2obs(
                 parameter=parameter[i, :],
                 flightpath=self.flightpath,
                 grid_t_drone=self.grid_t,
@@ -140,9 +138,7 @@ class Posterior:
             # TODO: sanity check for flightpath
 
         # save for later use
-        self.para2obs = G
-
-        return self.para2obs
+        return observations
 
     def compute_inverse_covariance(self):
         """
@@ -154,17 +150,17 @@ class Posterior:
         # TODO: I'm not entirely sure, but I think we don't actually every have to compute the inverse posterior
         #  covariance matrix, its action should be sufficient. Right now it should be fine (make sure everything is
         #  correct) but in the long run we want to replace this call with the action of the inverse posterior
-        #  covariance matrix.
+        #  covariance matrix. <-- WHY. IT IS NEEDED FOR THE OPTIMIZATION.
 
         if self.covar_inv is None:
             # only compute once
 
-            G = self.get_para2obs()  # parameter-to-observable map
+            observations = self.para2obs  # parameter-to-observable map
             self.invNoiseCovG = self.inversion.apply_noise_covar_inv(
-                G
+                observations
             )  # save for use in derivative computation
-            yolo = G.T @ self.invNoiseCovG  # squared noise norm
-            self.covar_inv = yolo + la.inv(self.prior.prior_covar)
+            noise_observations = observations.T @ self.invNoiseCovG  # squared noise norm
+            self.covar_inv = noise_observations + la.inv(self.prior.prior_covar)
             # TODO: get rid of the call to la.inv !!!
 
         return self.covar_inv
@@ -199,14 +195,15 @@ class Posterior:
         @param parameter:
         @return:
         """
-        G = self.get_para2obs()  # map parameter to its observations
+        G = self.para2obs  # map parameter to its observations
         yolo = self.inversion.apply_noise_covar_inv(
             G @ parameter
         )  # apply inverse noise covariance matrix
 
         return G.T @ yolo + la.solve(self.prior.prior_covar, parameter)
 
-    def get_eigenvalues(self):
+    @cached_property
+    def eigvals(self):
         """
         computes and returns the eigenvalues of the posterior covariance matrix
         Currently the inverse posterior covariance matrix gets computed explicitely. We need to change this to use its
@@ -214,20 +211,19 @@ class Posterior:
 
         @return: eigenvalues
         """
-        if self.eigvals is None:
-            # only compute once
+        # only compute once
 
-            # get the inverse posterior covariance matrix
-            covar_inv = self.compute_inverse_covariance()
+        # get the inverse posterior covariance matrix
+        covar_inv = self.compute_inverse_covariance()
 
-            # solve eigenvalue probblem
-            eigvals, eigvecs = la.eigh(covar_inv)
-            # TODO: switch to the action of the inverse covariance matrix instead
+        # solve eigenvalue probblem
+        eigvals, eigvecs = la.eigh(covar_inv)
+        # TODO: switch to the action of the inverse covariance matrix instead
 
-            # convert to eigenvalues of the posterior covariance matrix (instead of its inverse)
-            self.eigvals = 1 / eigvals
+        # convert to eigenvalues of the posterior covariance matrix (instead of its inverse)
+        eigvals = 1 / eigvals
 
-        return self.eigvals
+        return eigvals
 
     def d_invPostCov_d_control(self):
         """

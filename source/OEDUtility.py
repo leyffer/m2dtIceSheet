@@ -64,7 +64,7 @@ class OEDUtility:
         @param posterior:
         @return:
         """
-        return sum(posterior.get_eigenvalues())
+        return sum(posterior.eigvals)
 
     def eval_utility_D(self, posterior: Posterior):
         """
@@ -74,7 +74,7 @@ class OEDUtility:
         @return:
         """
         # TODO: should we compute the inverse or the log instead? The values get very big
-        return np.prod(posterior.get_eigenvalues())
+        return np.prod(posterior.eigvals)
 
     def eval_utility_Dinv(self, posterior: Posterior):
         """
@@ -84,7 +84,7 @@ class OEDUtility:
         @return:
         """
         # TODO: I think we have 1/ twice now in all the computations, optimize it out
-        return np.prod(1 / posterior.get_eigenvalues())
+        return np.prod(1 / posterior.eigvals)
 
     def eval_utility_E(self, posterior: Posterior):
         """
@@ -92,7 +92,7 @@ class OEDUtility:
         @param posterior:
         @return:
         """
-        return np.max(posterior.get_eigenvalues())
+        return np.max(posterior.eigvals)
 
     def d_utility_d_control(self, posterior: Posterior, mode=None):
         """
