@@ -1,6 +1,6 @@
-from InverseProblem import InverseProblem
 import numpy as np
 import scipy.linalg as la
+from typing import Optional
 
 from Posterior import Posterior
 
@@ -17,22 +17,18 @@ class OEDUtility:
 
     # TODO: decide if we should outsource the different OED modes into subclasses
 
-    def __init__(self, inversion: InverseProblem, default_mode: str = None) -> None:
+    def __init__(self, default_mode: Optional[str] = "D") -> None:
         """! initialization for OEDUtility class
 
         @param inversion: inverse problem for which the OED utility shall be computed
         """
 
-        self.fom = inversion.fom
-        self.drone = inversion.drone
-        self.inversion = inversion
-
-        self.default_mode = default_mode if default_mode is not None else "D"
+        self.default_mode = default_mode
 
     # TODO: specifiy all function call names that this class needs to have to interact with the other classes
     # TODO: from the old source files, copy over all computations
 
-    def eval_utility(self, posterior: Posterior, mode=None):
+    def eval_utility(self, posterior: Posterior, mode: Optional[str] = None):
         """
         computes the OED-utility of the posterior covariance matrix for a provided posterior (assuming a linear model).
         Available OED-utility functions are: A, D, E, and "D-inverse" to compute the determinant of the inverse
@@ -43,7 +39,8 @@ class OEDUtility:
         @return:
         """
         # use default if no mode was provided
-        mode = mode if mode is not None else self.default_mode
+        if mode is None:
+            mode = self.default_mode
 
         # switch between cases
         if mode == "A":
