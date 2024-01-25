@@ -1,6 +1,6 @@
 from FullOrderModel import FullOrderModel as FOM
 from Drone import Drone
-from Posterior import Posterior
+# from Posterior import Posterior
 
 import scipy.sparse as sparse
 import numpy as np
@@ -174,6 +174,7 @@ class InverseProblem:
         @param data: measurement data (optional)
         @return: posterior
         """
+        from Posterior import Posterior
         posterior = Posterior(
             inversion=self, alpha=alpha, data=data, flightpath=flightpath, grid_t=grid_t
         )

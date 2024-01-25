@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.linalg as la
 from functools import cached_property
-from typing import ForwardRef
+from typing import Optional
 
-inverseproblem = ForwardRef("InverseProblem.InverseProblem")
+from InverseProblem import InverseProblem
 
 class Posterior:
     """! Posterior distribution (Gaussian)
@@ -20,16 +20,18 @@ class Posterior:
     # TODO: I don't think it makes sense to use the posterior for saving the state solutions for the basis vectors.
     #  I think that should go into the inverse problem class
 
-    covar = None  # posterior covariance matrix
-    covar_inv = None  # inverse posterior covariance matrix
-    invNoiseCovG = None  # inverse noise covariance matrix applied to parameter-to-observable map G=para2obs
-    covar_inv_derivative = (
-        None  # derivative of the inverse posterior covariance matrix w.r.t. the control
-    )
+    covar: Optional[np.ndarray] = None  # posterior covariance matrix
+    covar_inv: Optional[np.ndarray] = None  # inverse posterior covariance matrix
+    invNoiseCovG: Optional[
+        np.ndarray
+    ] = None  # inverse noise covariance matrix applied to parameter-to-observable map G=para2obs
+    covar_inv_derivative: Optional[
+        np.ndarray
+    ] = None  # derivative of the inverse posterior covariance matrix w.r.t. the control
 
     # TODO: these variable names are HORRIBLE!
 
-    def __init__(self, inversion, alpha: np.ndarray, data: np.ndarray, **kwargs):
+    def __init__(self, inversion: InverseProblem, alpha: np.ndarray, data: np.ndarray, **kwargs):
         """
         initialization of the posterior distribution.
 
@@ -122,13 +124,18 @@ class Posterior:
 
         # initialization
         parameter = np.eye(self.prior.n_parameters)  # basis for parameters
-        observations = np.empty((self.K, self.prior.n_parameters))
+        G = np.empty((self.K, self.prior.n_parameters))
         states = self.inversion.get_states()
 
         # iterate over parameter basis
         for i in range(self.prior.n_parameters):
             # compute the measurements for the given parameter
-            observations[:, i], flightpath, grid_t_drone, state = self.inversion.apply_para2obs(
+            (
+                G[:, i],
+                flightpath,
+                grid_t_drone,
+                state,
+            ) = self.inversion.apply_para2obs(
                 parameter=parameter[i, :],
                 flightpath=self.flightpath,
                 grid_t_drone=self.grid_t,
@@ -138,7 +145,7 @@ class Posterior:
             # TODO: sanity check for flightpath
 
         # save for later use
-        return observations
+        return G
 
     def compute_inverse_covariance(self):
         """
@@ -150,16 +157,18 @@ class Posterior:
         # TODO: I'm not entirely sure, but I think we don't actually every have to compute the inverse posterior
         #  covariance matrix, its action should be sufficient. Right now it should be fine (make sure everything is
         #  correct) but in the long run we want to replace this call with the action of the inverse posterior
-        #  covariance matrix. <-- WHY. IT IS NEEDED FOR THE OPTIMIZATION.
+        #  covariance matrix.
 
         if self.covar_inv is None:
             # only compute once
 
-            observations = self.para2obs  # parameter-to-observable map
+            G = self.para2obs  # parameter-to-observable map
             self.invNoiseCovG = self.inversion.apply_noise_covar_inv(
-                observations
+                G
             )  # save for use in derivative computation
-            noise_observations = observations.T @ self.invNoiseCovG  # squared noise norm
+            noise_observations = (
+                G.T @ self.invNoiseCovG
+            )  # squared noise norm
             self.covar_inv = noise_observations + la.inv(self.prior.prior_covar)
             # TODO: get rid of the call to la.inv !!!
 
@@ -254,10 +263,12 @@ class Posterior:
         self.dG = dG  # save for future use, e.g., testing
 
         # apply chain rule
-        self.covar_inv_derivative = [
-            dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
-            for i in range(self.n_controls)
-        ]
+        self.covar_inv_derivative = np.array(
+            [
+                dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
+                for i in range(self.n_controls)
+            ]
+        )
 
         # TODO: this list is very inefficient. There's probably a smarter way using tensor multiplications
 
