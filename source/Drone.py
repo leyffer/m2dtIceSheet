@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Optional
 
 
 class Drone:
@@ -8,7 +9,7 @@ class Drone:
     functions below.
     """
 
-    def __init__(self, fom):
+    def __init__(self, eval_mode: str, grid_t: Optional[np.ndarray] = None):
         """! Initialization for the drone class
         In this call we specify the main setup parameters that the drone class
         has to have. The user needs to specify their own __init__ call, and call
@@ -18,8 +19,8 @@ class Drone:
         states computed by the FOM
         """
         # TODO: are there any other setup parameters?
-        self.fom = fom
-        self.n_parameters = fom.n_parameters
+        self.grid_t = grid_t
+        self.eval_mode = eval_mode
 
     # TODO: specify and describe other functions the general drone class has to have
 
@@ -34,7 +35,7 @@ class Drone:
         return pos[0, :]
 
     def get_trajectory(
-        self, alpha: np.ndarray, grid_t: np.ndarray = None
+        self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
     ) -> tuple[np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
         @param alpha The specified flight parameters

@@ -10,11 +10,8 @@ TODO - ensure consistent behavior when dealing with single time values (instead
 of arrays of time values)
 """
 
-import array
 import numpy as np
-from typing import Dict, Any
-
-from numpy import ndarray
+from typing import Dict, Any, Optional, Literal
 
 
 class Path:
@@ -23,7 +20,7 @@ class Path:
         Path defined by parameters:
         - `"initial x"` : initial position in `x` coordinate
         - `"initial y"` : initial position in `y` coordinate
-        - `"initial heading"` : initital heading direction (in radians)
+        - `"initial heading"` : initial heading direction (in radians)
         - `"velocity"` : constant velocity parameter (spatial units per time)
         - `"angular velocity"` : constant angular velocity (radians per time)
         """
@@ -59,7 +56,7 @@ class Path:
 
     def d_position_d_initial_x(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
-        Derivative of positions with repsect to the initial x position at time(s) t
+        Derivative of positions with respect to the initial x position at time(s) t
         """
         if not isinstance(t, np.ndarray):
             t = np.array([t])
@@ -70,7 +67,7 @@ class Path:
 
     def d_position_d_initial_y(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
-        Derivative of positions with repsect to the initial x position at time(s) t
+        Derivative of positions with respect to the initial x position at time(s) t
         """
         if not isinstance(t, np.ndarray):
             t = np.array([t])
@@ -79,7 +76,9 @@ class Path:
         deriv[:, 0] = 0
         return deriv
 
-    def d_position_d_initial_heading(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_initial_heading(
+        self, t: float | np.ndarray[float, Any]
+    ) -> np.ndarray:
         """
         Derivative of positions with respect to the initial heading at time(s) t
         """
@@ -136,7 +135,7 @@ class CircularPath(Path):
         Path defined by parameters:
         - `"initial x"` : initial position in `x` coordinate
         - `"initial y"` : initial position in `y` coordinate
-        - `"initial heading"` : initital heading direction (in radians)
+        - `"initial heading"` : initial heading direction (in radians)
         - `"velocity"` : constant velocity parameter (spatial units per time)
         - `"angular velocity"` : constant angular velocity (radians per time)
 
@@ -229,7 +228,9 @@ class CircularPath(Path):
         deriv = self.relative_position(t) / self.alpha["velocity"]
         return deriv
 
-    def d_position_d_angular_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_angular_velocity(
+        self, t: float | np.ndarray[float, Any]
+    ) -> np.ndarray:
         """
         Derivative of position with respect to angular velocity at time(s) t
         """
@@ -302,30 +303,30 @@ class CircularPath(Path):
         """
         Derivative of position with respect to control parameters alpha at time(s) t
         """
-        derivs = {}
+        derivatives = {}
         if not isinstance(t, np.ndarray):
             t = np.array([t])
 
-        derivs["initial x"] = self.d_position_d_initial_x(t)
-        derivs["initial y"] = self.d_position_d_initial_y(t)
+        derivatives["initial x"] = self.d_position_d_initial_x(t)
+        derivatives["initial y"] = self.d_position_d_initial_y(t)
 
         # alpha[2] is initial heading (radians); can be simplified to a function
         # of position relative to initial position only
-        derivs["initial heading"] = self.d_position_d_initial_heading(t)
+        derivatives["initial heading"] = self.d_position_d_initial_heading(t)
 
         # alpha[3] is velocity; can be simplified to a function of position again
-        derivs["velocity"] = self.d_position_d_velocity(t)
+        derivatives["velocity"] = self.d_position_d_velocity(t)
 
-        # alpha[4] is angular veolcity; not as easily simplified
-        derivs["angular velocity"] = self.d_position_d_angular_velocity(t)
+        # alpha[4] is angular velocity; not as easily simplified
+        derivatives["angular velocity"] = self.d_position_d_angular_velocity(t)
 
-        return derivs
+        return derivatives
 
 
 class CombinedCircularPath:
     """
     TODO - inheritance from the Path class would be helpful, but that class
-    currently has unecessarily specific paramters
+    currently has unnecessarily specific parameters
     """
 
     def __init__(
@@ -338,7 +339,7 @@ class CombinedCircularPath:
     ):
         """
         A series of parameters and transition times between switching
-        transition_times begining with an initial time
+        transition_times beginning with an initial time
 
         TODO - transition_time is a parameter as well and needs to be handled
         properly here (not currently considered at all)
@@ -449,7 +450,7 @@ class CombinedCircularPath:
         deriv[:, 1] = rel_pos[:, 0]
         return deriv
 
-    def d_position_d_velocitys(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_velocities(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of position with respect the various velocities provided at time(s) t
         """
@@ -470,7 +471,7 @@ class CombinedCircularPath:
 
         return deriv
 
-    def d_position_d_angular_velocitys(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_angular_velocities(self, t: float | np.ndarray[float, Any]):
         """
         Derivative of position with respect the various angular velocities provided at time(s) t
         """
@@ -497,22 +498,22 @@ class CombinedCircularPath:
 
         return deriv
 
-    def d_position_d_paramters(self, t: float | np.ndarray[float, Any]):
-        derivs = {}
+    def d_position_d_parameters(self, t: float | np.ndarray[float, Any]):
+        derivatives = {}
         if not isinstance(t, np.ndarray):
             t = np.array([t])
         # alpha[0] is initial x
-        derivs["initial x"] = self.d_position_d_initial_x(t)
+        derivatives["initial x"] = self.d_position_d_initial_x(t)
 
         # alpha[1] is initial y
-        derivs["initial y"] = self.d_position_d_initial_y(t)
+        derivatives["initial y"] = self.d_position_d_initial_y(t)
 
         # alpha[2] is initial heading
-        derivs["initial heading"] = self.d_position_d_initial_heading(t)
+        derivatives["initial heading"] = self.d_position_d_initial_heading(t)
 
-        derivs["velocity"] = self.d_position_d_velocitys(t)
-        derivs["angular velocity"] = self.d_position_d_angular_velocitys(t)
-        return derivs
+        derivatives["velocity"] = self.d_position_d_velocities(t)
+        derivatives["angular velocity"] = self.d_position_d_angular_velocities(t)
+        return derivatives
 
 
 # TODO - add radius derivative to the CircularPath class and then add a call to
@@ -544,7 +545,7 @@ class CirclePath(CircularPath):
         """
         # "initial x" : initial position in x coordinate
         # "initial y" : initial position in y coordinate
-        # "initial heading" : initital heading direction (in radians)
+        # "initial heading" : initial heading direction (in radians)
         # "velocity" : constant velocity parameter (spatial units per time)
         # "angular velocity" : constant angular velocity (radians per time)
 
@@ -600,20 +601,132 @@ class CirclePath(CircularPath):
         deriv[:, 1] = -c - s * theta
         return deriv
 
-    def d_position_d_alpha(self, t: float | np.ndarray[float, Any]) -> Dict[str, np.ndarray]:
+    def d_position_d_alpha(
+        self, t: float | np.ndarray[float, Any]
+    ) -> Dict[str, np.ndarray]:
         """
         Derivative of position with respect to control parameters alpha at time(s) t
         """
-        derivs = {}
+        derivatives = {}
         if t is None:
             t = self.grid_t
         if not isinstance(t, np.ndarray):
             t = np.array([t])
 
         # alpha[0] is radius
-        derivs["radius"] = self.d_position_d_radius(t)
+        derivatives["radius"] = self.d_position_d_radius(t)
 
         # alpha[1] is velocity
-        derivs["velocity"] = self.d_position_d_velocity(t)
+        derivatives["velocity"] = self.d_position_d_velocity(t)
 
-        return derivs
+        return derivatives
+
+
+class Edge:
+    """
+    A single edge path
+    """
+
+    def __init__(
+        self,
+        start_position: np.ndarray,
+        end_position: np.ndarray,
+        initial_time: float = 0.0,
+        final_time: float = 1.0,
+    ):
+        """Path goes from start position to end position between some initial and final time"""
+        self.start_position = start_position
+        self.end_position = end_position
+        self.initial_time = initial_time
+        self.final_time = final_time
+        self.dt = self.final_time - self.initial_time
+
+    @property
+    def speed(self) -> float:
+        """Speed along the edge"""
+        return self.length / self.dt
+
+    @property
+    def heading(self) -> float:
+        """Angular heading along the edge"""
+        v = self.end_position - self.start_position
+        return np.arctan2(v[1], v[0])
+
+    @property
+    def length(self) -> float:
+        """Length of the edge"""
+        return np.linalg.norm(self.end_position - self.start_position)
+
+    def relative_position(self, t: np.ndarray) -> np.ndarray:
+        """Position relative to the start position"""
+        return (
+            (t - self.initial_time)
+            / self.dt
+            * (self.end_position - self.start_position)
+        )
+
+    def position(self, t: np.ndarray) -> np.ndarray:
+        """Absolute position"""
+        return self.relative_position(t) + self.start_position
+
+
+class GraphEdges:
+    """
+    Multiple graph edges
+    """
+
+    def __init__(
+        self,
+        nodes: np.ndarray,
+        initial_time: float = 0.0,
+        final_time: float = 1.0,
+        grid_t: Optional[np.ndarray[float, Any]] = None,
+        grid_t_mode: Literal["arc_length", "equal_time"] = "arc_length",
+    ) -> None:
+        """
+        Given nodes, construct a path between them of edges
+        """
+        self.nodes = nodes
+        self.lengths = np.linalg.norm(nodes[1:] - nodes[:-1], axis=-1)
+        if grid_t is not None:
+            self.final_time = grid_t[0]
+            self.initial_time = grid_t[-1]
+            self.dt = self.final_time - self.initial_time
+        if grid_t is None:  # time grid not provided, use arc length (constant speed)
+            self.final_time = final_time
+            self.initial_time = initial_time
+            self.dt = self.final_time - self.initial_time
+            if grid_t_mode == "arc_length":
+                arc_length = np.zeros((self.nodes.shape[0],))
+                arc_length[1:] = np.cumsum(self.lengths)
+                arc_length = arc_length / arc_length[-1]
+                grid_t = arc_length * self.dt + self.initial_time
+            elif grid_t_mode == "equal_time":
+                grid_t = np.linspace(
+                    self.initial_time, self.final_time, self.nodes.shape[0]
+                )
+        self.grid_t = grid_t
+        self.edges = [
+            Edge(n0, n1, t0, t1)
+            for n0, n1, t0, t1 in zip(
+                self.nodes[:-1], self.nodes[1:], self.grid_t[:-1], self.grid_t[1:]
+            )
+        ]
+
+    def position(self, t: np.ndarray) -> np.ndarray:
+        """Position at time t"""
+        edge_numbers = np.zeros(t.shape, dtype=int)
+        t_head = 0
+        for e_head, t_val in enumerate(t):
+            while t_val > self.grid_t[t_head]:
+                t_head += 1
+                if t_head == len(self.grid_t):
+                    break
+            edge_numbers[e_head] = max(t_head - 1, 0)
+        print("len(edges)", len(self.edges))
+        print("grid_t", self.grid_t)
+        print("edge_numbers", edge_numbers)
+        pos = np.empty((t.shape[0], self.nodes.shape[1]))
+        for i, (edge_number, t_val) in enumerate(zip(edge_numbers, t)):
+            pos[i] = self.edges[edge_number].position(t_val)
+        return pos

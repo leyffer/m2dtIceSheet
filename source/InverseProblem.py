@@ -1,9 +1,14 @@
-from FullOrderModel import FullOrderModel as FOM
-from Drone import Drone
-# from Posterior import Posterior
+from typing import Optional, List, Any
 
 import scipy.sparse as sparse
 import numpy as np
+
+from FullOrderModel import FullOrderModel as FOM
+from Drone import Drone
+from State import State
+
+# FOM converts parameters to states
+# Inverse Problem has a basis and keeps the states for that basis
 
 
 class InverseProblem:
@@ -21,7 +26,7 @@ class InverseProblem:
     c_scaling = 1e3
     c_diffusion = 0.01
 
-    states = None
+    states: Optional[np.ndarray[State, Any]] = None
     Basis = None
     parameters = None
 
@@ -132,9 +137,11 @@ class InverseProblem:
         # TODO: still need to bring this parameterization together with the interpretation of the noise model
         return Kd
 
-    def apply_para2obs(self, parameter, state=None, flightpath=None, **kwargs):
-        """
-        applies the parameter-to-observable map:
+    def apply_para2obs(
+        self, parameter, state: State = None, flightpath: np.ndarray = None, **kwargs
+    ):
+        """!
+        Applies the parameter-to-observable map:
         1. computes the forward state for the given parameter
         2. computes the flightpath if none is specified
         3. takes the measurements along the flight path
@@ -164,7 +171,13 @@ class InverseProblem:
 
         return observation, flightpath, grid_t_drone, state
 
-    def compute_posterior(self, alpha, data=None, flightpath=None, grid_t=None):
+    def compute_posterior(
+        self,
+        alpha: np.ndarray,
+        data: Optional[np.ndarray] = None,
+        flightpath: Optional[np.ndarray] = None,
+        grid_t: Optional[np.ndarray] = None,
+    ):
         """
         Computes the posterior distribution for given flight path parameters and measurements obtained along the flight.
         If no data is provided, the returned posterior will only contain the posterior covariance matrix, but not
@@ -175,33 +188,38 @@ class InverseProblem:
         @return: posterior
         """
         from Posterior import Posterior
+
         posterior = Posterior(
             inversion=self, alpha=alpha, data=data, flightpath=flightpath, grid_t=grid_t
         )
         return posterior
 
-    def compute_states(self, parameters, Basis=None):
+    def compute_states(
+        self, parameters: np.ndarray, Basis: Optional[np.ndarray] = None
+    ):
         """
         Computes the forward solutions for a given parameters (or reduced parameters for a given basis) and saves them
         in self.states
 
+        @param parameters: np.ndarray such that the columns (or Basis applied to
+            the columns) form the parameters at which to evaluate
         @param Basis: np.ndarray, parameter basis after parameter space reduction
-        @param parameters: np.ndarray such that the columns (or Basis applied to the columns) form the parameters at
-        which to evaluate
         @return: None
         """
         self.parameters = parameters
         self.Basis = Basis
         self.states = self.precompute_states(parameters, Basis)
 
-    def precompute_states(self, parameters, Basis=None):
+    def precompute_states(
+        self, parameters: np.ndarray, Basis: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Computes the forward solutions for a given parameters (or reduced parameters for a given basis).
         Only returns the states, does not save anything.
 
+        @param parameters: np.ndarray such that the columns (or Basis applied to
+            the columns) form the parameters at which to evaluate
         @param Basis: np.ndarray, parameter basis after parameter space reduction
-        @param parameters: np.ndarray such that the columns (or Basis applied to the columns) form the parameters at
-        which to evaluate
         @return: np.ndarray containing the states
         """
         # assemble parameters in full parameter space dimension if necessary

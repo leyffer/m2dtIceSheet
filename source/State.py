@@ -1,3 +1,9 @@
+import numpy as np
+from dataclasses import dataclass
+from typing import Optional, Any
+
+
+@dataclass
 class State:
     """! State class
 
@@ -7,19 +13,21 @@ class State:
     overwrite this class for their specific needs.
     """
 
-    state = None  # where the state variable gets saved, e.g. as np.ndarray
-    parameter = None  # the parameter sample for which the solution was obtained, if any
+    state: np.ndarray  # where the state variable gets saved, e.g. as np.ndarray
 
-    other_identifiers = None
+    # the parameter sample for which the solution was obtained, if any
+    parameter: np.ndarray
+
+    other_identifiers: Optional = None
     # other setup parameters involved in obtaining this state (e.g., nuisance parameters)
     # We don't anticipate this attribute to be used by us, but it might be helpful for reproducibility
 
-    bool_is_transient = None  # whether the solution is time dependent
-    grid_t = None  # time discretization of the state solution
+    bool_is_transient: bool = None  # whether the solution is time dependent
+    grid_t: np.ndarray[float, Any] = None  # time discretization of the state solution
     Du = None
 
     def __init__(
-        self, fom, state, bool_is_transient, parameter, other_identifiers, *kwargs
+        self, fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
     ) -> None:
         """! Initialization for State class
 
