@@ -1,5 +1,5 @@
 """
-FlightPath class that transforms parameters alpha into a flight path and can
+Path class that transforms parameters alpha into a flight path and can
 generate derivatives with respect to control parameters alpha.
 
 Some flight paths are provided.
