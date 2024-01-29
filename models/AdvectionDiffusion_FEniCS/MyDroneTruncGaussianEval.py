@@ -28,8 +28,6 @@ class MyDroneTruncGaussianEval(MyDrone):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
-        if not self.bool_truncate:
-            return self.measure_without_truncation(flightpath, grid_t, state)
 
         # initialization
         n_steps = flightpath.shape[0]

@@ -61,6 +61,7 @@ class MyDroneUniformEval(MyDrone):
             if sum(inside) == inside.shape[0]:
                 val_integral = val_integral_ref
             else:
+                print("DEBUG info: domain collided with edge of domain")
                 u = dl.Function(V)
                 u.vector().vec().array = inside
                 val_integral = dl.assemble(u * dl.dx(domain=ref_domain))
