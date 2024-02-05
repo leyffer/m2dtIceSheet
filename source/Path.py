@@ -15,6 +15,10 @@ from typing import Dict, Any, Optional, Literal
 
 
 class Path:
+    """
+    Generic path methods
+    """
+
     def __init__(self, alpha: np.ndarray | Dict, initial_time: float = 0.0):
         """
         Path defined by parameters:
@@ -37,16 +41,29 @@ class Path:
 
     def relative_position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
-        Relative position must be implemented by the specified path
+        Get the position relative to the initial position (x, y) given the parameters and time(s) t
+
+        Uses absolute positions and initial positions to get relative positions
+
+        Either absolute or relative positions must be implemented
         """
-        raise NotImplementedError
+        # TODO - catch not implemented
+        positions = self.position(t)
+        rel_positions = positions - np.array(
+            [[self.alpha["initial x"], self.alpha["initial y"]]]
+        )
+
+        return rel_positions
 
     def position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
         """
         Get the position (x, y) given the parameters and time(s) t
 
         Uses relative positions and initial positions to get absolute positions
+
+        Either absolute or relative positions must be implemented
         """
+        # TODO - catch not implemented
         rel_positions = self.relative_position(t)
         positions = rel_positions + np.array(
             [[self.alpha["initial x"], self.alpha["initial y"]]]
@@ -123,6 +140,18 @@ class CircularPath(Path):
     Circular arc flight path (if the angular velocity is zero, becomes a linear path)
 
     Constant velocity and angular velocity
+
+    Parameters are:
+    - initial x
+    - initial y
+    - initial heading
+    - velocity
+    - angular velocity
+
+    Derived parameters (as a consequence of other parameters) are:
+    - radius
+    - center x
+    - center y
     """
 
     def __init__(
@@ -166,7 +195,7 @@ class CircularPath(Path):
         )
 
     @property
-    def linear(self) -> bool:
+    def linear(self) -> np.bool_:
         """
         If the angular velocity is smaller than the linear_tolerance value,
         assume that the path is linear (to avoid numerical problems)
@@ -520,7 +549,7 @@ class CombinedCircularPath:
 # that for the derivative calculation for this class
 class CirclePath(CircularPath):
     """
-    Speed and radius version of the circular path
+    Circular path with parameters radius [0] and speed [1]
 
     Similar to the CircularPath but uses the radius as a parameter instead of
     angular velocity: radius is equal to velocity/angular velocity
@@ -586,7 +615,7 @@ class CirclePath(CircularPath):
 
     def d_position_d_radius(self, t: float | np.ndarray[float, Any]):
         """
-        Derivative of position with repect to radius at time(s) t
+        Derivative of position with respect to radius at time(s) t
         """
         if t is None:
             t = self.grid_t
@@ -660,9 +689,9 @@ class Edge:
     def relative_position(self, t: np.ndarray) -> np.ndarray:
         """Position relative to the start position"""
         return (
-            (t - self.initial_time)
+            (t - self.initial_time)[:, np.newaxis]
             / self.dt
-            * (self.end_position - self.start_position)
+            * (self.end_position - self.start_position)[np.newaxis, :]
         )
 
     def position(self, t: np.ndarray) -> np.ndarray:
@@ -692,7 +721,7 @@ class GraphEdges:
             self.final_time = grid_t[0]
             self.initial_time = grid_t[-1]
             self.dt = self.final_time - self.initial_time
-        if grid_t is None:  # time grid not provided, use arc length (constant speed)
+        else:  # time grid not provided, use arc length (constant speed)
             self.final_time = final_time
             self.initial_time = initial_time
             self.dt = self.final_time - self.initial_time
@@ -723,9 +752,9 @@ class GraphEdges:
                 if t_head == len(self.grid_t):
                     break
             edge_numbers[e_head] = max(t_head - 1, 0)
-        print("len(edges)", len(self.edges))
-        print("grid_t", self.grid_t)
-        print("edge_numbers", edge_numbers)
+        # print("len(edges)", len(self.edges))
+        # print("grid_t", self.grid_t)
+        # print("edge_numbers", edge_numbers)
         pos = np.empty((t.shape[0], self.nodes.shape[1]))
         for i, (edge_number, t_val) in enumerate(zip(edge_numbers, t)):
             pos[i] = self.edges[edge_number].position(t_val)
