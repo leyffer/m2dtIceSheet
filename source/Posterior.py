@@ -131,6 +131,8 @@ class Posterior:
         parameters. The parameter-to-observable map gets saved for future use,
         and won't be computed again if this function is called twice.
 
+        G is M_L
+
         @return:
         """
         # TODO: generalize to non-unit-vector basis for compatibility with parameter reduction setting
@@ -207,7 +209,7 @@ class Posterior:
         # TODO: optimize the code so that we can get rid of this function (if necessary, replace with action of the
         #  posterior covariance
 
-        # TODO: the name is misleading, it should problaby be a get command
+        # TODO: the name is misleading, it should probably be a get command
 
         if self.covar is None:
             # only compute once
@@ -327,12 +329,15 @@ class Posterior:
 
     def d_PostCov_d_control(self):
         """
-        computes the matrix derivative of the posterior covariance matrix with respect to each control parameter
-        (returned as a list). The matrix derivative is computed explicitely, which is likely inefficient and can be
-        optmized out. In the long term, this function is therefore for testing purposes only, especially in case of
-        high-dimensional parameter spaces.
+        computes the matrix derivative of the posterior covariance matrix with
+        respect to each control parameter (returned as a list). The matrix
+        derivative is computed explicitly, which is likely inefficient and can
+        be optimized out. In the long term, this function is therefore for
+        testing purposes only, especially in case of high-dimensional parameter
+        spaces.
 
-        @return: list containing the matrix derivative of self.covar w.r.t. each control parameter
+        @return: list containing the matrix derivative of self.covar w.r.t. each
+            control parameter
         """
         # get the posterior covariance matrix and its derivative
         PostCov = self.compute_covariance()
