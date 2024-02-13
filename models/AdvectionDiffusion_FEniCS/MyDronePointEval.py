@@ -3,11 +3,18 @@ import numpy as np
 from MyDrone import MyDrone
 
 class MyDronePointEval(MyDrone):
-
+    """
+    In this drone class, we model measurements at time t of a state u to be of the form:
+    d(t) = u(p(t), t)
+    where p(t) is the position of the drone at time t. Compared to the other convolution-type measurements, this is the
+    cheapest way to compute measurements. However, in infinite-dimensional function space, the point evaluation is
+    not necessarily well defined.
+    """
     center = np.array([0.75/2, 0.55/2])
 
     def __init__(self, fom, grid_t=None, **kwargs):
         """! Initializer for the drone class with point-wise measurements
+
         @param fom  Full-order-model (FOM) object. The drone takes
         measurements from this
         @param grid_t the time grid the drone should fly in
@@ -34,6 +41,9 @@ class MyDronePointEval(MyDrone):
     def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
         """
         derivative of the measurement function for a given flightpath in control direction alpha
+
+        The derivative is computed via the chain rule. We use FEniCS functionaly to get the spatial derivative of the
+        state and then evaluate it in a point-wise manner.
 
         @param alpha:
         @param flightpath:
