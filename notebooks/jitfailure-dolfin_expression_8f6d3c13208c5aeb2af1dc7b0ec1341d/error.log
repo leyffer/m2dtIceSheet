@@ -1,0 +1,16 @@
+/var/folders/_k/q9sdsmfx2j35cmp3z9tn84km0000gp/T/tmpplg85aid/dolfin_expression_8f6d3c13208c5aeb2af1dc7b0ec1341d.cpp:61:23: error: no matching function for call to 'max'
+          values[0] = max(0, exp(-0.5 * ((x[0]-0.625)*((x[0]-0.625)) + (x[1]-0.275)*(x[1]-0.275)) / 0.010000000000000002));
+                      ^~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:2657:1: note: candidate template ignored: deduced conflicting types for parameter '_Tp' ('int' vs. 'double')
+max(const _Tp& __a, const _Tp& __b)
+^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:2668:1: note: candidate template ignored: could not match 'initializer_list<type-parameter-0-0>' against 'int'
+max(initializer_list<_Tp> __t, _Compare __comp)
+^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:2677:1: note: candidate function not viable: requires single argument '__t', but 2 arguments were provided
+max(initializer_list<_Tp> __t)
+^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:2648:1: note: candidate function not viable: requires 3 arguments, but 2 were provided
+max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+^
+1 error generated.
