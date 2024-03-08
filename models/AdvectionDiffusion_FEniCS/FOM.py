@@ -276,7 +276,7 @@ class FOM(FullOrderModel):
         dl.solve(F == 0, w, bcs=bcW)
         return u
 
-    def plot(self, u, mesh: dl.MeshGeometry = None, **kwargs):
+    def plot(self, u, mesh: dl.MeshGeometry = None, ax=None,**kwargs):
         """! Plot the state u"""
 
         # TODO: distinguish between different types of u
