@@ -2,6 +2,7 @@ import numpy as np
 import scipy.linalg as la
 from functools import cached_property
 from typing import Optional
+from functools import lru_cache
 
 from InverseProblem import InverseProblem
 
@@ -131,7 +132,7 @@ class Posterior:
         parameters. The parameter-to-observable map gets saved for future use,
         and won't be computed again if this function is called twice.
 
-        G is M_L
+        G is M_L without noise covariance
 
         @return:
         """
@@ -167,7 +168,7 @@ class Posterior:
         # save for later use
         return G
 
-    def compute_inverse_covariance(self):
+    def compute_inverse_covariance(self, inv_prior_factor: float = 1.0):
         """
         computes the inverse of the posterior covariance matrix. Since it needs
         the inverse prior covariance matrix, we really never want to compute it
@@ -192,12 +193,17 @@ class Posterior:
             self.invNoiseCovG = self.inversion.apply_noise_covar_inv(G)
             noise_observations = G.T @ self.invNoiseCovG  # squared noise norm
             # G^T Sigma_noise^{-1} G
-            self.covar_inv = noise_observations + la.inv(self.prior.prior_covar)
-            # TODO: get rid of the call to la.inv !!!
+            self.covar_inv = noise_observations + inv_prior_factor * la.inv(
+                self.prior.prior_covar
+            )
+            # TODO: get rid of the call to la.inv!!!
+            # Do this by substituting the prior covariance with the inverse
+            # prior covariance where needed (start with an inverse prior instead
+            # of a prior?)
 
         return self.covar_inv
 
-    def compute_covariance(self):
+    def compute_covariance(self, prior_factor: float = 1.0):
         """
         computes the posterior covariance matrix by inverting the inverse
         posterior covariance matrix from self.compute_inverse_covariance. This
@@ -213,7 +219,7 @@ class Posterior:
 
         if self.covar is None:
             # only compute once
-            self.covar = la.inv(self.compute_inverse_covariance())
+            self.covar = la.inv(self.compute_inverse_covariance(inv_prior_factor=1.0/prior_factor))
 
         return self.covar
 
@@ -225,6 +231,12 @@ class Posterior:
         compute_inverse_covariance.
 
         See: Stuart 2010 (2.16, 2.17)
+
+        G is the same as M_L
+        \\Sigma_{post}^{-1} = G + \\Sigma_{pr}^{-1}
+        Given b, find \\Sigma_{post}^{-1} b = x, i.e. solve \\Sigma_{post} x = b for x
+        This is the same as solving for x:
+        \\Sigma_{pr} x = (\\Sigma_{pr} G + I) b
 
         @param parameter:
         @return:

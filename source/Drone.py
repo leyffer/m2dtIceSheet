@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional
+from State import State
 
 
 class Drone:
@@ -24,7 +25,7 @@ class Drone:
 
     # TODO: specify and describe other functions the general drone class has to have
 
-    def get_position(self, t: float, alpha: np.ndarray):
+    def get_position(self, t: float | np.ndarray, alpha: np.ndarray):
         """! Get the position of the drone given the time and flying parameters
 
         @param t  The time to evaluate the position of the drone
@@ -46,7 +47,9 @@ class Drone:
             "Drone.get_trajectory: Needs to be implemented in subclass"
         )
 
-    def measure(self, flightpath, grid_t, state) -> np.ndarray:
+    def measure(
+        self, flightpath: np.ndarray, grid_t: np.ndarray, state: State
+    ) -> np.ndarray:
         """! Method to take a measurement
 
         @param flightpath  The trajectory of the drone
@@ -77,7 +80,7 @@ class Drone:
         @param flightpath:
         @param grid_t:
         @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
         # TODO: I think we can generalize the code from myDrone in models/AdvectionDiffusion_FEniCS such that the user
         #  doesn't need to write this function themselves.

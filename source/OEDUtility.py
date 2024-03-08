@@ -230,6 +230,13 @@ class OEDUtility:
         return gradient
 
     def d_utilE_d_control(self, posterior: Posterior):
+        """
+        For PSD matrix, can use derivative of elements w.r.t. eigenvalues is the
+        outer product of the corresponding eigenvector (as long as eigenvalues
+        are not repeated). We can recover top eigenvalue and eigenvector through
+        power iteration and get the derivative using an outer product (I think
+        this translates well to infinite dimension)
+        """
         raise NotImplementedError(
             "OEDUtility.d_utilE_d_control: still need to understand how to get the eigenvalue derivative"
         )

@@ -1,5 +1,7 @@
 import sys
 
+from torch import initial_seed
+
 sys.path.insert(0, "../source/")
 
 from typing import Optional, Tuple
@@ -7,13 +9,12 @@ from typing import Optional, Tuple
 import numpy as np
 from Drone import Drone
 from myState import State
-from Path import CirclePath
+from Path import GraphEdges
 
 FlightPath = np.dtype([("position", "<f8", 2), ("time", "<f8")])
 
 
 class MyDrone(Drone):
-    center = np.array([0.75 / 2, 0.55 / 2])
 
     def __init__(
         self,
@@ -42,16 +43,22 @@ class MyDrone(Drone):
         super().__init__(eval_mode=eval_mode, grid_t=grid_t)
 
         self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-2, 1e-2)
+        
+        self.initial_time = self.grid_t[0]
+        self.final_time = self.grid_t[-1]
 
-        self.path_class = CirclePath
+        self.path_class = GraphEdges
 
         # TODO: get parameterization for other eval modes, in particular give them a common name, not individual ones:
         # self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
         # self.radius_uniform = kwargs.get("radius_uniform", 0.1)
 
-    def path(self, alpha: np.ndarray) -> CirclePath:
+    def path(
+        self, nodes: np.ndarray
+    ) -> GraphEdges:
         """Instantiate the path class with alpha"""
-        return self.path_class(alpha=alpha, center=self.center)
+        
+        return self.path_class(nodes, initial_time=self.initial_time, final_time=self.final_time)
 
     def get_trajectory(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
@@ -64,8 +71,10 @@ class MyDrone(Drone):
         # default time grid if None is provided
         if grid_t is None:
             grid_t = self.grid_t
+        
+        nodes = np.reshape(alpha, (alpha.shape[0]//2, 2))
 
-        return self.path(alpha).position(grid_t), grid_t
+        return self.path(nodes=nodes).position(grid_t), grid_t
 
     def d_position_d_control(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
@@ -78,14 +87,14 @@ class MyDrone(Drone):
         @param grid_t:
         @return:
         """
-        # for the Drone class
         if grid_t is None:
             grid_t = self.grid_t
-
-        d_speed = self.path(alpha).d_position_d_velocity(grid_t).T
-        d_radius = self.path(alpha).d_position_d_radius(grid_t).T
-
-        return np.array([d_radius, d_speed])
+            
+        nodes = np.reshape(alpha, (alpha.shape[0]//2, 2))  # (node x, node y)
+        
+        derivs = self.path(nodes=nodes).d_position_d_node_locations(grid_t)  # (time, (node x, node y), (x, y))
+        output = np.moveaxis(derivs, 0, -1)
+        return output
 
     def measure(
         self, flightpath: np.ndarray, grid_t: np.ndarray, state: State
@@ -143,7 +152,6 @@ class MyDrone(Drone):
             except RuntimeError:
                 out[k] = 0
         return out
-        # return np.array([state(flightpath[k, :]) for k in range(flightpath.shape[0])])
 
     def d_measurement_d_control(
         self,
@@ -168,7 +176,7 @@ class MyDrone(Drone):
         Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
-        D_data_d_alpha = np.zeros((grid_t.shape[0], alpha.shape[0]))
+        D_data_d_alpha = np.empty((grid_t.shape[0], alpha.shape[0]))
 
         if self.eval_mode == "point-eval":
             for i in range(grid_t.shape[0]):
@@ -176,10 +184,7 @@ class MyDrone(Drone):
                 # that's why we can't get rid of this loop
 
                 # apply chain rule
-                try:
-                    D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
-                except RuntimeError:
-                    pass
+                D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
 
                 # TODO: make compatible with transient setting
 

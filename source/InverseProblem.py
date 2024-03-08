@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import Optional, List, Any, assert_type
 
 import scipy.sparse as sparse
 import numpy as np
@@ -42,15 +42,22 @@ class InverseProblem:
 
         # set noise model:
         self.grid_t = drone.grid_t
-        self.K = self.grid_t.shape[0]
-        self.diffusion_matrix = self.compute_diffusion_matrix()
-        self.mass_matrix = self.compute_mass_matrix()
+        # self.diffusion_matrix = self.compute_diffusion_matrix()
+        self.diffusion_matrix = None
+        # self.mass_matrix = self.compute_mass_matrix()
+        self.mass_matrix = None
         # TODO: right now it's somewhat unclear what the noise model actually is - we are just using the mass matrix.
         #  double check in the literature what we should be using exactly
 
     # TODO: write other functions required for this class
     # TODO: from the old source files, copy over all computations
     # TODO: set up connection to hIppylib
+    
+    @property
+    def K(self):
+        if isinstance(self.grid_t, np.ndarray):
+            return self.grid_t.shape[0]
+        raise ValueError("Time grid not present.")
 
     def set_noise_model(self, c_scaling, c_diffusion, grid_t):
         """! Noise model initialization (only needed if varying from default c_scaling=1, c_diffusion=1, grid_t=drone.grid_t)
@@ -63,7 +70,6 @@ class InverseProblem:
         self.c_scaling = c_scaling
         self.c_diffusion = c_diffusion
         self.grid_t = grid_t
-        self.K = grid_t.shape[0]  # Number of time steps in the time grid
 
         # matrices involved in the noise model
         self.diffusion_matrix = self.compute_diffusion_matrix()
@@ -74,15 +80,15 @@ class InverseProblem:
 
         @return  diffusion matrix (piece-wise linear finite elements)
         """
-        dt = self.grid_t[1] - self.grid_t[0]
+        delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
-        # dts = np.diff(grid_t)
+        # delta_ts = np.diff(grid_t)
 
         A = sparse.diags([1, -1], offsets=[0, 1], shape=(self.K, self.K))
         A = sparse.csr_matrix(A + A.T)
         A[0, 0] = 1
         A[-1, -1] = 1
-        A /= dt
+        A /= delta_t
 
         return A
 
@@ -91,7 +97,8 @@ class InverseProblem:
 
         @return  mass matrix (piecewise linear finite elements)
         """
-        dt = self.grid_t[1] - self.grid_t[0]
+        assert_type(self.grid_t, np.ndarray)
+        delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
 
@@ -99,7 +106,7 @@ class InverseProblem:
         M = sparse.csr_matrix(M + M.T)
         M[0, 0] /= 2
         M[-1, -1] /= 2
-        M *= dt
+        M *= delta_t
 
         return M
 
@@ -110,7 +117,7 @@ class InverseProblem:
         @return  The samples
         """
         # TODO: sampling the noise model is just for show, it's not necessarily needed. However, it's a very nice show
-        #  and helps visualiziing the data a lot, so ... implement it!
+        #  and helps visualizing the data a lot, so ... implement it!
         raise NotImplementedError(
             "InverseProblem.sample: still need to check how exactly we are setting up the noise model"
         )
@@ -130,6 +137,10 @@ class InverseProblem:
         @param d  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
+        if self.diffusion_matrix is None:
+            self.diffusion_matrix = self.compute_diffusion_matrix()
+        if self.mass_matrix is None:
+            self.mass_matrix = self.compute_mass_matrix()
         LHS = self.c_scaling * (
             self.c_diffusion * self.diffusion_matrix + self.mass_matrix
         )
@@ -138,7 +149,7 @@ class InverseProblem:
         return Kd
 
     def apply_para2obs(
-        self, parameter, state: State = None, flightpath: np.ndarray = None, **kwargs
+        self, parameter, state: Optional[State] = None, flightpath: Optional[np.ndarray] = None, **kwargs
     ):
         """!
         Applies the parameter-to-observable map:
@@ -171,6 +182,7 @@ class InverseProblem:
 
         return observation, flightpath, grid_t_drone, state
 
+    # TODO - cache posterior for optimization
     def compute_posterior(
         self,
         alpha: np.ndarray,
