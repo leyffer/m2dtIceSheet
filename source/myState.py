@@ -22,11 +22,7 @@ class myState(State):
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
 
-
-    convolution = None
-
-    def get_derivative(self):
-
+    def get_derivative(self) -> dl.MultiMeshFunction | dl.Function:
         """
         computes and saves the spatial derivative of the state
         @return:
@@ -58,30 +54,6 @@ class myState(State):
                 [self.state(x, y) for x, y in zip(position[:, 0], position[:, 1])]
             )
 
-    def set_convolution(self, convolution, key):
-        """
-        this function is intended for the MyDroneGaussianEval class to save the convoluted state computed in
-        MyDroneGaussianEval.measure such that it does not need to get re-computed for other flight paths or when
-        taking the derivative. The "key" parameter is there to distinguish between different drones measuring this
-        state.
-
-        Discussion:
-        Right now, we only consider one drone at a time, so the key is probably not strictly necessary, but I think
-        it's probably good practice to build it in already. In particular, we can probably think of other use cases
-        beyond the MyDroneGaussianEval class
-
-        @param convolution:
-        @param key: unique identifier (string) of the drone
-        @return:
-        """
-        if self.convolution is None:
-            self.convolution = {}
-        self.convolution[key] = convolution
-
-    def get_convolution(self, key):
-        if self.convolution is None:
-            return None
-        return self.convolution[key]
 
 def make_circle_kernel(radius: float, dx: float) -> np.ndarray:
     """!

@@ -7,13 +7,13 @@ from typing import Optional, Tuple
 import numpy as np
 from Drone import Drone
 from myState import State
-from Path import CirclePath
+from Path import CombinedCircularPath
 
 FlightPath = np.dtype([("position", "<f8", 2), ("time", "<f8")])
 
 
 class MyDrone(Drone):
-    center = np.array([0.75 / 2, 0.55 / 2])
+    start = np.array([0.75, 0.55 / 2])
 
     def __init__(
         self,
@@ -43,15 +43,37 @@ class MyDrone(Drone):
 
         self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-2, 1e-2)
 
-        self.path_class = CirclePath
+        self.path_class = CombinedCircularPath
 
         # TODO: get parameterization for other eval modes, in particular give them a common name, not individual ones:
         # self.sigma_gaussian = kwargs.get("sigma_gaussian", 0.1)
         # self.radius_uniform = kwargs.get("radius_uniform", 0.1)
 
-    def path(self, alpha: np.ndarray) -> CirclePath:
-        """Instantiate the path class with alpha"""
-        return self.path_class(alpha=alpha, center=self.center)
+    def path(self, alpha: np.ndarray) -> CombinedCircularPath:
+        """
+        Instantiate the path class with alpha
+        For this path class alpha is compromised of:
+        - initial heading [0]
+        - velocity and angular velocity pairs
+        - transition times
+        """
+        num_segments = len(alpha[1:]) // 2
+        self.num_segments = num_segments
+        # return self.path_class(
+        #     initial_x=self.start[0],
+        #     initial_y=self.start[1],
+        #     initial_heading=alpha[0],
+        #     #    parameters=np.reshape(alpha[1:2*num_segments + 1], (num_segments, 2)),
+        #     parameters= np.reshape(alpha[1:], (num_segments,2)),
+        #     transition_times=np.linspace(self.grid_t[0], self.grid_t[-1], num_segments + 1),
+        # )
+        return self.path_class(
+            initial_x=self.start[0],
+            initial_y=self.start[1],
+            initial_heading=alpha[0],
+            parameters= np.reshape(alpha[1:], (2, num_segments)).T,
+            transition_times=np.linspace(self.grid_t[0], self.grid_t[-1], num_segments + 1),
+        )
 
     def get_trajectory(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
@@ -82,10 +104,23 @@ class MyDrone(Drone):
         if grid_t is None:
             grid_t = self.grid_t
 
-        d_speed = self.path(alpha).d_position_d_velocity(grid_t).T
-        d_radius = self.path(alpha).d_position_d_radius(grid_t).T
+        # d_speed = self.path(alpha).d_position_d_velocity(grid_t).T
+        # d_radius = self.path(alpha).d_position_d_radius(grid_t).T
+        
+        derivatives = self.path(alpha).d_position_d_parameters(grid_t)
+        d_velocity = derivatives["velocity"]  # dimensions are (time, control (for each segment), (x,y))
+        d_angular_velocity = derivatives["angular velocity"]
+        d_heading = derivatives["initial heading"]
 
-        return np.array([d_radius, d_speed])
+        output = np.empty((1 + d_velocity.shape[1] + d_angular_velocity.shape[1], 2, len(grid_t)))  # should be (parameter, (x,y), time)
+        output[0, :, :] = d_heading[:, :].T
+        for i in range(d_velocity.shape[1]):
+            # output[2*i + 1, :, :] = d_velocity[:, i, :].T
+            # output[2*i + 2, :, :] = d_angular_velocity[:, i, :].T
+            output[i + 1, :, :] = d_velocity[:, i, :].T
+            output[i + 1 + d_velocity.shape[1], :, :] = d_angular_velocity[:, i, :].T
+
+        return output
 
     def measure(
         self, flightpath: np.ndarray, grid_t: np.ndarray, state: State
@@ -152,7 +187,6 @@ class MyDrone(Drone):
         grid_t: np.ndarray,
         state: State,
     ) -> np.ndarray:
-
         """
         derivative of the measurement function for a given flightpath in control direction alpha
 
@@ -162,13 +196,14 @@ class MyDrone(Drone):
         @param state:
         @return np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
+
         # parts of the chain rule (only compute once)
         grad_p = self.d_position_d_control(alpha, grid_t)  # derivative of position
         # TODO: optimize this computation such that we don't repeat it as often
         Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
-        D_data_d_alpha = np.zeros((grid_t.shape[0], alpha.shape[0]))
+        D_data_d_alpha = np.empty((grid_t.shape[0], alpha.shape[0]))
 
         if self.eval_mode == "point-eval":
             for i in range(grid_t.shape[0]):
@@ -179,7 +214,7 @@ class MyDrone(Drone):
                 try:
                     D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
                 except RuntimeError:
-                    pass
+                    D_data_d_alpha[i, :] = 0
 
                 # TODO: make compatible with transient setting
 

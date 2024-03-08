@@ -152,7 +152,6 @@ class MyDrone(Drone):
         grid_t: np.ndarray,
         state: State,
     ) -> np.ndarray:
-
         """
         derivative of the measurement function for a given flightpath in control direction alpha
 
@@ -162,6 +161,7 @@ class MyDrone(Drone):
         @param state:
         @return np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
+
         # parts of the chain rule (only compute once)
         grad_p = self.d_position_d_control(alpha, grid_t)  # derivative of position
         # TODO: optimize this computation such that we don't repeat it as often
