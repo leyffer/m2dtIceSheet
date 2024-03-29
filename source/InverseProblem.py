@@ -149,7 +149,7 @@ class InverseProblem:
         return Kd
 
     def apply_para2obs(
-        self, parameter, state: Optional[State] = None, flightpath: Optional[np.ndarray] = None, **kwargs
+        self, parameter, state: Optional[State] = None, flight: Optional["Flight"] = None, **kwargs
     ):
         """!
         Applies the parameter-to-observable map:
@@ -168,27 +168,21 @@ class InverseProblem:
             state = self.fom.solve(parameter=parameter)
 
         # determine flight path
-        if flightpath is None:
-            flightpath, grid_t_drone = self.drone.get_trajectory(
-                grid_t=kwargs.get("alpha")
-            )
-        else:
-            grid_t_drone = kwargs.get("grid_t_drone")
+        if flight is None:
+            flight = self.drone.navigation.create_flight(alpha=kwargs.get("alpha"))
 
         # fly out and measure
         observation = self.drone.measure(
-            flightpath=flightpath, grid_t=grid_t_drone, state=state
+            flight=flight, state=state
         )
 
-        return observation, flightpath, grid_t_drone, state
+        return observation, flight, state
 
     # TODO - cache posterior for optimization
     def compute_posterior(
         self,
-        alpha: np.ndarray,
-        data: Optional[np.ndarray] = None,
-        flightpath: Optional[np.ndarray] = None,
-        grid_t: Optional[np.ndarray] = None,
+        flight : "Flight",
+        data: Optional[np.ndarray] = None
     ):
         """
         Computes the posterior distribution for given flight path parameters and measurements obtained along the flight.
@@ -202,7 +196,7 @@ class InverseProblem:
         from Posterior import Posterior
 
         posterior = Posterior(
-            inversion=self, alpha=alpha, data=data, flightpath=flightpath, grid_t=grid_t
+            inversion=self, flight=flight, data=data
         )
         return posterior
 

@@ -1,8 +1,11 @@
+import sys
 import numpy as np
 
-from MyDrone import MyDrone
+sys.path.insert(0, "../source/")
 
-class MyDronePointEval(MyDrone):
+from Detector import Detector
+
+class DetectorPointwise(Detector):
     """
     In this drone class, we model measurements at time t of a state u to be of the form:
     d(t) = u(p(t), t)
@@ -12,7 +15,7 @@ class MyDronePointEval(MyDrone):
     """
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, fom, grid_t=None, **kwargs):
+    def __init__(self, grid_t=None, **kwargs):
         """! Initializer for the drone class with point-wise measurements
 
         @param fom  Full-order-model (FOM) object. The drone takes
@@ -21,24 +24,29 @@ class MyDronePointEval(MyDrone):
         @param **kwargs  Keyword arguments including `sigma_gaussian`
         (Gaussian radius) and `radius_uniform`
         """
-        super().__init__(fom=fom, eval_mode="point-eval", grid_t=grid_t, **kwargs)
+        super().__init__(grid_t=grid_t, **kwargs)
 
-    def measure(self, flightpath, grid_t, state) -> np.ndarray:
+    def measure(self, flight, state) -> np.ndarray:
         """! Get measurements along the flight path at the drone location
 
         @param flightpath  The trajectory of the drone
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
+        
+        flightpath = flight.flightpath
+        grid_t = flight.grid_t
+        
         if state.bool_is_transient:
             # todo: extend to transient measurements
             raise NotImplementedError("In MyDrone.measure_pointwise: still need to bring over code for transient measurements")
             # old code:
             # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
 
-        return np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
+        data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
+        return data
 
-    def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
+    def d_measurement_d_control(self, flight, state, navigation):
         """
         derivative of the measurement function for a given flightpath in control direction alpha
 
@@ -51,9 +59,11 @@ class MyDronePointEval(MyDrone):
         @param state:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
         """
+        
+        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
 
         # parts of the chain rule (only compute once)
-        grad_p = self.d_position_d_control(alpha, flightpath, grid_t)  # derivative of position
+        grad_p = flight.d_position_d_control()   # derivative of position
         # todo: optimize this computation such that we don't repeat it as often
         Du = state.get_derivative()  # spatial derivative of the state
 

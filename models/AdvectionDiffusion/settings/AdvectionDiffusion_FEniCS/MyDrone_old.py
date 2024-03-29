@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 import numpy as np
 from Drone import Drone
 from myState import State
-from Path import CirclePath
+from models.AdvectionDiffusion.Navigators.Path import CirclePath
 
 FlightPath = np.dtype([("position", "<f8", 2), ("time", "<f8")])
 

@@ -1,13 +1,17 @@
+import sys
+
 import numpy as np
 import fenics as dl
 import scipy.linalg as la
 import scipy.sparse as sparse
 import scipy.sparse.linalg as sla
 
-from MyDrone import MyDrone
+sys.path.insert(0, "../source/")
+
+from Detector import Detector
 from myState import myState
 
-class MyDroneGaussianEval(MyDrone):
+class DetectorGaussian(Detector):
     """
     In this drone class, we model measurements at time t of a state u to be of the form:
     d(t) = 1/|c(t)| \int_{\Omega} u(x, t) Phi(x, p(t)) dx
@@ -21,10 +25,12 @@ class MyDroneGaussianEval(MyDrone):
     Note that currently it is only an approximation because we are not setting the correct boundary conditions. These,
     in turn, would again require evaluating the convolution everywhere.
     """
+    
+    eval_mode = "gaussian"
 
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, fom, grid_t=None, sigma=0.1, **kwargs):
+    def __init__(self, fom, sigma=0.1, **kwargs):
         """! Initializer for the drone class with point-wise measurements
         @param fom  Full-order-model (FOM) object. The drone takes
         measurements from this
@@ -32,8 +38,9 @@ class MyDroneGaussianEval(MyDrone):
         @param **kwargs  Keyword arguments including `sigma_gaussian`
         (Gaussian radius) and `radius_uniform`
         """
-        super().__init__(fom=fom, eval_mode="gaussian", grid_t=grid_t, **kwargs)
+        super().__init__(**kwargs)
         self.sigma = sigma
+        self.fom=fom
 
     def compute_convolution(self, state):  # -> myState:
         """
@@ -180,7 +187,7 @@ class MyDroneGaussianEval(MyDrone):
 
         return convolution_state
 
-    def measure(self, flightpath, grid_t, state) -> np.ndarray:
+    def measure(self, flight, state) -> np.ndarray:
         """! Get measurements along the flight path at the drone location
 
         To get the measurements, we proceed the following way:
@@ -192,6 +199,9 @@ class MyDroneGaussianEval(MyDrone):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
+        flightpath = flight.flightpath
+        grid_t = flight.grid_t
+        
         # compute convolution with gaussian
         convolution = self.compute_convolution(state=state)
         convolution = convolution.state
@@ -206,7 +216,7 @@ class MyDroneGaussianEval(MyDrone):
 
         return data
 
-    def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
+    def d_measurement_d_control(self, flight, state, navigation):
         """
         derivative of the measurement function for a given flightpath in control direction alpha.
         The derivative can easily be computed with the chain rule. After the convolution field is computed (and saved),
@@ -218,12 +228,14 @@ class MyDroneGaussianEval(MyDrone):
         @param state:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
         """
+        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
+        
         # compute convolution with gaussian
         convolution = self.compute_convolution(state=state)
         Du = convolution.get_derivative()
 
         # parts of the chain rule (only compute once)
-        grad_p = self.d_position_d_control(alpha, flightpath, grid_t)  # derivative of position
+        grad_p = flight.d_position_d_control()   # derivative of position
         # todo: optimize this computation such that we don't repeat it as often
 
         # initialization
@@ -244,45 +256,45 @@ class MyDroneGaussianEval(MyDrone):
 
         return D_data_d_alpha
 
-    def measure_without_truncation(self, flightpath, grid_t, state) -> np.ndarray:
-        """! Get measurements along the flight path at the drone location
+    # def measure_without_truncation(self, flightpath, grid_t, state) -> np.ndarray:
+    #     """! Get measurements along the flight path at the drone location
 
-        This function is for testing purposes to check the implementation of the boundary condition is self.measure.
-        Because of the integration in FE dimension, it takes a very long time to run, it should not be used in the final
-        product.
+    #     This function is for testing purposes to check the implementation of the boundary condition is self.measure.
+    #     Because of the integration in FE dimension, it takes a very long time to run, it should not be used in the final
+    #     product.
 
-        @param flightpath  The trajectory of the drone
-        @param grid_t  the time discretization on which the flightpath lives
-        @param state  The state which the drone shall measure, State object
-        """
-        # initialization
-        n_steps = flightpath.shape[0]
-        data = np.NaN * np.ones((n_steps,))
+    #     @param flightpath  The trajectory of the drone
+    #     @param grid_t  the time discretization on which the flightpath lives
+    #     @param state  The state which the drone shall measure, State object
+    #     """
+    #     # initialization
+    #     n_steps = flightpath.shape[0]
+    #     data = np.NaN * np.ones((n_steps,))
 
-        for k in range(n_steps):
+    #     for k in range(n_steps):
 
-            # define Gaussian with center around the current flight path position and std deviation self.sigma
-            pos_x, pos_y = flightpath[k, :]  # current position of the drone
-            weight = f'exp(-0.5 * ((x[0]-{pos_x})*((x[0]-{pos_x})) +' \
-                     + f' (x[1]-{pos_y})*(x[1]-{pos_y})) / {self.sigma ** 2})'
-            weight_fct = dl.Expression(weight, degree=0)
+    #         # define Gaussian with center around the current flight path position and std deviation self.sigma
+    #         pos_x, pos_y = flightpath[k, :]  # current position of the drone
+    #         weight = f'exp(-0.5 * ((x[0]-{pos_x})*((x[0]-{pos_x})) +' \
+    #                  + f' (x[1]-{pos_y})*(x[1]-{pos_y})) / {self.sigma ** 2})'
+    #         weight_fct = dl.Expression(weight, degree=0)
 
-            # Re-weight such that the integral is = 1
-            val_integral = dl.assemble(
-                weight_fct * dl.dx(domain=self.fom.mesh))  # comment in for non-truncated gaussian
-            # We would just divide by (np.pi*radius_uniform**2) here, but if the
-            # mesh is not fine enough this will cause issues.
-            # (We won't converge towards point evaluation even though that's our
-            # theoretical limit since our FE solution is continuous)
+    #         # Re-weight such that the integral is = 1
+    #         val_integral = dl.assemble(
+    #             weight_fct * dl.dx(domain=self.fom.mesh))  # comment in for non-truncated gaussian
+    #         # We would just divide by (np.pi*radius_uniform**2) here, but if the
+    #         # mesh is not fine enough this will cause issues.
+    #         # (We won't converge towards point evaluation even though that's our
+    #         # theoretical limit since our FE solution is continuous)
 
-            if state.bool_is_transient:
-                # todo: this assumes state and drone operate on the same time discretization -> generalize
-                val = dl.assemble(weight_fct * state.state[k] * dl.dx()) / val_integral
-            else:
-                val = dl.assemble(
-                    weight_fct * state.state * dl.dx()) / val_integral  # comment in for non-truncated gaussian
+    #         if state.bool_is_transient:
+    #             # todo: this assumes state and drone operate on the same time discretization -> generalize
+    #             val = dl.assemble(weight_fct * state.state[k] * dl.dx()) / val_integral
+    #         else:
+    #             val = dl.assemble(
+    #                 weight_fct * state.state * dl.dx()) / val_integral  # comment in for non-truncated gaussian
 
-            data[k] = val
+    #         data[k] = val
 
-        return data
+    #     return data
 

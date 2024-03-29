@@ -37,7 +37,7 @@ class Posterior:
     # TODO: these variable names are HORRIBLE!
 
     def __init__(
-        self, inversion: InverseProblem, alpha: np.ndarray, data: np.ndarray, **kwargs
+        self, inversion: InverseProblem, flight : "Flight", data: np.ndarray, **kwargs
     ):
         """
         initialization of the posterior distribution.
@@ -61,31 +61,33 @@ class Posterior:
         self.n_parameters = self.prior.n_parameters
 
         # information about the flight:
-        self.alpha = alpha
-        self.n_controls = alpha.shape[0]
+        self.flight = flight
+        self.alpha = flight.alpha
+        self.n_controls = self.alpha.shape[0]
+        self.grid_t = flight.grid_t
 
-        # check if the time discretization is known
-        self.grid_t = kwargs.get("grid_t", None)
+        # # check if the time discretization is known
+        # self.grid_t = kwargs.get("grid_t", None)
 
-        if self.grid_t is None:
-            # flightpath has to be computed based on drone's default settings
-            self.flightpath, self.grid_t = self.drone.get_trajectory(alpha=alpha)
+        # if self.grid_t is None:
+        #     # flightpath has to be computed based on drone's default settings
+        #     self.flightpath, self.grid_t = self.drone.get_trajectory(alpha=alpha)
 
-        else:
-            # check if flightpath is known already
-            self.flightpath = kwargs.get("flightpath", None)
+        # else:
+        #     # check if flightpath is known already
+        #     self.flightpath = kwargs.get("flightpath", None)
 
-            if self.flightpath is None:
-                # compute flightpath for the provided time discretization
-                self.flightpath, new_grid_t = self.drone.get_trajectory(
-                    alpha=alpha, grid_t=self.grid_t
-                )
+        #     if self.flightpath is None:
+        #         # compute flightpath for the provided time discretization
+        #         self.flightpath, new_grid_t = self.drone.get_trajectory(
+        #             alpha=alpha, grid_t=self.grid_t
+        #         )
 
-                # sanity check:
-                if (self.grid_t != new_grid_t).any():
-                    raise RuntimeError(
-                        "In Posterior.__init__: time discretization was changed"
-                    )
+        #         # sanity check:
+        #         if (self.grid_t != new_grid_t).any():
+        #             raise RuntimeError(
+        #                 "In Posterior.__init__: time discretization was changed"
+        #             )
 
         self.K = self.grid_t.shape[0]  # number of time steps
 
@@ -153,13 +155,11 @@ class Posterior:
                 # compute the measurements for the given parameter
                 (
                     G[:, i],  # ith column = ith basis
-                    flightpath,
-                    grid_t_drone,
-                    state,
+                    __,
+                    __,
                 ) = self.inversion.apply_para2obs(
                     parameter=parameter[i, :],
-                    flightpath=self.flightpath,
-                    grid_t_drone=self.grid_t,
+                    flight=self.flight,
                     state=states[i],
                 )
 
@@ -307,9 +307,7 @@ class Posterior:
         for i in range(self.n_parameters):
             # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
             dG[:, i, :] = self.drone.d_measurement_d_control(
-                alpha=self.alpha,
-                flightpath=self.flightpath,
-                grid_t=self.grid_t,
+                flight=self.flight,
                 state=self.inversion.states[i],
             )
 
