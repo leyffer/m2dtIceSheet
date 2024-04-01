@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Optional
 from State import State
+from Flight import Flight
 
 
 class Drone:
@@ -19,12 +20,12 @@ class Drone:
         @param fom  Full-order-model (FOM) object. The drone needs to measure
         states computed by the FOM
         """
-        # TODO: are there any other setup parameters?
         self.navigation = navigation
         self.detector = detector
         self.grid_t = navigation.grid_t
 
-    # TODO: specify and describe other functions the general drone class has to have
+        self.detector.attach_to_drone(self)
+        self.navigation.attach_to_drone(self)
 
     def get_position(self, t: float | np.ndarray, flight : "Flight"):
         """! Get the position of the drone given the time and flying parameters
@@ -78,9 +79,14 @@ class Drone:
         @param state:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
+        # todo: split up to get rid of detector.d_measurement_d_control
+
         return self.detector.d_measurement_d_control(flight=flight, state=state, navigation=self.navigation)
     
     def d_measurement_d_position(self, flight : "Flight", state):
         """
         """
         return self.detector.d_measurement_d_position(flight, state)
+
+    def plan_flight(self, alpha) -> Flight:
+        return self.navigation.plan_flight(alpha)

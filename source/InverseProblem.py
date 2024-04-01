@@ -1,4 +1,5 @@
-from typing import Optional, List, Any, assert_type
+from typing import Optional, List, Any
+# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
 
 import scipy.sparse as sparse
 import numpy as np
@@ -6,6 +7,7 @@ import numpy as np
 from FullOrderModel import FullOrderModel as FOM
 from Drone import Drone
 from State import State
+
 
 # FOM converts parameters to states
 # Inverse Problem has a basis and keeps the states for that basis
@@ -26,7 +28,7 @@ class InverseProblem:
     c_scaling = 1e3
     c_diffusion = 0.01
 
-    states: Optional[np.ndarray[State, Any]] = None
+    states = None  # Optional[np.ndarray[State, Any]]
     Basis = None
     parameters = None
 
@@ -97,7 +99,7 @@ class InverseProblem:
 
         @return  mass matrix (piecewise linear finite elements)
         """
-        assert_type(self.grid_t, np.ndarray)
+        # assert_type(self.grid_t, np.ndarray)  # compatibility issues with Nicole's laptop (April 1, 2024)
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
@@ -181,7 +183,8 @@ class InverseProblem:
     # TODO - cache posterior for optimization
     def compute_posterior(
         self,
-        flight : "Flight",
+        flight : Optional["Flight"] = None,
+        alpha : Optional[np.ndarray] = None,
         data: Optional[np.ndarray] = None
     ):
         """
@@ -193,7 +196,15 @@ class InverseProblem:
         @param data: measurement data (optional)
         @return: posterior
         """
+        # import class for the posterior
         from Posterior import Posterior
+        # TODO: the import is here instead of outside the class definition to avoid a circular import. It's not the best
+        #  solution, we should revisit this for efficiency
+
+        if flight is None:
+            if alpha is None:
+                raise RuntimeError("neither a flight nor valid control parameters were provided")
+            flight = self.drone.plan_flight(alpha=alpha)
 
         posterior = Posterior(
             inversion=self, flight=flight, data=data

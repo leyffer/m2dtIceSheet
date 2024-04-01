@@ -1,6 +1,8 @@
+from __future__ import annotations
 from FOM import FOM
 
 import sys
+
 
 sys.path.insert(0, "../source/")
 from myState import myState as State

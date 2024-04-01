@@ -7,23 +7,23 @@ class Navigation:
     """
     
     """
+
+    drone = None
+
     def __init__(self, grid_t):
         
         self.grid_t=grid_t
         # TODO: write initializer
         return
 
-    # def get_position(self, t: float | np.ndarray, alpha: np.ndarray):
-    #     """! Get the position of the drone given the time and flying parameters
-
-    #     @param t  The time to evaluate the position of the drone
-    #     @param alpha  The parameters of the flight path
-    #     @return  spatial position of the drone
-    #     """
-    #     print("WARNING: Navigation.get_position was called. Should be replaced with flight.get_position")
-        
-    #     pos, __ = self.get_trajectory(alpha=alpha, grid_t=t * np.ones((1,)))
-    #     return pos[0, :]
+    def attach_to_drone(self, drone):
+        if self.drone is not None:
+            pass
+            # raise RuntimeWarning("Navigation system was attached to a new drone. Was this intentional? If attaching "
+            #                      "the navigation system to several drones, make sure they'll not accidentally change "
+            #                      "each other (make an appropriate copy or make sure they have no changable "
+            #                      "parameters)")
+        self.drone = drone
 
     def get_trajectory(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None

@@ -23,7 +23,7 @@ class State:
     # We don't anticipate this attribute to be used by us, but it might be helpful for reproducibility
 
     bool_is_transient: bool = None  # whether the solution is time dependent
-    grid_t: np.ndarray[float, Any] = None  # time discretization of the state solution
+    grid_t: np.ndarray = None  # time discretization of the state solution
     Du = None
 
     def __init__(

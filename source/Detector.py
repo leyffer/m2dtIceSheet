@@ -5,9 +5,19 @@ class Detector:
     """
     Takes measurements of a state at locations
     """
+    drone = None
 
     def __init__(self, *args, **kwargs):
         return
+
+    def attach_to_drone(self, drone):
+        if self.drone is not None:
+            pass
+            # raise RuntimeWarning("Navigation system was attached to a new drone. Was this intentional? If attaching "
+            #                      "the navigation system to several drones, make sure they'll not accidentally change "
+            #                      "each other (make an appropriate copy or make sure they have no changable "
+            #                      "parameters)")
+        self.drone = drone
 
     def measure(
         self, flight : "Flight", state: "State"
