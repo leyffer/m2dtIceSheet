@@ -2,9 +2,8 @@ import numpy as np
 
 class Flight():
     
-    dpdc = None # d position d control
-    dmdc = None # d measurement d control
-    measurement = None # measurement along this flight path
+    dpdc = None  # d position d control
+    dmdc = None  # d measurement d control
     
     def __init__(self, navigation, alpha):
         
@@ -21,7 +20,7 @@ class Flight():
         """
         print("WARNING: Navigation.get_position was called. Should be replaced with flight.get_position")
         
-        pos, __ = self.naviation.get_trajectory(alpha=self.alpha, grid_t=t * np.ones((1,)))
+        pos, __ = self.navigation.get_trajectory(alpha=self.alpha, grid_t=t * np.ones((1,)))
         return pos[0, :]
     
     def d_position_d_control(self):
