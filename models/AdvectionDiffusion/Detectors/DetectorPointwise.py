@@ -52,7 +52,7 @@ class DetectorPointwise(Detector):
         data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
         return data
 
-    def d_measurement_d_position(self, flight, state, navigation):
+    def d_measurement_d_position(self, flight, state):
         """
         derivative of the measurement function for a given flightpath in position.
         The derivative is the gradient of the  state along the flightpath. We can use FEniCS to get the derivative.
@@ -88,41 +88,3 @@ class DetectorPointwise(Detector):
 
         return D_data_d_position
 
-    def d_measurement_d_control(self, flight, state, navigation):
-        """
-        derivative of the measurement function for a given flightpath in control direction alpha
-
-        The derivative is computed via the chain rule. We use FEniCS functionally to get the spatial derivative of the
-        state and then evaluate it in a point-wise manner.
-
-        @param alpha:
-        @param flightpath:
-        @param grid_t:
-        @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
-        """
-        
-        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
-
-        # parts of the chain rule (only compute once)
-        grad_p = flight.d_position_d_control()   # derivative of position
-        # todo: optimize this computation such that we don't repeat it as often
-        Du = state.get_derivative()  # spatial derivative of the state
-
-        # initialization
-        D_data_d_alpha = np.empty((grid_t.shape[0], alpha.shape[0]))
-
-        for i in range(grid_t.shape[0]):
-            # the FEniCS evaluation of the Du at a position unfortunately doesn't work with multiple positions
-            # that's why we can't get rid of this loop
-
-            # apply chain rule
-            if state.bool_is_transient:
-                # todo: extend to transient measurements
-                raise NotImplementedError(
-                    "In MyDronePointEval.d_measurement_d_control: still need to bring over code for transient measurements")
-            else:
-                # state is time-independent
-                D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
-
-        return D_data_d_alpha

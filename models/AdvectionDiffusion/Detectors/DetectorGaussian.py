@@ -216,7 +216,7 @@ class DetectorGaussian(Detector):
 
         return data
 
-    def d_measurement_d_position(self, flight, state, navigation):
+    def d_measurement_d_position(self, flight, state):
         """
         derivative of the measurement function for a given flightpath in position.
         The derivative is the gradient of the (convoluted) state along the flightpath. After the convolution field is computed (and saved),
@@ -251,86 +251,3 @@ class DetectorGaussian(Detector):
                 D_data_d_position[i, :] = Du(flightpath[i, :])
 
         return D_data_d_position
-
-    def d_measurement_d_control(self, flight, state, navigation):
-        """
-        derivative of the measurement function for a given flightpath in control direction alpha.
-        The derivative can easily be computed with the chain rule. After the convolution field is computed (and saved),
-        we can use FEniCS to get the derivative.
-
-        @param alpha:
-        @param flightpath:
-        @param grid_t:
-        @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
-        """
-        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
-        
-        # compute convolution with gaussian
-        convolution = self.compute_convolution(state=state)
-        Du = convolution.get_derivative()
-
-        # parts of the chain rule (only compute once)
-        grad_p = flight.d_position_d_control()   # derivative of position
-        # todo: optimize this computation such that we don't repeat it as often
-
-        # initialization
-        D_data_d_alpha = np.empty((grid_t.shape[0], alpha.shape[0]))
-
-        for i in range(grid_t.shape[0]):
-            # the FEniCS evaluation of the Du at a position unfortunately doesn't work with multiple positions
-            # that's why we can't get rid of this loop
-
-            # apply chain rule
-            if state.bool_is_transient:
-                # todo: extend to transient measurements
-                raise NotImplementedError(
-                    "In MyDronePointEval.d_measurement_d_control: still need to bring over code for transient measurements")
-            else:
-                # state is time-independent
-                D_data_d_alpha[i, :] = Du(flightpath[i, :]) @ grad_p[:, :, i].T
-
-        return D_data_d_alpha
-
-    # def measure_without_truncation(self, flightpath, grid_t, state) -> np.ndarray:
-    #     """! Get measurements along the flight path at the drone location
-
-    #     This function is for testing purposes to check the implementation of the boundary condition is self.measure.
-    #     Because of the integration in FE dimension, it takes a very long time to run, it should not be used in the final
-    #     product.
-
-    #     @param flightpath  The trajectory of the drone
-    #     @param grid_t  the time discretization on which the flightpath lives
-    #     @param state  The state which the drone shall measure, State object
-    #     """
-    #     # initialization
-    #     n_steps = flightpath.shape[0]
-    #     data = np.NaN * np.ones((n_steps,))
-
-    #     for k in range(n_steps):
-
-    #         # define Gaussian with center around the current flight path position and std deviation self.sigma
-    #         pos_x, pos_y = flightpath[k, :]  # current position of the drone
-    #         weight = f'exp(-0.5 * ((x[0]-{pos_x})*((x[0]-{pos_x})) +' \
-    #                  + f' (x[1]-{pos_y})*(x[1]-{pos_y})) / {self.sigma ** 2})'
-    #         weight_fct = dl.Expression(weight, degree=0)
-
-    #         # Re-weight such that the integral is = 1
-    #         val_integral = dl.assemble(
-    #             weight_fct * dl.dx(domain=self.fom.mesh))  # comment in for non-truncated gaussian
-    #         # We would just divide by (np.pi*radius_uniform**2) here, but if the
-    #         # mesh is not fine enough this will cause issues.
-    #         # (We won't converge towards point evaluation even though that's our
-    #         # theoretical limit since our FE solution is continuous)
-
-    #         if state.bool_is_transient:
-    #             # todo: this assumes state and drone operate on the same time discretization -> generalize
-    #             val = dl.assemble(weight_fct * state.state[k] * dl.dx()) / val_integral
-    #         else:
-    #             val = dl.assemble(
-    #                 weight_fct * state.state * dl.dx()) / val_integral  # comment in for non-truncated gaussian
-
-    #         data[k] = val
-
-    #     return data
-

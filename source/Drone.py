@@ -86,32 +86,22 @@ class Drone:
         @param state:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
-        # # derivative of the measurement with respect to the position
-        # dmdp = self.d_measurement_d_position(flight=flight, state=state)
-        #
-        # # derivative of the position with respect to the control
-        # dpdc = flight.d_position_d_control()
-        #
-        # # chain rule
-        # dmdc = np.zeros((dmdp.shape[0], dpdc.shape[0]))
-        # for k in range(dmdp.shape[0]):
-        #     dmdc[k, :] = dmdp[k, :] @ dpdc[:, :, k].T
-        #     # TODO: the transpose here is increadibly error prone. We should change the order of computations such that
-        #     #  we can get rid of it.
-        # # TODO: This loop slows everything down. We should change the structure of dpdc such that we can compute dmdc
-        # #  as a single tensor multiplication
-        #
-        # return dmdc
+        # derivative of the measurement with respect to the position
+        dmdp = self.d_measurement_d_position(flight=flight, state=state)
 
-        # TODO: we should switch to the code above (which applies the chain rule for getting the derivative of the
-        #   measurements w.r.t. the control by computing the derivatives of the measurements w.r.t. the position, and
-        #  the derivative of the position w.r.t. the control separately). However, right now the functions
-        #  "d_measurement_d_position" for our 4 measurement types don't have these functions (they are on Thomas'
-        #  computer). Once we've transferred them over, we can put in the code above and take out
-        #  "d_measurement_d_control" in all four classes. By doing it this way, we avoid for Detector to compute the
-        #  derivatives in two serparate scenarios.
+        # derivative of the position with respect to the control
+        dpdc = flight.d_position_d_control()
 
-        return self.detector.d_measurement_d_control(flight=flight, state=state, navigation=self.navigation)
+        # chain rule
+        dmdc = np.zeros((dmdp.shape[0], dpdc.shape[0]))
+        for k in range(dmdp.shape[0]):
+            dmdc[k, :] = dmdp[k, :] @ dpdc[:, :, k].T
+            # TODO: the transpose here is increadibly error prone. We should change the order of computations such that
+            #  we can get rid of it.
+        # TODO: This loop slows everything down. We should change the structure of dpdc such that we can compute dmdc
+        #  as a single tensor multiplication
+
+        return dmdc
     
     def d_measurement_d_position(self, flight : "Flight", state):
         """
