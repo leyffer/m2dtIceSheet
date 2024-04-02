@@ -77,19 +77,6 @@ class Detector:
         """
         raise NotImplementedError("Drone.measure: Needs to be implemented in subclass")
 
-    # def d_measurement_d_control(self, flight, state):
-    #     """
-    #     derivative of the measurement function for a given flightpath in control direction alpha
-    #
-    #     @param alpha:
-    #     @param flightpath:
-    #     @param grid_t:
-    #     @param state:
-    #     @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
-    #     """
-    #     # TODO: Take out this function
-    #     raise NotImplementedError("Deprecated")
-
     def d_measurement_d_position(self, flight, state):
         """
         derivative of the measurement function for a given flight in direction of the flight's positions flightpath.
