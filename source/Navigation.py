@@ -1,28 +1,63 @@
 import numpy as np
 from typing import Optional
 from Flight import Flight
-#TODO
 
 class Navigation:
     """
-    
+    Converts control parameters alpha into a flightpath
+
+    The Navigation system describes how the drone flies for any given control parameterization. It creates the flight
+    as an instance of the Flight class (plan_flight). The navigation system is more general than a specific flight,
+    alpha never gets set. Instead, it offers all the understanding of how a flight is created from the control alpha,
+    and how it reacts to changes (d_position_d_control).
+
+    Since these questions depend on the implementation of the FOM and the specific choice of measurement integration
+    kernel function, the user has to fill out this class by themselves (as a child class please, don't change this
+    file). The descriptions below tell the user which functions have to be implemented for compatibility with the rest
+    of the code: Search for "NotImplementedError"
     """
 
     drone = None
 
-    def __init__(self, grid_t):
-        
-        self.grid_t=grid_t
-        # TODO: write initializer
-        return
+    def __init__(self, grid_t : np.ndarray, *args, **kwargs):
+        """Initialization of the Navigation class
+
+        When writing the child class specific for the application, remember to call super().__init__
+
+        The time discretization grid_t will be used for all flights. We are assuming uniform time stepping. This might
+        change in the future.
+
+        @param grid_t : the time discretization for the drone, np.ndarray with len(grid_t.shape)=1
+
+        Options to be passed in **kwargs:
+
+        bool_allow_multiple_attachments:
+        Whenever a drone equips a detector, it will tell the detector that it was just
+        equipped through a call to detector.attach_to_drone. By default, we allow a single detector to be attached to
+        multiple drones. However, if the user expects detector parameters to change, they might want to set
+        bool_allow_multiple_attachments = False
+        to ensure that any instance of Detector can only be equipped by a single drone. This avoids copy-issues and
+        saves time on debugging. It will, however, make code testing harder within notebooks when running blocks out of
+        order, which is why, per default, we are enabling multiple attachments.
+        """
+
+        # time discretization (this one will be ued for all flights)
+        self.grid_t = grid_t
+
+        # check if the user wants to allow or disallow the use of the same navigation system in multiple drones
+        self.bool_allow_multiple_attachments = kwargs.get("bool_allow_multiple_attachments", True)
 
     def attach_to_drone(self, drone):
-        if self.drone is not None:
-            pass
-            # raise RuntimeWarning("Navigation system was attached to a new drone. Was this intentional? If attaching "
-            #                      "the navigation system to several drones, make sure they'll not accidentally change "
-            #                      "each other (make an appropriate copy or make sure they have no changable "
-            #                      "parameters)")
+        """
+        The drone tells the navigation system that it was just equipped. The navigation system has now the ability to
+        communicate to the drone and from there interact with its environment. However, this ability should be used with
+        care, we expect that the navigation for most applications is stand-alone.
+        """
+        if self.drone is not None and not self.bool_allow_multiple_attachments:
+            raise RuntimeWarning("Navigation system was attached to a new drone. Was this intentional? If attaching "
+                                 "the navigation system to several drones, make sure they'll not accidentally change "
+                                 "each other (make an appropriate copy or make sure they have no changable "
+                                 "parameters)")
         self.drone = drone
 
     def get_trajectory(
@@ -50,7 +85,3 @@ class Navigation:
         raise NotImplementedError(
             "Drone.d_position_d_control: Needs to be implemented in subclass"
         )
-        
-    def plan_flight(self, alpha) -> Flight:
-        flight = Flight(alpha=alpha, navigation=self)
-        return flight

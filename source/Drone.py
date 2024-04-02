@@ -127,4 +127,4 @@ class Drone:
         """
         creates a Flight object for a given control parameter alpha
         """
-        return self.navigation.plan_flight(alpha)
+        return Flight(alpha=alpha, navigation=self.navigation)

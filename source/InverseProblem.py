@@ -279,10 +279,9 @@ class InverseProblem:
         """
 
         if self.states is None:
-            print(
-                "WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the states."
-            )
-            print("this is ok, but it is error prone.")
+            print("WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the "
+                  "states. This is ok, but it is error prone. Pleae just call InverseProblem.precompute_states() "
+                  "first in the future.")
 
             # precompute states assuming unit basis
             self.compute_states(parameters=np.eye(self.n_parameters))
