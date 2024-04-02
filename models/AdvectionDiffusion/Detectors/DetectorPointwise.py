@@ -64,13 +64,14 @@ class DetectorPointwise(Detector):
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
         flightpath, grid_t = flight.flightpath, flight.grid_t
+        n_spatial = flightpath.shape[1]
         
         # # compute convolution with delta function (not needed for pointwise)
         # convolution = self.compute_convolution(state=state)
         Du = state.get_derivative()
 
         # initialization
-        D_data_d_position = np.empty((grid_t.shape[0], 2))  # (time, (dx,dy))
+        D_data_d_position = np.empty((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
 
         for i in range(grid_t.shape[0]):
             # the FEniCS evaluation of the Du at a position unfortunately
@@ -85,6 +86,9 @@ class DetectorPointwise(Detector):
             else:
                 # state is time-independent
                 D_data_d_position[i, :] = Du(flightpath[i, :])
+
+        # todo: I don't think the dimensions work out here
+        #D_data_d_position = np.vstack([D_data_d_position[i, :] for i in range(grid_t.shape[0])])
 
         return D_data_d_position
 

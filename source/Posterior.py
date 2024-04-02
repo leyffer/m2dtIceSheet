@@ -339,7 +339,7 @@ class Posterior:
         dG = self.d_G_d_position
         if dG is None:
             # derivative of the parameter-to-observable map
-            dG = np.empty((self.n_timesteps, self.n_parameters, self.n_spatial))  # initialization
+            dG = np.empty((self.n_timesteps, self.n_parameters, self.n_spatial * self.n_timesteps))  # initialization
 
             for i in range(self.n_parameters):
                 # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
