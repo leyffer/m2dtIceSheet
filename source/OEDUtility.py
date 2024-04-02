@@ -13,20 +13,19 @@ class OEDUtility:
     - evaluate the utility of a given flight path design (A-, D-, and E)
     - compute the eigenvalues of the posterior covariance matrix for a given flight path design
     - evaluate the gradient of the utility function
-    """
 
-    # TODO: decide if we should outsource the different OED modes into subclasses
+    We have decided not to outsource each OED criterion into its own subclass, at least for now, so that the user can
+    easily switch and compare between criteria without having to juggle different objects. If, in the future, we
+    expand to more criteria (e.g., C-OED), then we might change this decision.
+    """
 
     def __init__(self, default_mode: Optional[str] = "D") -> None:
         """! initialization for OEDUtility class
 
-        @param inversion: inverse problem for which the OED utility shall be computed
+        @param default_mode: OED utility criterion (A, D, or E), E is only partially supported
         """
-
+        # remember which mode we are in per default
         self.default_mode = default_mode
-
-    # TODO: specifiy all function call names that this class needs to have to interact with the other classes
-    # TODO: from the old source files, copy over all computations
 
     def eval_utility(self, posterior: Posterior, mode: Optional[str] = None):
         """
@@ -35,8 +34,8 @@ class OEDUtility:
         posterior covariance matrix.
 
         @param posterior: posterior distribution for which the utility shall be computed
-        @param mode: string: "A", "D", "D-inverse", "E"
-        @return:
+        @param mode: string: "A", "D", "D-inverse", "E", defaults to self.default_mode if not provided
+        @return: utility function evaluation of the posterior, float
         """
         # use default if no mode was provided
         if mode is None:
@@ -59,19 +58,20 @@ class OEDUtility:
 
     def eval_utility_A(self, posterior: Posterior):
         """
-        A-OED utility criterion: trace of the posterior covariance matrix.
+        A-OED utility criterion: trace of the posterior covariance matrix. Computed as the sum of the posterior's
+        eigenvalues
 
         @param posterior:
-        @return:
+        @return: float
         """
         return sum(posterior.eigvals)
 
     def eval_utility_D(self, posterior: Posterior):
         """
-        A-OED utility criterion: determinant of the posterior covariance matrix.
+        D-OED utility criterion: determinant of the posterior covariance matrix.
 
         @param posterior:
-        @return:
+        @return: float
         """
         # TODO: should we compute the inverse or the log instead? The values get very big
         return np.prod(posterior.eigvals)
@@ -81,7 +81,7 @@ class OEDUtility:
         determinant of the inverse posterior covariance matrix.
 
         @param posterior:
-        @return:
+        @return: float
         """
         # TODO: I think we have 1/ twice now in all the computations, optimize it out
         return np.prod(1 / posterior.eigvals)
@@ -90,16 +90,18 @@ class OEDUtility:
         """
         E-OED criterion: maximum eigenvalue of posterior covariance matrix
         @param posterior:
-        @return:
+        @return: float
         """
         return np.max(posterior.eigvals)
 
     def d_utility_d_control(self, posterior: Posterior, mode=None):
         """
         computes the derivative of the OED-utility function for the given posterior w.r.t. the control parameters.
-        @param posterior:
-        @param mode:
-        @return: string: "A", "D", "D-inverse", "E"
+        @param posterior: Posterior
+        @param mode: string: "A", "D", "D-inverse", "E"
+        @return:
+
+        # TODO: we also need to support d_utility_d_position
         """
 
         # use default mode if none is provided
@@ -183,8 +185,8 @@ class OEDUtility:
             yolo = det * la.solve(posterior.covar.T, der[i])
             # TODO: just apply inverse posterior covariance matrix (or its action)
             # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
-            # I don't think the posterior covariance matrix can become singular unless the prior or the noise covariance
-            # matrices are degenerate. We might want to catch that case though.
+            #  I don't think the posterior covariance matrix can become singular unless the prior or the noise covariance
+            #  matrices are degenerate. We might want to catch that case though.
 
             # finish computing the gradient
             gradient[i] = np.trace(yolo)

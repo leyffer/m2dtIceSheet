@@ -35,6 +35,8 @@ nproc = comm.Get_size()
 
 
 class FOM(FullOrderModel):
+    n_spatial = 2
+
     def __init__(
         self,
         meshDim: int = 50,

@@ -33,8 +33,12 @@ class Posterior:
     invNoiseCovG: Optional[np.ndarray] = None
 
     # derivative of the inverse posterior covariance matrix w.r.t. the control
-    covar_inv_derivative: Optional[np.ndarray] = None
+    d_invCov_d_control: Optional[np.ndarray] = None
+    d_invCov_d_position: Optional[np.ndarray] = None
     # TODO: these variable names are HORRIBLE!
+
+    d_G_d_control = None
+    d_G_d_position = None
 
     def __init__(
         self, inversion: InverseProblem, flight : "Flight", data: np.ndarray, **kwargs
@@ -59,40 +63,17 @@ class Posterior:
         self.drone = inversion.drone  # how the measurements are taken
         self.prior = inversion.fom
         self.n_parameters = self.prior.n_parameters
+        self.n_spatial = self.inversion.fom.n_spatial
 
         # information about the flight:
         self.flight = flight
         self.alpha = flight.alpha
         self.n_controls = self.alpha.shape[0]
         self.grid_t = flight.grid_t
-
-        # # check if the time discretization is known
-        # self.grid_t = kwargs.get("grid_t", None)
-
-        # if self.grid_t is None:
-        #     # flightpath has to be computed based on drone's default settings
-        #     self.flightpath, self.grid_t = self.drone.get_trajectory(alpha=alpha)
-
-        # else:
-        #     # check if flightpath is known already
-        #     self.flightpath = kwargs.get("flightpath", None)
-
-        #     if self.flightpath is None:
-        #         # compute flightpath for the provided time discretization
-        #         self.flightpath, new_grid_t = self.drone.get_trajectory(
-        #             alpha=alpha, grid_t=self.grid_t
-        #         )
-
-        #         # sanity check:
-        #         if (self.grid_t != new_grid_t).any():
-        #             raise RuntimeError(
-        #                 "In Posterior.__init__: time discretization was changed"
-        #             )
-
-        self.K = self.grid_t.shape[0]  # number of time steps
+        self.n_timesteps = self.grid_t.shape[0]  # number of time steps
 
         # information about the posterior covariance
-        self.para2obs = self.para2obs
+        #self.para2obs = self.para2obs
 
         # information about the posterior mean
         self.data = data
@@ -145,7 +126,7 @@ class Posterior:
 
         # initialization for parameters to observable map
         # ith column stores measurements for ith basis function
-        G = np.empty((self.K, self.prior.n_parameters))
+        G = np.empty((self.n_timesteps, self.prior.n_parameters))
 
         states = self.inversion.get_states()  # basis states
 
@@ -296,13 +277,14 @@ class Posterior:
 
         @return: list containing the matrix derivative of self.covar_inv w.r.t. each control parameter
         """
+        # TODO: check overlap with d_invPostdoc_d_position
 
-        if self.covar_inv_derivative is not None:
+        if self.d_invCov_d_control is not None:
             # avoid re-computation
-            return self.covar_inv_derivative
+            return self.d_invCov_d_control
 
         # derivative of the parameter-to-observable map
-        dG = np.empty((self.K, self.n_parameters, self.n_controls))  # initialization
+        dG = np.empty((self.n_timesteps, self.n_parameters, self.n_controls))  # initialization
 
         for i in range(self.n_parameters):
             # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
@@ -311,10 +293,10 @@ class Posterior:
                 state=self.inversion.states[i],
             )
 
-        self.dG = dG  # save for future use, e.g., testing
+        self.d_G_d_control = dG  # save for future use, e.g., testing
 
         # apply chain rule
-        self.covar_inv_derivative = np.array(
+        self.d_invCov_d_control = np.array(
             [
                 dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
                 for i in range(self.n_controls)
@@ -324,18 +306,73 @@ class Posterior:
         # TODO: this list is very inefficient. There's probably a smarter way using tensor multiplications
 
         # sanity check:
-        if len(self.covar_inv_derivative[0].shape) == 0:
+        if len(self.d_invCov_d_control[0].shape) == 0:
             # d_invPostCov_d_speed = np.array(np.array([d_invPostCov_d_speed]))
 
             # instead of casting into the correct format we raise an error, because at this point I expect the code
             # to be optimized enough that everything gets the correct shape just from being initialized correctly
             raise RuntimeError(
                 "invalid shape = {} for d_invPostCov_d_speed".format(
-                    self.covar_inv_derivative[0].shape
+                    self.d_invCov_d_control[0].shape
                 )
             )
 
-        return self.covar_inv_derivative
+        return self.d_invCov_d_control
+
+    def d_invPostCov_d_position(self):
+        """
+        computes the matrix derivative of the inverse posterior covariance
+        matrix with respect to each control parameter (returned as a list). The
+        matrix derivative is computed explicitly, which is likely inefficient
+        and can be optimized out. In the long term, this function is therefore
+        for testing purposes only, especially in case of high-dimensional
+        parameter spaces.
+
+        @return: list containing the matrix derivative of self.covar_inv w.r.t. each control parameter
+        """
+        # TODO: the dimensions don't work out here yet!
+
+        if self.d_invCov_d_position is not None:
+            # avoid re-computation
+            return self.d_invCov_d_position
+
+        dG = self.d_G_d_position
+        if dG is None:
+            # derivative of the parameter-to-observable map
+            dG = np.empty((self.n_timesteps, self.n_parameters, self.n_spatial))  # initialization
+
+            for i in range(self.n_parameters):
+                # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
+                dG[:, i, :] = self.drone.d_measurement_d_position(
+                    flight=self.flight,
+                    state=self.inversion.states[i],
+                )
+            # save for future use, e.g., testing
+            self.d_G_d_position = dG
+
+        # apply chain rule
+        self.d_invCov_d_position = np.array(
+            [
+                dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
+                for i in range(self.n_spatial)
+            ]
+        )
+
+        # TODO: this list is very inefficient. There's probably a smarter way using tensor multiplications
+
+        # sanity check:
+        if len(self.d_invCov_d_position[0].shape) == 0:
+            # d_invPostCov_d_speed = np.array(np.array([d_invPostCov_d_speed]))
+
+            # instead of casting into the correct format we raise an error, because at this point I expect the code
+            # to be optimized enough that everything gets the correct shape just from being initialized correctly
+            raise RuntimeError(
+                "invalid shape = {} for d_invPostCov_d_position".format(
+                    self.d_invCov_d_position[0].shape
+                )
+            )
+
+        return self.d_invCov_d_control
 
     def d_PostCov_d_control(self):
         """
@@ -357,3 +394,28 @@ class Posterior:
         return [
             -PostCov @ covar_inv_derivative[i] @ PostCov for i in range(self.n_controls)
         ]
+
+    def d_PostCov_d_position(self):
+        """
+        computes the matrix derivative of the posterior covariance matrix with
+        respect to the position at each time step (returned as a list). The matrix
+        derivative is computed explicitly, which is likely inefficient and can
+        be optimized out. In the long term, this function is therefore for
+        testing purposes only, especially in case of high-dimensional parameter
+        spaces.
+
+        Note: Since the list has <number of time steps> many entries, computing all
+        of these derivatives can be expensive. In the future we should look at
+        optimizing these calls, or maybe some sort of approximation.
+
+        @return: list containing the matrix derivative of self.covar w.r.t. each
+            control parameter
+        """
+        # get the posterior covariance matrix and its derivative
+        PostCov = self.compute_covariance()
+        covar_inv_derivative = self.d_invPostCov_d_position()
+
+        # apply chain rule (matrix form) to get the derivative (be careful about the order!)
+        return [-PostCov @ covar_inv_derivative[i] @ PostCov for i in range(self.n_timesteps)]
+
+
