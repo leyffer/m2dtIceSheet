@@ -216,6 +216,42 @@ class DetectorGaussian(Detector):
 
         return data
 
+    def d_measurement_d_position(self, flight, state, navigation):
+        """
+        derivative of the measurement function for a given flightpath in position.
+        The derivative is the gradient of the (convoluted) state along the flightpath. After the convolution field is computed (and saved),
+        we can use FEniCS to get the derivative.
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @param state:
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
+        """
+        flightpath, grid_t = flight.flightpath, flight.grid_t
+        
+        # compute convolution with gaussian
+        convolution = self.compute_convolution(state=state)
+        Du = convolution.get_derivative()
+        
+        # initialization
+        D_data_d_position = np.empty((grid_t.shape[0], 2))  # (time, (dx,dy))
+
+        for i in range(grid_t.shape[0]):
+            # the FEniCS evaluation of the Du at a position unfortunately doesn't work with multiple positions
+            # that's why we can't get rid of this loop
+
+            # apply chain rule
+            if state.bool_is_transient:
+                # todo: extend to transient measurements
+                raise NotImplementedError(
+                    "In MyDronePointEval.d_measurement_d_position: still need to bring over code for transient measurements")
+            else:
+                # state is time-independent
+                D_data_d_position[i, :] = Du(flightpath[i, :])
+
+        return D_data_d_position
+
     def d_measurement_d_control(self, flight, state, navigation):
         """
         derivative of the measurement function for a given flightpath in control direction alpha.
@@ -226,7 +262,7 @@ class DetectorGaussian(Detector):
         @param flightpath:
         @param grid_t:
         @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
         alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
         

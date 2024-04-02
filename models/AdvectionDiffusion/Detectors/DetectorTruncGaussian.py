@@ -100,7 +100,7 @@ class DetectorTruncGaussian(Detector):
             if sum(inside) == inside.shape[0]:
                 # use reference integral value (save some compute time)
                 val_integral = val_integral_ref
-                # in this case, we know that the circle didn't overlap with the edgess of the domain
+                # in this case, we know that the circle didn't overlap with the edges of the domain
                 # so we know that the integral is just the one we computed at the reference
             else:
                 # the circle overlapped with the edges of the domain
@@ -112,6 +112,95 @@ class DetectorTruncGaussian(Detector):
             data[k] = val / val_integral
 
         return data
+
+    def d_measurement_d_position(self, flight, state, navigation):
+        """
+        TODO - lots of overlap with this and the other derivative with respect to controls
+        TODO - Update docstring
+
+        derivative of the measurement function for a given flightpath in position
+        The derivative can be computed via the chain rule. For computing the derivative of the integral over the
+        circle, we proceed similar as in self.measure, but project the spatial derivative of the state onto the
+        reference mesh. Ideally, in the future, we do both within the one function to save on some iterations.
+
+        Note:
+        This function throws an error when the circle around the drone extends beyond the domain Omega. This is because
+        in this case, the measurements are only evaluating the part of the circle within Omega, and the integral is
+        also only normalized w.r.t. this subsection. For the derivative, we then need to also compute hte derivative of
+        this section. It's doable, but very problem dependent (unless we approximate it numerically). Therefore, it's
+        not implemented yet.
+
+        # todo: already compute the derivative as a part of self.measure
+        # todo: accept that the circle might extend beyond Omega and approximate the derivative in this case
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @param state:
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
+        """
+        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
+        
+        # parts of the chain rule (only compute once)
+        grad_p = flight.d_position_d_control()   # derivative of position
+        # todo: optimize this computation such that we don't repeat it as often
+        Du = state.get_derivative()  # spatial derivative of the state
+
+        # initialization
+        n_steps = flightpath.shape[0]
+        D_data_d_position = np.empty((n_steps, 2))  # (time, (dx, dy))
+
+        # define subdomain
+        ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=np.min([self.radius, 4 * self.sigma])),
+                                        self.meshDim)
+        V = dl.FunctionSpace(ref_domain, 'P', 1)
+        weight = f'exp(-0.5 * ((x[0]-0)*((x[0]-0)) + (x[1]-0)*(x[1]-0)) / {self.sigma ** 2})'
+        weight_fct = dl.Expression(weight, degree=1)
+        val_integral_ref = dl.assemble(weight_fct * dl.dx(domain=ref_domain))
+
+        for k in range(n_steps):
+
+            coordinates = ref_domain.coordinates()
+            vals = np.zeros((coordinates.shape[0], 2))  # (time, (dx,dy))
+            inside = np.ones((coordinates.shape[0],))
+
+            for i in range(coordinates.shape[0]):
+                try:
+                    # take measurement if inside the domain
+                    if state.bool_is_transient:
+                        vals[i, :] = Du[k](flightpath[k, :] + coordinates[i, :])
+                    else:
+                        vals[i, :] = Du(flightpath[k, :] + coordinates[i, :])
+                except(RuntimeError):
+                    # mark point as outside the domain
+                    inside[i] = 0
+                    # while not implemented, interrupt here already to know early
+                    raise NotImplementedError(
+                        "In MyDroneTruncGaussianEval.d_measurement_d_position: encountered overlap with edge of domain.")
+
+            # integrate over reference domain
+            val = np.zeros((vals.shape[1],))
+            for i in range(val.shape[0]):
+                u = dl.Function(V)
+                u.vector().vec().array = vals[:, i]
+                val[i] = dl.assemble(u * weight_fct * dl.dx(domain=ref_domain))
+                # todo: this loop is very inefficient, there's likely a smarter way to integrate each element of a vector
+
+            #  compute re-weighting
+            if sum(inside) == inside.shape[0]:
+                # use reference integral value (save some compute time)
+                val_integral = val_integral_ref
+                # in this case, we know that the circle didn't overlap with the edges of the domain
+                # so we know that the integral is just the one we computed at the reference
+            else:
+                # the circle overlapped with the edges of the domain
+                # for computing the weight function, we need to exclude those points
+                raise NotImplementedError(
+                    "In MyDroneTruncGaussianEval.d_measurement_d_position: encountered overlap with edge of domain.")
+
+            D_data_d_position[k, :] = val / val_integral
+
+        return D_data_d_position
 
     def d_measurement_d_control(self, flight, state, navigation):
         """
@@ -136,7 +225,7 @@ class DetectorTruncGaussian(Detector):
         @param flightpath:
         @param grid_t:
         @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
         alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
         
@@ -189,7 +278,7 @@ class DetectorTruncGaussian(Detector):
             if sum(inside) == inside.shape[0]:
                 # use reference integral value (save some compute time)
                 val_integral = val_integral_ref
-                # in this case, we know that the circle didn't overlap with the edgess of the domain
+                # in this case, we know that the circle didn't overlap with the edges of the domain
                 # so we know that the integral is just the one we computed at the reference
             else:
                 # the circle overlapped with the edges of the domain

@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import warnings
 
 sys.path.insert(0, "../source/")
 
@@ -26,6 +27,11 @@ class DetectorPointwise(Detector):
         """
         super().__init__(grid_t=grid_t, **kwargs)
 
+    def compute_convolution(self, state):
+        """Pointwise measurements are taken from the un-convolved state."""
+        warnings.warn("For pointwise measurements, measurements are taken from the un-convolved state.")
+        return state
+
     def measure(self, flight, state) -> np.ndarray:
         """! Get measurements along the flight path at the drone location
 
@@ -46,18 +52,54 @@ class DetectorPointwise(Detector):
         data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
         return data
 
+    def d_measurement_d_position(self, flight, state, navigation):
+        """
+        derivative of the measurement function for a given flightpath in position.
+        The derivative is the gradient of the  state along the flightpath. We can use FEniCS to get the derivative.
+
+        @param alpha:
+        @param flightpath:
+        @param grid_t:
+        @param state:
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
+        """
+        flightpath, grid_t = flight.flightpath, flight.grid_t
+        
+        # # compute convolution with delta function (not needed for pointwise)
+        # convolution = self.compute_convolution(state=state)
+        Du = state.get_derivative()
+
+        # initialization
+        D_data_d_position = np.empty((grid_t.shape[0], 2))  # (time, (dx,dy))
+
+        for i in range(grid_t.shape[0]):
+            # the FEniCS evaluation of the Du at a position unfortunately
+            # doesn't work with multiple positions that's why we can't get rid
+            # of this loop
+
+            # apply chain rule
+            if state.bool_is_transient:
+                # todo: extend to transient measurements
+                raise NotImplementedError(
+                    "In MyDronePointEval.d_measurement_d_position: still need to bring over code for transient measurements")
+            else:
+                # state is time-independent
+                D_data_d_position[i, :] = Du(flightpath[i, :])
+
+        return D_data_d_position
+
     def d_measurement_d_control(self, flight, state, navigation):
         """
         derivative of the measurement function for a given flightpath in control direction alpha
 
-        The derivative is computed via the chain rule. We use FEniCS functionaly to get the spatial derivative of the
+        The derivative is computed via the chain rule. We use FEniCS functionally to get the spatial derivative of the
         state and then evaluate it in a point-wise manner.
 
         @param alpha:
         @param flightpath:
         @param grid_t:
         @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameterss)
+        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
         
         alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
