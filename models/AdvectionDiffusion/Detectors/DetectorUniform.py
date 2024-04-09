@@ -98,7 +98,7 @@ class DetectorUniform(Detector):
 
         return data
 
-    def d_measurement_d_position(self, flight, state, navigation):
+    def d_measurement_d_position(self, flight, state):
         """
         TODO - update docstring
 
@@ -117,14 +117,22 @@ class DetectorUniform(Detector):
         # todo: already compute the derivative as a part of self.measure
         # todo: accept that the circle might extend beyond Omega and approximate the derivative in this case
 
-        @param alpha:
-        @param flightpath:
-        @param grid_t:
-        @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
+        Since the position is determined by <spatial dimension>*<number of time steps> parameters, and a measurement
+        has <number of time steps> entries, the return of this function has to have shape
+
+        $$ <number of time steps> \times <spatial dimension>*<number of time steps> $$
+
+        The columns should be ordered such that the first <number of time steps> columns are for the first spatial
+        dimension (x direction), the next <number of time steps> columns for the second (y-direction), etc.
+
+        @param flight: the flight parameterization of the drone. Contains, in particular, the flightpath `flightpath`,
+        the flight controls `alpha`, and the time discretization `grid_t`, Flight object
+        @param state  The state which the drone shall measure, State object
+        @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
         
         alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
+        n_spatial = flightpath.shape[1]
         
         # parts of the chain rule (only compute once)
         grad_p = flight.d_position_d_control()  # derivative of position
@@ -174,4 +182,6 @@ class DetectorUniform(Detector):
 
             D_data_d_position[k, :] = val / val_integral
 
+        # bring into correct shape format
+        D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
         return D_data_d_position

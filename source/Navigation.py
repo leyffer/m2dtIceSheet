@@ -16,7 +16,11 @@ class Navigation:
     file). The descriptions below tell the user which functions have to be implemented for compatibility with the rest
     of the code: Search for "NotImplementedError"
     """
+    # properties to be defined in user child class
+    n_spatial = None  # spatial dimension, likely n_spatial = 2 or 3
+    n_controls = None  # number of control dimensions, can be fixed or dependent on number of time steps
 
+    # properties set at runtime
     drone = None
 
     def __init__(self, grid_t : np.ndarray, *args, **kwargs):
@@ -43,6 +47,7 @@ class Navigation:
 
         # time discretization (this one will be ued for all flights)
         self.grid_t = grid_t
+        self.n_timesteps = grid_t.shape[0]
 
         # check if the user wants to allow or disallow the use of the same navigation system in multiple drones
         self.bool_allow_multiple_attachments = kwargs.get("bool_allow_multiple_attachments", True)

@@ -88,18 +88,14 @@ class Drone:
         """
         # derivative of the measurement with respect to the position
         dmdp = self.d_measurement_d_position(flight=flight, state=state)
+        # shape <n_timesteps> \times <n_spatial * n_timesteps>
 
         # derivative of the position with respect to the control
         dpdc = flight.d_position_d_control()
+        # shape <n_spatial * n_timesteps> \times <n_controls>
 
-        # chain rule
-        dmdc = np.zeros((dmdp.shape[0], dpdc.shape[0]))
-        for k in range(dmdp.shape[0]):
-            dmdc[k, :] = dmdp[k, :] @ dpdc[:, :, k].T
-            # TODO: the transpose here is increadibly error prone. We should change the order of computations such that
-            #  we can get rid of it.
-        # TODO: This loop slows everything down. We should change the structure of dpdc such that we can compute dmdc
-        #  as a single tensor multiplication
+        # apply chain rule
+        dmdc = dmdp @ dpdc
 
         return dmdc
     

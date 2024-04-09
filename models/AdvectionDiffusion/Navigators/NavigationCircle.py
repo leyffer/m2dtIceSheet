@@ -13,8 +13,13 @@ class NavigationCircle(Navigation):
     def __init__(self, 
         center: np.ndarray = np.array([0.75 / 2, 0.55 / 2]),
         grid_t: np.ndarray = np.arange(0, 4 + 1e-2, 1e-2),):
-        
-        self.center = center
+
+        # individual settings for this child of Navigation
+        self.center = center  # the center around which the drone is flying
+        self.n_spatial = 2  # we are in 2D space
+        self.n_controls = 2  # radius and speed
+
+        # call parent class to initialize the rest
         super().__init__(grid_t=grid_t)
         
     def get_trajectory(
@@ -36,6 +41,11 @@ class NavigationCircle(Navigation):
         computes the derivative of the flightpath with respect to the control parameters in alpha.
         This class is problem specific and needs to be written by the user.
 
+        Since the position is determined by <spatial dimension>*<number of time steps> parameters, and there are
+        <number of controls> control parameters, the return of this function has to have shape
+
+        $$ <spatial dimension>*<number of time steps> \times <number of controls> $$
+
         @param alpha:
         @param flightpath:
         @param grid_t:
@@ -43,8 +53,17 @@ class NavigationCircle(Navigation):
         """
         grid_t = flight.grid_t
         circle = CirclePath(alpha=flight.alpha, center=self.center, grid_t=grid_t)
-        
+
+        # get the derivatives for each control parameter
         d_speed = circle.d_position_d_velocity(grid_t).T
         d_radius = circle.d_position_d_radius(grid_t).T
 
-        return np.array([d_radius, d_speed])
+        # reshape such that derivatives in x direction come first, then derivatives in y direction
+        d_speed = np.reshape(d_speed, (self.n_timesteps * self.n_spatial,))
+        d_radius = np.reshape(d_radius, (self.n_timesteps * self.n_spatial,))
+
+        # stack everything next to each other
+        #return np.vstack([d_speed, d_radius]).T
+
+        return np.vstack([d_radius, d_speed]).T
+

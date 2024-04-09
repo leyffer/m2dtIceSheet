@@ -54,14 +54,29 @@ class DetectorPointwise(Detector):
 
     def d_measurement_d_position(self, flight, state):
         """
-        derivative of the measurement function for a given flightpath in position.
-        The derivative is the gradient of the  state along the flightpath. We can use FEniCS to get the derivative.
+        derivative of the measurement function for a given flight in direction of the flight's positions flightpath.
+        For measurements of the form
+        $$
+        d(t; p) = \int_{\Omega} \Phi(x, p(t)) u(x,t) dx
+        $$
+        this function returns
+        $$
+        \frac{\partial d(t;, p)}{\partial p}
+        = \int_{\Omega} D_y \Phi(x, y=p(t)) u(x, t) dx.
+        $$
 
-        @param alpha:
-        @param flightpath:
-        @param grid_t:
-        @param state:
-        @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
+        Since the position is determined by <spatial dimension>*<number of time steps> parameters, and a measurement
+        has <number of time steps> entries, the return of this function has to have shape
+
+        $$ <number of time steps> \times <spatial dimension>*<number of time steps> $$
+
+        The columns should be ordered such that the first <number of time steps> columns are for the first spatial
+        dimension (x direction), the next <number of time steps> columns for the second (y-direction), etc.
+
+        @param flight: the flight parameterization of the drone. Contains, in particular, the flightpath `flightpath`,
+        the flight controls `alpha`, and the time discretization `grid_t`, Flight object
+        @param state  The state which the drone shall measure, State object
+        @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
         flightpath, grid_t = flight.flightpath, flight.grid_t
         n_spatial = flightpath.shape[1]
@@ -87,8 +102,7 @@ class DetectorPointwise(Detector):
                 # state is time-independent
                 D_data_d_position[i, :] = Du(flightpath[i, :])
 
-        # todo: I don't think the dimensions work out here
-        #D_data_d_position = np.vstack([D_data_d_position[i, :] for i in range(grid_t.shape[0])])
-
+        # stack next to each other horizontally
+        D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
         return D_data_d_position
 

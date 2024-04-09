@@ -354,7 +354,7 @@ class Posterior:
         self.d_invCov_d_position = np.array(
             [
                 dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
-                for i in range(self.n_spatial)
+                for i in range(self.n_spatial * self.n_timesteps)
             ]
         )
 
@@ -372,7 +372,7 @@ class Posterior:
                 )
             )
 
-        return self.d_invCov_d_control
+        return self.d_invCov_d_position
 
     def d_PostCov_d_control(self):
         """
@@ -416,6 +416,6 @@ class Posterior:
         covar_inv_derivative = self.d_invPostCov_d_position()
 
         # apply chain rule (matrix form) to get the derivative (be careful about the order!)
-        return [-PostCov @ covar_inv_derivative[i] @ PostCov for i in range(self.n_timesteps)]
+        return [-PostCov @ covar_inv_derivative[i] @ PostCov for i in range(self.n_spatial * self.n_timesteps)]
 
 
