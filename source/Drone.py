@@ -2,19 +2,22 @@ import numpy as np
 from typing import Optional
 from State import State
 from Flight import Flight
+# from Navigation import Navigation
+# from Detector import Detector
 
 
 class Drone:
     """! This is a class for accessing the "public" functionalities navigating and measuring
 
     The drone class uses the navigation system (class Navigation) and the detector measuring system (class Detector) to
-    take measurements of states on the domain $\Omega$. Its main functionality is to inferface between the two systems
+    take measurements of states on the domain $\Omega$. Its main functionality is to interface between the two systems
     and the outside world to ensure that everything remains in their place. Ideally, the user does not need to alter
     this class in any way, but only passes an instance of "Navigation" and "Detector" -- both are problem specific.
     """
 
     def __init__(self, navigation: "Navigation", detector: "Detector"):
         """! Initialization for the drone class
+
         In most cases, the drone is already defined by the navigation system and the detector, nothing else needs to
         be passed. The navigation system and the detector will both be told that they have been equipped by this drone
 
@@ -28,9 +31,11 @@ class Drone:
         # tell the detector and the navigation system that they've just been equipped
         self.detector.attach_to_drone(self)
         self.navigation.attach_to_drone(self)
-        # this gives the two systems the possiblilty to see beyond their own scope (caution advised), and can ensure
-        # that any single navigation / detector system is only equipped by one drone at a time if necessary
-        # (see setup parameter bool_allow_multiple_attachments in Detector and Navigation)
+        # this gives the two systems the possibility to see beyond their own
+        # scope (caution advised), and can ensure that any single navigation /
+        # detector system is only equipped by one drone at a time if necessary
+        # (see setup parameter bool_allow_multiple_attachments in Detector and
+        # Navigation)
 
     def get_position(self, t: float | np.ndarray, flight : "Flight"):
         """! Get the position of the drone given the time and flying parameters
@@ -38,7 +43,7 @@ class Drone:
         @param t  The time at which to evaluate the position of the drone
         @param flight  the
         """
-        print("In Drone.get_position: Should call flight.d_position_d_control() instead")
+        print("In Drone.get_position: Should call flight.d_position_d_control instead")
         return flight.get_position(t)
 
     def get_trajectory(
@@ -49,7 +54,7 @@ class Drone:
         @param grid_t the time grid on which the drone position shall be computed
         @return  Tuple of (position over flight path, corresponding time for each position)
         """
-        raise DeprecationWarning("Drone.get_trajectory is depricated: should get flight and call flight.get_trajectory instead")
+        raise DeprecationWarning("Drone.get_trajectory is deprecated: should get flight and call flight.get_trajectory instead")
         # return self.navigation.get_trajectory(alpha, grid_t)
 
     def measure(
@@ -73,8 +78,8 @@ class Drone:
         @param grid_t:
         @return:
         """
-        print("In drone.d_position_d_control: Should call flight.d_position_d_control() instead")
-        return flight.d_position_d_control()
+        print("In drone.d_position_d_control: Should call flight.d_position_d_control instead")
+        return flight.d_position_d_control
 
     def d_measurement_d_control(self, flight : "Flight", state):
         """
@@ -87,17 +92,17 @@ class Drone:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
         # derivative of the measurement with respect to the position
-        dmdp = self.d_measurement_d_position(flight=flight, state=state)
+        d_meas_d_pos = self.d_measurement_d_position(flight=flight, state=state)
         # shape <n_timesteps> \times <n_spatial * n_timesteps>
 
         # derivative of the position with respect to the control
-        dpdc = flight.d_position_d_control()
+        d_pos_d_cont = flight.d_position_d_control
         # shape <n_spatial * n_timesteps> \times <n_controls>
 
         # apply chain rule
-        dmdc = dmdp @ dpdc
+        d_meas_d_control = d_meas_d_pos @ d_pos_d_cont
 
-        return dmdc
+        return d_meas_d_control
     
     def d_measurement_d_position(self, flight : "Flight", state):
         """
@@ -119,8 +124,8 @@ class Drone:
         """
         return self.detector.d_measurement_d_position(flight, state)
 
-    def plan_flight(self, alpha) -> Flight:
+    def plan_flight(self, alpha, grid_t:np.ndarray = None) -> Flight:
         """
         creates a Flight object for a given control parameter alpha
         """
-        return Flight(alpha=alpha, navigation=self.navigation)
+        return Flight(alpha=alpha, navigation=self.navigation, grid_t=grid_t)

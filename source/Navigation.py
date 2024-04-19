@@ -45,7 +45,7 @@ class Navigation:
         order, which is why, per default, we are enabling multiple attachments.
         """
 
-        # time discretization (this one will be ued for all flights)
+        # time discretization (this one will be used for all flights)
         self.grid_t = grid_t
         self.n_timesteps = grid_t.shape[0]
 
@@ -61,7 +61,7 @@ class Navigation:
         if self.drone is not None and not self.bool_allow_multiple_attachments:
             raise RuntimeWarning("Navigation system was attached to a new drone. Was this intentional? If attaching "
                                  "the navigation system to several drones, make sure they'll not accidentally change "
-                                 "each other (make an appropriate copy or make sure they have no changable "
+                                 "each other (make an appropriate copy or make sure they have no changeable "
                                  "parameters)")
         self.drone = drone
 
@@ -74,7 +74,7 @@ class Navigation:
         @return  Tuple of (position over flight path, corresponding time for each position), grid_t
         """
         raise NotImplementedError(
-            "Drone.get_trajectory: Needs to be implemented in subclass"
+            "Navigation.get_trajectory: Needs to be implemented in subclass"
         )
 
     def d_position_d_control(self, flight : Flight):
@@ -88,5 +88,5 @@ class Navigation:
         @return:
         """
         raise NotImplementedError(
-            "Drone.d_position_d_control: Needs to be implemented in subclass"
+            "Navigation.d_position_d_control: Needs to be implemented in subclass"
         )

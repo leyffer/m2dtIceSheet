@@ -1,5 +1,8 @@
 import numpy as np
 
+# from Drone import Drone
+# from Flight import Flight
+# from State import State
 
 class Detector:
     """
@@ -26,6 +29,7 @@ class Detector:
     file). The descriptions below tell the user which functions have to be implemented for compatibility with the rest
     of the code: Search for "NotImplementedError"
     """
+
     drone = None
     # The detector will always be attached to a Drone object.
 
@@ -45,9 +49,11 @@ class Detector:
         saves time on debugging. It will, however, make code testing harder within notebooks when running blocks out of
         order, which is why, per default, we are enabling multiple attachments.
         """
-        self.bool_allow_multiple_attachments = kwargs.get("bool_allow_multiple_attachments", True)
+        self.bool_allow_multiple_attachments = kwargs.get(
+            "bool_allow_multiple_attachments", True
+        )
 
-    def attach_to_drone(self, drone : "Drone"):
+    def attach_to_drone(self, drone: "Drone"):
         """
         The drone tells the detector that it was just equipped. The detector has now the ability to communicate to the
         drone and from there interact with its environment. However, this ability should be used with care - according
@@ -58,24 +64,22 @@ class Detector:
         we don't expect the detector to actually need to communicate to the drone or beyond.
         """
         if self.drone is not None and not self.bool_allow_multiple_attachments:
-            raise RuntimeWarning("Detector system was attached to a new drone. Was this intentional? If attaching "
-                                 "the navigation system to several drones, make sure they'll not accidentally change "
-                                 "each other (make an appropriate copy or make sure they have no changable "
-                                 "parameters)")
+            raise RuntimeWarning(
+                "Detector system was attached to a new drone. Was this intentional? If attaching "
+                "the navigation system to several drones, make sure they'll not accidentally change "
+                "each other (make an appropriate copy or make sure they have no changeable "
+                "parameters)"
+            )
         self.drone = drone
 
-    def measure(
-        self,
-        flight : "Flight",
-        state: "State"
-    ) -> np.ndarray:
+    def measure(self, flight: "Flight", state: "State") -> np.ndarray:
         """! Method to take a measurement
 
         @param flight  the flight parameterization of the drone. Contains, in particular, the flightpath `flightpath`,
         the flight controls `alpha`, and the time discretization `grid_t`, Flight object
         @param state  The state which the drone shall measure, State object
         """
-        raise NotImplementedError("Drone.measure: Needs to be implemented in subclass")
+        raise NotImplementedError("Detector.measure: Needs to be implemented in subclass")
 
     def d_measurement_d_position(self, flight, state):
         """
@@ -104,5 +108,5 @@ class Detector:
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
         raise NotImplementedError(
-            "Drone.d_measurement_d_control: Needs to be implemented in subclass"
+            "Detector.d_measurement_d_control: Needs to be implemented in subclass"
         )

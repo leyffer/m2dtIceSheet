@@ -9,8 +9,10 @@ Currently a 2D path.
 TODO - ensure consistent behavior when dealing with single time values (instead
 of arrays of time values)
 """
+
 from __future__ import annotations
 import sys
+
 sys.path.insert(0, "../../../source/")
 
 import numpy as np
@@ -137,13 +139,3 @@ class Path(Navigation):
         return np.hstack(
             (np.cos(headings[:, np.newaxis]), np.sin(headings[:, np.newaxis]))
         )
-
-
-
-
-
-
-
-
-
-

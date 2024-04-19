@@ -49,7 +49,14 @@ class DetectorPointwise(Detector):
             # old code:
             # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
 
-        data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
+        data = np.zeros((flightpath.shape[0],))
+        for k in range(flightpath.shape[0]):
+            try:
+                data[k] = state.state(flightpath[k, :])
+            except RuntimeError:
+                warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
+                pass
+        # data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
         return data
 
     def d_measurement_d_position(self, flight, state):
@@ -86,7 +93,7 @@ class DetectorPointwise(Detector):
         Du = state.get_derivative()
 
         # initialization
-        D_data_d_position = np.empty((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
+        D_data_d_position = np.zeros((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
 
         for i in range(grid_t.shape[0]):
             # the FEniCS evaluation of the Du at a position unfortunately
@@ -100,7 +107,10 @@ class DetectorPointwise(Detector):
                     "In MyDronePointEval.d_measurement_d_position: still need to bring over code for transient measurements")
             else:
                 # state is time-independent
-                D_data_d_position[i, :] = Du(flightpath[i, :])
+                try:
+                    D_data_d_position[i, :] = Du(flightpath[i, :])
+                except RuntimeError:
+                    pass
 
         # stack next to each other horizontally
         D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
