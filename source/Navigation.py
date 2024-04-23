@@ -1,6 +1,10 @@
-import numpy as np
 from typing import Optional
+
+import numpy as np
+
+# from Drone import Drone
 from Flight import Flight
+
 
 class Navigation:
     """
@@ -16,6 +20,7 @@ class Navigation:
     file). The descriptions below tell the user which functions have to be implemented for compatibility with the rest
     of the code: Search for "NotImplementedError"
     """
+
     # properties to be defined in user child class
     n_spatial = None  # spatial dimension, likely n_spatial = 2 or 3
     n_controls = None  # number of control dimensions, can be fixed or dependent on number of time steps
@@ -23,7 +28,7 @@ class Navigation:
     # properties set at runtime
     drone = None
 
-    def __init__(self, grid_t : np.ndarray, *args, **kwargs):
+    def __init__(self, grid_t: np.ndarray, *args, **kwargs):
         """Initialization of the Navigation class
 
         When writing the child class specific for the application, remember to call super().__init__
@@ -50,19 +55,23 @@ class Navigation:
         self.n_timesteps = grid_t.shape[0]
 
         # check if the user wants to allow or disallow the use of the same navigation system in multiple drones
-        self.bool_allow_multiple_attachments = kwargs.get("bool_allow_multiple_attachments", True)
+        self.bool_allow_multiple_attachments = kwargs.get(
+            "bool_allow_multiple_attachments", True
+        )
 
-    def attach_to_drone(self, drone):
+    def attach_to_drone(self, drone: "Drone"):
         """
         The drone tells the navigation system that it was just equipped. The navigation system has now the ability to
         communicate to the drone and from there interact with its environment. However, this ability should be used with
         care, we expect that the navigation for most applications is stand-alone.
         """
         if self.drone is not None and not self.bool_allow_multiple_attachments:
-            raise RuntimeWarning("Navigation system was attached to a new drone. Was this intentional? If attaching "
-                                 "the navigation system to several drones, make sure they'll not accidentally change "
-                                 "each other (make an appropriate copy or make sure they have no changeable "
-                                 "parameters)")
+            raise RuntimeWarning(
+                "Navigation system was attached to a new drone. Was this intentional? If attaching "
+                "the navigation system to several drones, make sure they'll not accidentally change "
+                "each other (make an appropriate copy or make sure they have no changeable "
+                "parameters)"
+            )
         self.drone = drone
 
     def get_trajectory(
@@ -77,7 +86,7 @@ class Navigation:
             "Navigation.get_trajectory: Needs to be implemented in subclass"
         )
 
-    def d_position_d_control(self, flight : Flight):
+    def d_position_d_control(self, flight: Flight):
         """
         computes the derivative of the flightpath with respect to the control parameters in alpha.
         This class is problem specific and needs to be written by the user.

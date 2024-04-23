@@ -196,6 +196,7 @@ class InverseProblem:
         self,
         flight : Optional["Flight"] = None,
         alpha : Optional[np.ndarray] = None,
+        grid_t: Optional[np.ndarray] = None,
         data: Optional[np.ndarray] = None
     ):
         """
@@ -221,7 +222,7 @@ class InverseProblem:
             if alpha is None:
                 # if no control parameters are provided, something went wrong.
                 raise RuntimeError("neither a flight nor valid control parameters were provided")
-            flight = self.drone.plan_flight(alpha=alpha)
+            flight = self.drone.plan_flight(alpha=alpha, grid_t=grid_t)
 
         # initialize posterior
         posterior = Posterior(

@@ -1,13 +1,16 @@
 from __future__ import annotations
 import sys
+import warnings
 
 sys.path.insert(0, "../../../source/")
 
 import numpy as np
 from typing import Dict, Any, Optional, Literal
+
 # from scipy.interpolate import make_interp_spline
 
 from Navigation import Navigation
+
 
 class NavigationFreePath(Navigation):
     """
@@ -22,14 +25,20 @@ class NavigationFreePath(Navigation):
         grid_t: np.ndarray = np.arange(0, 4 + 1e-2, 1e-2),
         num_spatial_dimensions: int = 2,
     ):
+        """! Path defined by (x(t), y(t)) and t
+        
+        Args:
+        @param alpha: 
         """
-        Path defined by (x(t), y(t))
-        """
-        self.alpha = (
-            alpha  # Parameters, in this case, x y coordinates for some time grid
-        )
+        # Parameters, in this case, x y coordinates for some time grid
+        self.alpha = alpha
         self.grid_t = grid_t
         self.num_spatial_dimensions = num_spatial_dimensions
+
+        # pos = self._convert_alpha_to_position(alpha)
+        # if pos.shape[0] != grid_t.shape[0]:
+        #     warnings.warn("NavigationFreePath: time grid and positions do not agree, changing time grid to match")
+        #     self.grid_t = np.linspace(grid_t[0], grid_t[-1], pos.shape[0])
 
     def get_trajectory(
         self, alpha: np.ndarray = None, grid_t: Optional[np.ndarray] = None
@@ -57,4 +66,4 @@ class NavigationFreePath(Navigation):
         return position, grid_t
 
     def _convert_alpha_to_position(self, alpha: np.ndarray) -> np.ndarray:
-        return alpha.reshape((-1, alpha.shape[0]//self.num_spatial_dimensions)).T
+        return alpha.reshape((self.num_spatial_dimensions, alpha.shape[0] // self.num_spatial_dimensions)).T

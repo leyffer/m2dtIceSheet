@@ -5,6 +5,8 @@ import warnings
 sys.path.insert(0, "../source/")
 
 from Detector import Detector
+# from State import State
+# from Flight import Flight
 
 class DetectorPointwise(Detector):
     """
@@ -16,7 +18,7 @@ class DetectorPointwise(Detector):
     """
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, grid_t=None, **kwargs):
+    def __init__(self, grid_t:np.ndarray=None, **kwargs):
         """! Initializer for the drone class with point-wise measurements
 
         @param fom  Full-order-model (FOM) object. The drone takes
@@ -27,12 +29,12 @@ class DetectorPointwise(Detector):
         """
         super().__init__(grid_t=grid_t, **kwargs)
 
-    def compute_convolution(self, state):
+    def compute_convolution(self, state: "State"):
         """Pointwise measurements are taken from the un-convolved state."""
         warnings.warn("For pointwise measurements, measurements are taken from the un-convolved state.")
         return state
 
-    def measure(self, flight, state) -> np.ndarray:
+    def measure(self, flight: "Flight", state: "State") -> np.ndarray:
         """! Get measurements along the flight path at the drone location
 
         @param flightpath  The trajectory of the drone
@@ -59,7 +61,7 @@ class DetectorPointwise(Detector):
         # data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
         return data
 
-    def d_measurement_d_position(self, flight, state):
+    def d_measurement_d_position(self, flight: "Flight", state:"State"):
         """
         derivative of the measurement function for a given flight in direction of the flight's positions flightpath.
         For measurements of the form
@@ -104,12 +106,13 @@ class DetectorPointwise(Detector):
             if state.bool_is_transient:
                 # todo: extend to transient measurements
                 raise NotImplementedError(
-                    "In MyDronePointEval.d_measurement_d_position: still need to bring over code for transient measurements")
+                    "In DetectorPointwise.d_measurement_d_position: still need to bring over code for transient measurements")
             else:
                 # state is time-independent
                 try:
                     D_data_d_position[i, :] = Du(flightpath[i, :])
                 except RuntimeError:
+                    warnings.warn(f"DetectorPointwise.d_measurement_d_position: flightpath goes outside of computational domain")
                     pass
 
         # stack next to each other horizontally
