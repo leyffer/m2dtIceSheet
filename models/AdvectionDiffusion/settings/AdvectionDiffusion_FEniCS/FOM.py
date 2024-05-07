@@ -46,6 +46,7 @@ class FOM(FullOrderModel):
         dt: float = 0.1,
         final_time: float = 4,
         mesh_shape: str = "houses",
+            centers: list = None,
         **kwargs,
     ):
         """! Initializer for the Full-order-model (FOM)
@@ -55,6 +56,7 @@ class FOM(FullOrderModel):
         @param kappa  Advection-diffusion equation parameter
         @param dt  Time step size for transient solves
         @param final_time  Final time for transient solutions
+        @param centers list of [x,y] coordinates for parameter centers
         @param **kwargs  Keyword arguments passed to set_defaults
         """
 
@@ -87,7 +89,8 @@ class FOM(FullOrderModel):
         )
 
         # Parameters
-        self.m_parameterized = self.set_parameter_functions()
+        self.m_parameterized = self.set_parameter_functions(centers=centers)  # parameter basis functions
+        self.n_para = self.m_parameterized.shape[0]  # number of parameters
 
         # Equation setup
         self.kappa = kappa
@@ -100,7 +103,7 @@ class FOM(FullOrderModel):
 
         self.set_defaults(**kwargs)
 
-    def set_parameter_functions(self):  # -> np.ndarray[dl.Function]:
+    def set_parameter_functions(self, centers=None):  # -> np.ndarray[dl.Function]:
         """! Initialize the parameterized functions used with the provided
         parameters to make the initial condition
             @return  Numpy array of separate initial condition elements that we
@@ -108,8 +111,10 @@ class FOM(FullOrderModel):
         """
         # TODO: The type hint for this function gave me an error (Nicole, Oct 31, 2023)
 
-        m = np.zeros(5, dtype=object)
-        centers = [[0.35, 0.7], [0.8, 0.2], [0.7, 0.5], [0.1, 0.9], [0.1, 0.2]]
+        if centers is None:
+            centers = [[0.35, 0.7], [0.8, 0.2], [0.7, 0.5], [0.1, 0.9], [0.1, 0.2]]
+        m = np.zeros(len(centers), dtype=object)
+
 
         for i, _ in enumerate(m):
             m_str = (

@@ -28,6 +28,7 @@ class FOM_stationary(FOM):
         @param **kwargs  Not used
         """
         # TODO: Why these default parameters?
+        # todo: do we actually need these?
 
         self.default_forcing = self.m_true
         self.default_para = [0.1, 20, 0.01]
@@ -82,10 +83,11 @@ class FOM_stationary(FOM):
             @param parameter  Forcing function parameters
             @return  The scaled sum of forcing functions
         """
-        if parameter.shape[0] == 1:
-            # This is a very simple parameterization where the true forcing is
-            # just scaled by a scalar
-            return parameter[0] * self.default_forcing
+        # if parameter.shape[0] == 1:
+        #     # This is a very simple parameterization where the true forcing is
+        #     # just scaled by a scalar
+        #     return parameter[0] * self.default_forcing
+        # NOTE (Nicole): I've commented out this default forcing because I don't think we need it
 
         m = parameter[0] * self.m_parameterized[0]
         # Multiply each parametrized forcing by the provided parameter and sum
