@@ -23,6 +23,11 @@ class InverseProblem:
     - the option to apply a reduction in parameter space (e.g., with active subspaces)
 
     Note: the details on the last part are not clear yet
+
+    By default, for consistency with the old code, we are using the **deterministic** inverse problem here where the
+    noise is weighted by an arbitrary inner product matrix. The full Bayesian version where the noise model is
+    consistent with time continuous measurements is slightly more involved. The computations for it are therefore
+    outsourced into the subclass InverseProblemBayes.
     """
 
     c_scaling = 1e3
@@ -60,8 +65,8 @@ class InverseProblem:
             return self.grid_t.shape[0]
         raise ValueError("Time grid not present.")
 
-    def set_noise_model(self, c_scaling, c_diffusion, grid_t):
-        """! Noise model initialization (only needed if varying from default c_scaling=1, c_diffusion=1, grid_t=drone.grid_t)
+    def set_noise_model(self, c_scaling, c_diffusion):
+        """! Noise model initialization (only needed if varying from defaults)
 
         @param grid_t  Time grid on which the measurements are taken
         @param c_scaling  Noise scaling parameter
@@ -70,7 +75,6 @@ class InverseProblem:
         # parameterization for the noise covariance operator
         self.c_scaling = c_scaling
         self.c_diffusion = c_diffusion
-        self.grid_t = grid_t
 
         # matrices involved in the noise model
         self.diffusion_matrix = self.compute_diffusion_matrix()
@@ -83,7 +87,6 @@ class InverseProblem:
         """
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
-        # delta_ts = np.diff(grid_t)
 
         A = sparse.diags([1, -1], offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps))
         A = sparse.csr_matrix(A + A.T)
@@ -101,7 +104,6 @@ class InverseProblem:
         # assert_type(self.grid_t, np.ndarray)  # compatibility issues with Nicole's laptop (April 1, 2024)
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
-        # dts = np.diff(grid_t)
 
         M = sparse.diags(np.array([2, 1]) / 6, offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps))
         M = sparse.csr_matrix(M + M.T)
