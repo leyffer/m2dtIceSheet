@@ -1,4 +1,5 @@
-from typing import Optional, List, Any, assert_type
+from typing import Optional, List, Any
+# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
 
 import scipy.sparse as sparse
 import numpy as np
@@ -6,6 +7,7 @@ import numpy as np
 from FullOrderModel import FullOrderModel as FOM
 from Drone import Drone
 from State import State
+
 
 # FOM converts parameters to states
 # Inverse Problem has a basis and keeps the states for that basis
@@ -26,7 +28,7 @@ class InverseProblem:
     c_scaling = 1e3
     c_diffusion = 0.01
 
-    states: Optional[np.ndarray[State, Any]] = None
+    states = None  # Optional[np.ndarray[State, Any]]
     Basis = None
     parameters = None
 
@@ -50,11 +52,10 @@ class InverseProblem:
         #  double check in the literature what we should be using exactly
 
     # TODO: write other functions required for this class
-    # TODO: from the old source files, copy over all computations
     # TODO: set up connection to hIppylib
     
     @property
-    def K(self):
+    def n_time_steps(self):
         if isinstance(self.grid_t, np.ndarray):
             return self.grid_t.shape[0]
         raise ValueError("Time grid not present.")
@@ -84,7 +85,7 @@ class InverseProblem:
         # TODO: don't assume uniform timestepping
         # delta_ts = np.diff(grid_t)
 
-        A = sparse.diags([1, -1], offsets=[0, 1], shape=(self.K, self.K))
+        A = sparse.diags([1, -1], offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps))
         A = sparse.csr_matrix(A + A.T)
         A[0, 0] = 1
         A[-1, -1] = 1
@@ -97,12 +98,12 @@ class InverseProblem:
 
         @return  mass matrix (piecewise linear finite elements)
         """
-        assert_type(self.grid_t, np.ndarray)
+        # assert_type(self.grid_t, np.ndarray)  # compatibility issues with Nicole's laptop (April 1, 2024)
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
         # dts = np.diff(grid_t)
 
-        M = sparse.diags(np.array([2, 1]) / 6, offsets=[0, 1], shape=(self.K, self.K))
+        M = sparse.diags(np.array([2, 1]) / 6, offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps))
         M = sparse.csr_matrix(M + M.T)
         M[0, 0] /= 2
         M[-1, -1] /= 2
@@ -122,19 +123,25 @@ class InverseProblem:
             "InverseProblem.sample: still need to check how exactly we are setting up the noise model"
         )
 
-    def compute_noisenorm2(self, d):
-        """! Computes the noise norm squared
+    def compute_noisenorm2(self, measurement_data):
+        """! Computes the noise norm squared of `measurement data`, i.e., compute
+        $$
+        measurement_data^T \Sigma_{noise}^{-1} measurement_data
+        $$
 
-        @param d  measured values
-        @return  noise norm squared
+        @param measurement_data  measured values
+        @return  noise norm squared, i.e., $\| <measurement_data> \|_{\Sigma_{noise}^{-1}}^2
         """
-        b = self.apply_noise_covar_inv(d)
-        return d.T @ b
+        yolo = self.apply_noise_covar_inv(measurement_data)
+        return measurement_data.T @ yolo
 
-    def apply_noise_covar_inv(self, d):
-        """! Apply the inverse noise covariance matrix to the observations d
+    def apply_noise_covar_inv(self, measurement_data):
+        """! Apply the inverse noise covariance matrix to the observations ` measurement_data`, i.e., compute
+        $$
+        \Sigma_{noise}^{-1} measurement_data
+        $$
 
-        @param d  measured values
+        @param measurement_data  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
         if self.diffusion_matrix is None:
@@ -144,12 +151,12 @@ class InverseProblem:
         LHS = self.c_scaling * (
             self.c_diffusion * self.diffusion_matrix + self.mass_matrix
         )
-        Kd = LHS @ d
+        Kd = LHS @ measurement_data
         # TODO: still need to bring this parameterization together with the interpretation of the noise model
         return Kd
 
     def apply_para2obs(
-        self, parameter, state: Optional[State] = None, flightpath: Optional[np.ndarray] = None, **kwargs
+        self, parameter : np.ndarray, state: Optional[State] = None, flight: Optional["Flight"] = None, **kwargs
     ):
         """!
         Applies the parameter-to-observable map:
@@ -157,52 +164,69 @@ class InverseProblem:
         2. computes the flightpath if none is specified
         3. takes the measurements along the flight path
 
-        @param parameter:
-        @param state:
-        @param flightpath:
-        @param kwargs:
+        @param parameter:  The parameter for which we want to compute the observable
+        @param state:  The (unique) state of the FOM for this parameter (to avoid re-computations if necessary) -- optional
+        @param flight:  The flight along which to measure. If not yet available, pass the control parameter `alpha` as part of **kwargs
+        @param kwargs:  should contain flight control parameter alpha if flight is not provided
         @return:
+        - observation of state $u$ for parameter parameter along the trajectory of the flight $p$
+        - the flight $p$ (for future use to avoid re-computations)
+        - the state $u$ for the given parameter (for future use to avoid re-computations)
         """
         # solve for state
         if state is None:
             state = self.fom.solve(parameter=parameter)
+        else:
+            if (state.parameter != parameter).any():
+                raise RuntimeError("In InverseProblem.apply_para2obs: state and parameter do not match")
 
         # determine flight path
-        if flightpath is None:
-            flightpath, grid_t_drone = self.drone.get_trajectory(
-                grid_t=kwargs.get("alpha")
-            )
-        else:
-            grid_t_drone = kwargs.get("grid_t_drone")
+        if flight is None:
+            flight = self.drone.navigation.create_flight(alpha=kwargs.get("alpha"))
 
         # fly out and measure
         observation = self.drone.measure(
-            flightpath=flightpath, grid_t=grid_t_drone, state=state
+            flight=flight, state=state
         )
 
-        return observation, flightpath, grid_t_drone, state
+        return observation, flight, state
 
     # TODO - cache posterior for optimization
     def compute_posterior(
         self,
-        alpha: np.ndarray,
-        data: Optional[np.ndarray] = None,
-        flightpath: Optional[np.ndarray] = None,
+        flight : Optional["Flight"] = None,
+        alpha : Optional[np.ndarray] = None,
         grid_t: Optional[np.ndarray] = None,
+        data: Optional[np.ndarray] = None
     ):
         """
-        Computes the posterior distribution for given flight path parameters and measurements obtained along the flight.
+        Computes the posterior distribution for a given flight and measurement data obtained along this flight.
         If no data is provided, the returned posterior will only contain the posterior covariance matrix, but not
-        the posterior mean, provided the forward model is linear.
+        the posterior mean, as it assumes the forward model is linear.
 
-        @param alpha: flight path parameters
+        If no flight is provided, it gets computed from the control parameter alpha instead. Make sure that at least
+        one of them is called, otherwise we throw a Runtime Error.
+
+        @param alpha: flight path control. Will NOT be used if flight is provided
+        @param flight: Flight for which we want to compute the posterior. Will be computed from alpha if not provided.
         @param data: measurement data (optional)
         @return: posterior
         """
+        # import class for the posterior
         from Posterior import Posterior
+        # TODO: the import is here instead of outside the class definition to avoid a circular import. It's not the best
+        #  solution, we should revisit this for efficiency
 
+        if flight is None:
+            # if no flight is provided, we compute the one corresponding to the control parameters alpha
+            if alpha is None:
+                # if no control parameters are provided, something went wrong.
+                raise RuntimeError("neither a flight nor valid control parameters were provided")
+            flight = self.drone.plan_flight(alpha=alpha, grid_t=grid_t)
+
+        # initialize posterior
         posterior = Posterior(
-            inversion=self, alpha=alpha, data=data, flightpath=flightpath, grid_t=grid_t
+            inversion=self, flight=flight, data=data
         )
         return posterior
 
@@ -256,10 +280,9 @@ class InverseProblem:
         """
 
         if self.states is None:
-            print(
-                "WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the states."
-            )
-            print("this is ok, but it is error prone.")
+            print("WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the "
+                  "states. This is ok, but it is error prone. Pleae just call InverseProblem.precompute_states() "
+                  "first in the future.")
 
             # precompute states assuming unit basis
             self.compute_states(parameters=np.eye(self.n_parameters))

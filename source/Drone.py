@@ -1,39 +1,50 @@
 import numpy as np
 from typing import Optional
 from State import State
+from Flight import Flight
+# from Navigation import Navigation
+# from Detector import Detector
 
 
 class Drone:
-    """! This is a general parent class for the drones.
+    """! This is a class for accessing the "public" functionalities navigating and measuring
 
-    For any particular model the user should create a subclass and specify the
-    functions below.
+    The drone class uses the navigation system (class Navigation) and the detector measuring system (class Detector) to
+    take measurements of states on the domain $\Omega$. Its main functionality is to interface between the two systems
+    and the outside world to ensure that everything remains in their place. Ideally, the user does not need to alter
+    this class in any way, but only passes an instance of "Navigation" and "Detector" -- both are problem specific.
     """
 
-    def __init__(self, eval_mode: str, grid_t: Optional[np.ndarray] = None):
+    def __init__(self, navigation: "Navigation", detector: "Detector"):
         """! Initialization for the drone class
-        In this call we specify the main setup parameters that the drone class
-        has to have. The user needs to specify their own __init__ call, and call
-        super().__init__ for the setup here.
 
-        @param fom  Full-order-model (FOM) object. The drone needs to measure
-        states computed by the FOM
+        In most cases, the drone is already defined by the navigation system and the detector, nothing else needs to
+        be passed. The navigation system and the detector will both be told that they have been equipped by this drone
+
+        @param navigation: for how the drone flies, type Navigation
+        @param detector: for how the drone measures, type Detector
         """
-        # TODO: are there any other setup parameters?
-        self.grid_t = grid_t
-        self.eval_mode = eval_mode
+        self.navigation = navigation
+        self.detector = detector
+        self.grid_t = navigation.grid_t
 
-    # TODO: specify and describe other functions the general drone class has to have
+        # tell the detector and the navigation system that they've just been equipped
+        self.detector.attach_to_drone(self)
+        self.navigation.attach_to_drone(self)
+        # this gives the two systems the possibility to see beyond their own
+        # scope (caution advised), and can ensure that any single navigation /
+        # detector system is only equipped by one drone at a time if necessary
+        # (see setup parameter bool_allow_multiple_attachments in Detector and
+        # Navigation)
 
-    def get_position(self, t: float | np.ndarray, alpha: np.ndarray):
+    def get_position(self, t: float | np.ndarray, flight : "Flight"):
         """! Get the position of the drone given the time and flying parameters
 
-        @param t  The time to evaluate the position of the drone
-        @param alpha  The parameters of the flight path
-        @return  spatial position of the drone
+        @param t  The time at which to evaluate the position of the drone
+        @param flight  the
         """
-        pos, __ = self.get_trajectory(alpha=alpha, grid_t=t * np.ones((1,)))
-        return pos[0, :]
+        print("In Drone.get_position: Should call flight.d_position_d_control instead")
+        return flight.get_position(t)
 
     def get_trajectory(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
@@ -43,12 +54,11 @@ class Drone:
         @param grid_t the time grid on which the drone position shall be computed
         @return  Tuple of (position over flight path, corresponding time for each position)
         """
-        raise NotImplementedError(
-            "Drone.get_trajectory: Needs to be implemented in subclass"
-        )
+        raise DeprecationWarning("Drone.get_trajectory is deprecated: should get flight and call flight.get_trajectory instead")
+        # return self.navigation.get_trajectory(alpha, grid_t)
 
     def measure(
-        self, flightpath: np.ndarray, grid_t: np.ndarray, state: State
+        self, flight : "Flight", state: State
     ) -> np.ndarray:
         """! Method to take a measurement
 
@@ -56,9 +66,9 @@ class Drone:
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
-        raise NotImplementedError("Drone.measure: Needs to be implemented in subclass")
+        return self.detector.measure(flight, state)
 
-    def d_position_d_control(self, alpha, flightpath, grid_t):
+    def d_position_d_control(self, flight : "Flight"):
         """
         computes the derivative of the flightpath with respect to the control parameters in alpha.
         This class is problem specific and needs to be written by the user.
@@ -68,11 +78,10 @@ class Drone:
         @param grid_t:
         @return:
         """
-        raise NotImplementedError(
-            "Drone.d_position_d_control: Needs to be implemented in subclass"
-        )
+        print("In drone.d_position_d_control: Should call flight.d_position_d_control instead")
+        return flight.d_position_d_control
 
-    def d_measurement_d_control(self, alpha, flightpath, grid_t, state):
+    def d_measurement_d_control(self, flight : "Flight", state):
         """
         derivative of the measurement function for a given flightpath in control direction alpha
 
@@ -82,8 +91,41 @@ class Drone:
         @param state:
         @return: np.ndarray of shape (grid_t.shape[0], self.n_parameters)
         """
-        # TODO: I think we can generalize the code from myDrone in models/AdvectionDiffusion_FEniCS such that the user
-        #  doesn't need to write this function themselves.
-        raise NotImplementedError(
-            "Drone.d_measurement_d_control: Needs to be implemented in subclass"
-        )
+        # derivative of the measurement with respect to the position
+        d_meas_d_pos = self.d_measurement_d_position(flight=flight, state=state)
+        # shape <n_timesteps> \times <n_spatial * n_timesteps>
+
+        # derivative of the position with respect to the control
+        d_pos_d_cont = flight.d_position_d_control
+        # shape <n_spatial * n_timesteps> \times <n_controls>
+
+        # apply chain rule
+        d_meas_d_control = d_meas_d_pos @ d_pos_d_cont
+
+        return d_meas_d_control
+    
+    def d_measurement_d_position(self, flight : "Flight", state):
+        """
+        derivative of the measurement function for a given flight in direction of the flight's positions flightpath.
+        For measurements of the form
+        $$
+        d(t; p) = \int_{\Omega} \Phi(x, p(t)) u(x,t) dx
+        $$
+        this function returns
+        $$
+        \frac{\partial d(t;, p)}{\partial p}
+        = \int_{\Omega} D_y \Phi(x, y=p(t)) u(x, t) dx.
+        $$
+
+        @param flight: the flight parameterization of the drone. Contains, in particular, the flightpath `flightpath`,
+        the flight controls `alpha`, and the time discretization `grid_t`, Flight object
+        @param state  The state which the drone shall measure, State object
+        @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
+        """
+        return self.detector.d_measurement_d_position(flight, state)
+
+    def plan_flight(self, alpha, grid_t:np.ndarray = None) -> Flight:
+        """
+        creates a Flight object for a given control parameter alpha
+        """
+        return Flight(alpha=alpha, navigation=self.navigation, grid_t=grid_t)

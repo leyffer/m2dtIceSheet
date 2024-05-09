@@ -14,6 +14,7 @@ class FullOrderModel:
     prior_covar = None
     prior_mean = None
     covar_sqrt = None
+    n_spatial = None  # spatial dimension (2D, 3D)
 
     def __init__(self):
         """!

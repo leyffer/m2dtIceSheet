@@ -24,7 +24,7 @@ class Posterior():
             return self.para2obs
 
         parameter = np.eye(self.prior.n_para)
-        G = np.empty((self.noise_model.K, self.prior.n_para))
+        G = np.empty((self.noise_model.n_time_steps, self.prior.n_para))
 
         for i in range(self.prior.n_para):
             G[:, i], flightpath = self.brain.apply_para2obs(para=parameter[i, :], flightpath=self.flightpath,
