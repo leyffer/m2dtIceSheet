@@ -65,10 +65,9 @@ class InverseProblem:
             return self.grid_t.shape[0]
         raise ValueError("Time grid not present.")
 
-    def set_noise_model(self, c_scaling, c_diffusion):
+    def set_noise_model(self, c_scaling, c_diffusion, *args):
         """! Noise model initialization (only needed if varying from defaults)
 
-        @param grid_t  Time grid on which the measurements are taken
         @param c_scaling  Noise scaling parameter
         @param c_diffusion  Noise diffusion parameter
         """
@@ -112,7 +111,6 @@ class InverseProblem:
         M *= delta_t
 
         return M
-
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
         """! Method for sampling
 

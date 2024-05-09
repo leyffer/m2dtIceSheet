@@ -16,7 +16,7 @@ from InverseProblem import InverseProblem
 # Inverse Problem has a basis and keeps the states for that basis
 
 
-class InverseProblemBayes(InverseProblem):
+class InverseProblemBayesNeumann(InverseProblem):
     """! InverseProblem class
     In this class we provide all functions needed for handling the inverse problem, starting from its setup to its
     solution. In particular, for the OED problem, we provide:
@@ -37,6 +37,7 @@ class InverseProblemBayes(InverseProblem):
     states = None
     Basis = None
     parameters = None
+    reformat_matrix = None
     laplacian_matrix = None
     mass_matrix_LU = None
     mass_matrix_Chol = None
@@ -78,20 +79,30 @@ class InverseProblemBayes(InverseProblem):
         diffusion_matrix = self.compute_diffusion_matrix()
         mass_matrix = self.compute_mass_matrix()
 
-        K = c_scaling * (c_diffusion * diffusion_matrix + mass_matrix)
+        n_steps = self.grid_t.shape[0]
+        K = sparse.lil_matrix((n_steps + 2, n_steps + 2))
+        K[1:-1, 1:-1] = c_scaling * (c_diffusion * diffusion_matrix + mass_matrix)
         K[0, 0] = 1
-        K[0, 1] = 0
+        K[1, 0] = c_scaling * c_diffusion
         K[-1, -1] = 1
-        K[-1, -2] = 0
+        K[-2, -1] = -c_scaling * c_diffusion
 
-        M = mass_matrix
-        M[0, 0] = c_boundary
-        M[0, 1] = 0
-        M[-1, -1] = c_boundary
-        M[-1, -2] = 0
+        M = sparse.lil_matrix((n_steps + 2, n_steps + 2))
+        M[1:-1, 1:-1] = mass_matrix
+        M[0, 0] = c_boundary ** 2
+        M[-1, -1] = c_boundary ** 2
+
+        dt = self.grid_t[1] - self.grid_t[0]
+        reformat = sparse.lil_matrix((n_steps + 2, n_steps))
+        reformat[1:-1, :] = sparse.eye(n_steps)
+        reformat[0, 0] = -1 / dt
+        reformat[0, 1] = 1 / dt
+        reformat[-1, -2] = -1 / dt
+        reformat[-1, -1] = 1 / dt
 
         self.laplacian_matrix = K
         self.mass_matrix = sparse.csc_matrix(M)
+        self.reformat_matrix = reformat
         self.mass_matrix_LU = sla.splu(self.mass_matrix, diag_pivot_thresh=0)
 
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
@@ -113,7 +124,7 @@ class InverseProblemBayes(InverseProblem):
         samples = np.random.normal(size=(n_steps, n_samples))
         rhs = self.mass_matrix_Chol @ samples
         samples_with_bc = sla.spsolve(self.laplacian_matrix, rhs)
-        return samples_with_bc
+        return samples_with_bc[1:-1, :]
 
     def apply_noise_covar_inv(self, measurement_data):
         """! Apply the inverse noise covariance matrix to the observations ` measurement_data`, i.e., compute
@@ -124,7 +135,8 @@ class InverseProblemBayes(InverseProblem):
         @param measurement_data  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
-        Kd = self.laplacian_matrix @ measurement_data
+        data_with_BC = self.reformat_matrix @ measurement_data
+        Kd = self.laplacian_matrix @ data_with_BC
         weighted_Kd = self.mass_matrix_LU.solve(Kd)
 
-        return self.laplacian_matrix.T @ weighted_Kd
+        return self.reformat_matrix.T @ (self.laplacian_matrix.T @ weighted_Kd)

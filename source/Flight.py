@@ -35,7 +35,7 @@ class Flight():
         """
         # Default time grid if not provided
         if grid_t is None:
-            grid_t = np.arange(0, 4 + 1e-2, 1e-2)
+            grid_t = navigation.grid_t
 
         self.navigation = navigation
         self.alpha = alpha
