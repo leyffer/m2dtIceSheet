@@ -27,3 +27,9 @@ Change port or do not specify for default port (`8888`).
 ssh -N -f -L localhost:YYYY:localhost:XXXX remoteuser@remotehost
 ```
 Specify local port `YYYY` and previously selected remote port `XXXX`.
+
+# Fenics environment
+```bash
+module load anaconda3
+conda activate /nfs/gce/projects/M2dt-OED/fenics-env
+```

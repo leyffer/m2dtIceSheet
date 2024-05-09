@@ -3,15 +3,18 @@ import scipy.linalg as la
 
 from State import State
 
+
 class FullOrderModel:
     """! Full-order-model (FOM)
     This is the general parent class for full-order models.
     For any particular model the user should create a subclass and specify the functions below.
     """
+
     n_parameters = -1
     prior_covar = None
     prior_mean = None
     covar_sqrt = None
+    n_spatial = None  # spatial dimension (2D, 3D)
 
     def __init__(self):
         """!
@@ -24,15 +27,17 @@ class FullOrderModel:
 
     # TODO: create those functions that we know we'll need, add explanations for their correct setup
 
-    def solve(self, parameter : np.ndarray, *kwargs) -> State:
+    def solve(self, parameter: np.ndarray, *kwargs) -> State:
         """! Solve the transient problem
-            @param parameter of interest
-            @param kwargs should contain:
-                "grid_t" for transient problems
+        @param parameter of interest
+        @param kwargs should contain:
+            "grid_t" for transient problems
         """
-        raise NotImplementedError("FullOrderModel.solve: Needs to be implemented in subclass")
+        raise NotImplementedError(
+            "FullOrderModel.solve: Needs to be implemented in subclass"
+        )
 
-    def set_prior(self, prior_mean : np.ndarray, prior_covar : np.ndarray) -> None:
+    def set_prior(self, prior_mean: np.ndarray, prior_covar: np.ndarray) -> None:
         """
         sets the prior for the parameter of interest. The size of the prior mean communicates the parameter dimension.
         The prior is assumed to be a Gaussian and thereby uniquely specified by its prior mean and covariance matrix.
@@ -48,7 +53,11 @@ class FullOrderModel:
 
         # sanity check:
         if prior_covar.shape != (self.n_parameters, self.n_parameters):
-            raise RuntimeError("In FullOrderModel.set_prior: invalid shape {} for prior covariance matrix (expected: {})".format(prior_covar.shape, (self.n_parameters, self.n_parameters)))
+            raise RuntimeError(
+                "In FullOrderModel.set_prior: invalid shape {} for prior covariance matrix (expected: {})".format(
+                    prior_covar.shape, (self.n_parameters, self.n_parameters)
+                )
+            )
 
     def get_covar_sqrt(self):
         """
@@ -58,11 +67,11 @@ class FullOrderModel:
         """
         if self.covar_sqrt is None:
             self.covar_sqrt = la.sqrtm(self.prior_covar)
-            # todo: find a better (randomized?) way to compute this matrix for large-dimensional parameter spaces (or
+            # TODO: find a better (randomized?) way to compute this matrix for large-dimensional parameter spaces (or
             #  find a way to sample without it and get rid of it altogether)
         return self.covar_sqrt
 
-    def sample(self, n_samples : int = 1) -> np.ndarray:
+    def sample(self, n_samples: int = 1) -> np.ndarray:
         """
         draws a sample from the prior of size (n_parameters,) if only one sample to be drawn, and (n_parameters,n_samples) otherwise
 
@@ -78,6 +87,6 @@ class FullOrderModel:
             size = (self.n_parameters, n_samples)
 
         covar_sqrt = self.get_covar_sqrt()
-        samples = covar_sqrt @ np.random.normal(size=size) # centered around 0
+        samples = covar_sqrt @ np.random.normal(size=size)  # centered around 0
 
         return (samples.T + self.prior_mean).T
