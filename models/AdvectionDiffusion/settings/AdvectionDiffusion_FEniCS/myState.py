@@ -40,7 +40,7 @@ class myState(State):
 
             else:
                 Du = dl.grad(self.state)
-                self.Du = dl.project(Du)
+                self.Du = dl.project(Du, self.fom.V2)
 
         return self.Du
 
