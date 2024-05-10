@@ -196,6 +196,9 @@ class FOM(FullOrderModel):
         order of meshDim * meshDim
         @return  Mesh geometry
         """
+        if self.mesh_shape == "square":
+            return dl.UnitSquareMesh(meshDim, meshDim, diagonal="right")
+
         together = mshr.Rectangle(dl.Point(0.0, 0.0), dl.Point(1.0, 1.0))
 
         if self.mesh_shape == "houses":
@@ -223,6 +226,8 @@ class FOM(FullOrderModel):
                 boundary[f] = 2
             elif dl.near(mp[1], 0.0) or dl.near(mp[1], 1):  # walls
                 boundary[f] = 3
+            elif self.mesh_shape == "square":
+                continue
             elif dl.near(mp[0], 0.25) or dl.near(mp[0], 0.5):
                 if 0.15 <= mp[1] and mp[1] <= 0.4:
                     boundary[f] = 4
