@@ -85,14 +85,12 @@ class InverseProblemBayes(InverseProblem):
         K[-1, -2] = 0
 
         M = mass_matrix
-        M[0, 0] = c_boundary
-        M[0, 1] = 0
-        M[-1, -1] = c_boundary
-        M[-1, -2] = 0
+        M[0, 0] += c_boundary
+        M[-1, -1] += c_boundary
 
         self.laplacian_matrix = K
         self.mass_matrix = sparse.csc_matrix(M)
-        self.mass_matrix_LU = sla.splu(self.mass_matrix, diag_pivot_thresh=0)
+        # self.mass_matrix_LU = sla.splu(M, diag_pivot_thresh=0)
 
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
         """! Method for sampling
@@ -125,6 +123,7 @@ class InverseProblemBayes(InverseProblem):
         @return  the inverse noise covariance matrix applied to the observations d
         """
         Kd = self.laplacian_matrix @ measurement_data
-        weighted_Kd = self.mass_matrix_LU.solve(Kd)
+        # weighted_Kd = self.mass_matrix_LU.solve(Kd)
+        weighted_Kd = sla.spsolve(self.mass_matrix, Kd)
 
         return self.laplacian_matrix.T @ weighted_Kd

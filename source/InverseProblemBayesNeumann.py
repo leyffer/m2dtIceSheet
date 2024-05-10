@@ -103,7 +103,7 @@ class InverseProblemBayesNeumann(InverseProblem):
         self.laplacian_matrix = K
         self.mass_matrix = sparse.csc_matrix(M)
         self.reformat_matrix = reformat
-        self.mass_matrix_LU = sla.splu(self.mass_matrix, diag_pivot_thresh=0)
+        # self.mass_matrix_LU = sla.splu(self.mass_matrix, diag_pivot_thresh=0)
 
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
         """! Method for sampling
@@ -137,6 +137,7 @@ class InverseProblemBayesNeumann(InverseProblem):
         """
         data_with_BC = self.reformat_matrix @ measurement_data
         Kd = self.laplacian_matrix @ data_with_BC
-        weighted_Kd = self.mass_matrix_LU.solve(Kd)
+        # weighted_Kd = self.mass_matrix_LU.solve(Kd)
+        weighted_Kd = sla.spsolve(self.mass_matrix, Kd)
 
         return self.reformat_matrix.T @ (self.laplacian_matrix.T @ weighted_Kd)
