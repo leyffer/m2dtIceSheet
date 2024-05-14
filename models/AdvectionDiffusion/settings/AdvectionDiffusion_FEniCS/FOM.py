@@ -74,10 +74,11 @@ class FOM(FullOrderModel):
         self.boundary_marker = self.create_boundary_marker()
 
         # Create the velocity field for the advection term
-        self.velocity = self.create_velocity_field()
+        self.velocity = self.create_velocity_field(polyDim)
 
         # Trial and test space for advection-diffusion eq ('P' == Polynomial)
-        self.V = dl.FunctionSpace(self.mesh, "P", polyDim)
+        self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
+        # see ufl.finiteelement.elementlist.show_elements() for finite element family options
 
         # Finite-element dimension
         self.nFE = self.V.dim()
@@ -240,7 +241,7 @@ class FOM(FullOrderModel):
 
         return boundary
 
-    def create_velocity_field(self) -> dl.Function:
+    def create_velocity_field(self, polyDim) -> dl.Function:
         """! Creation of velocity field for the advection term in the advection-diffusion equation
 
         The velocity field is modeled as the solution to a steady state Navier
@@ -254,9 +255,9 @@ class FOM(FullOrderModel):
 
         # initialize function spaces
         V = dl.VectorElement(
-            "P", mesh.ufl_cell(), 2
+            "CG", mesh.ufl_cell(), 2
         )  # H^1_0(Omega)^2, Velocity function space
-        Q = dl.FiniteElement("P", mesh.ufl_cell(), 1)  # L^2(Omega)
+        Q = dl.FiniteElement("CG", mesh.ufl_cell(), 1)  # L^2(Omega)
         TH = dl.MixedElement([V, Q])
         W = dl.FunctionSpace(mesh, TH)
 
