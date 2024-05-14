@@ -92,12 +92,16 @@ class InverseProblemBayesNeumann(InverseProblem):
         M[0, 0] = c_boundary ** 2
         M[-1, -1] = c_boundary ** 2
 
-        dt = self.grid_t[1] - self.grid_t[0]
+        # dt_target = 1e-3
+        # k_target = np.argmin(np.abs(self.grid_t-dt_target))
+        # k_target = np.maximum(k_target, 1)
+        k_target = 1
+        dt = self.grid_t[k_target]
         reformat = sparse.lil_matrix((n_steps + 2, n_steps))
         reformat[1:-1, :] = sparse.eye(n_steps)
         reformat[0, 0] = -1 / dt
-        reformat[0, 1] = 1 / dt
-        reformat[-1, -2] = -1 / dt
+        reformat[0, k_target] = 1 / dt
+        reformat[-1, -1 - k_target] = -1 / dt
         reformat[-1, -1] = 1 / dt
 
         self.laplacian_matrix = K

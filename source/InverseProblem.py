@@ -65,11 +65,12 @@ class InverseProblem:
             return self.grid_t.shape[0]
         raise ValueError("Time grid not present.")
 
-    def set_noise_model(self, c_scaling, c_diffusion, *args):
+    def set_noise_model(self, c_scaling, c_diffusion, c_boundary=0, *args):
         """! Noise model initialization (only needed if varying from defaults)
 
         @param c_scaling  Noise scaling parameter
         @param c_diffusion  Noise diffusion parameter
+        @param c_boundary  boundary scaling (ignored in determistic setting)
         """
         # parameterization for the noise covariance operator
         self.c_scaling = c_scaling

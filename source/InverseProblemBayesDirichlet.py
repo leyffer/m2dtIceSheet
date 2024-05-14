@@ -16,7 +16,7 @@ from InverseProblem import InverseProblem
 # Inverse Problem has a basis and keeps the states for that basis
 
 
-class InverseProblemBayes(InverseProblem):
+class InverseProblemBayesDirichlet(InverseProblem):
     """! InverseProblem class
     In this class we provide all functions needed for handling the inverse problem, starting from its setup to its
     solution. In particular, for the OED problem, we provide:
@@ -66,7 +66,6 @@ class InverseProblemBayes(InverseProblem):
     def set_noise_model(self, c_scaling, c_diffusion, c_boundary=1, *args):
         """! Noise model initialization (only needed if varying from defaults)
 
-        @param grid_t  Time grid on which the measurements are taken
         @param c_scaling  Noise scaling parameter
         @param c_diffusion  Noise diffusion parameter
         """
@@ -85,12 +84,15 @@ class InverseProblemBayes(InverseProblem):
         K[-1, -2] = 0
 
         M = mass_matrix
-        M[0, 0] += c_boundary
-        M[-1, -1] += c_boundary
+        M[0, :] = 0
+        M[:, 0] = 0
+        M[:, -1] = 0
+        M[-1, :] = 0
+        M[0, 0] += c_boundary ** 2
+        M[-1, -1] += c_boundary ** 2
 
         self.laplacian_matrix = K
         self.mass_matrix = sparse.csc_matrix(M)
-        # self.mass_matrix_LU = sla.splu(M, diag_pivot_thresh=0)
 
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
         """! Method for sampling

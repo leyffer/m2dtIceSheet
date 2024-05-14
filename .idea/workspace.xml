@@ -4,7 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="included finite difference comparison in notebook 3" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="started on convergence studies">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/4_noise.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_noise.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/InverseProblem.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblem.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/InverseProblemBayes.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblemBayesDirichlet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/InverseProblemBayesNeumann.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblemBayesNeumann.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -55,19 +64,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;git-widget-placeholder&quot;: &quot;noise-model&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/source&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/source" />
+      <recent name="$PROJECT_DIR$/models/AdvectionDiffusion_FEniCS" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/graveyard" />
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion" />
       <recent name="$PROJECT_DIR$/source/leftover" />
-    </key>
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/models/AdvectionDiffusion_FEniCS" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -241,7 +252,23 @@
       <option name="project" value="LOCAL" />
       <updated>1715266260697</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="consistent noise model (Dirichlet and Neumann BC)">
+      <option name="closed" value="true" />
+      <created>1715292613704</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1715292613704</updated>
+    </task>
+    <task id="LOCAL-00023" summary="started on convergence studies">
+      <option name="closed" value="true" />
+      <created>1715309106798</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1715309106798</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -286,7 +313,9 @@
     <MESSAGE value="adjusted notebook 2 for custom forcing centers" />
     <MESSAGE value="tested positional derivatives (notebook 3)" />
     <MESSAGE value="included finite difference comparison in notebook 3" />
-    <option name="LAST_COMMIT_MESSAGE" value="included finite difference comparison in notebook 3" />
+    <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
+    <MESSAGE value="started on convergence studies" />
+    <option name="LAST_COMMIT_MESSAGE" value="started on convergence studies" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
