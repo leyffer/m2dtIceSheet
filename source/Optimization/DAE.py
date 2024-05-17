@@ -2,6 +2,10 @@
 Functions and 
 """
 
+import sys
+
+sys.path.insert(0, "../source/")
+
 from functools import cached_property
 from typing import Literal
 
@@ -11,8 +15,8 @@ import jax
 jax.config.update("jax_enable_x64", True)
 import numpy as np
 
-from source.InverseProblem import InverseProblem
-from source.OEDUtility import OEDUtility
+from InverseProblem import InverseProblem
+from OEDUtility import OEDUtility
 
 from collections import namedtuple
 
@@ -78,20 +82,6 @@ class polygon_obstacle:
 # %%
 
 DAE_vars = namedtuple("DAE_vars", ["x", "y", "theta", "v", "acc", "omega", "omega_acc"])
-
-
-class VariableHandler:
-    def __init__(self, variables: DAE_vars = None, variable_lengths: DAE_vars = None):
-        if variables is None and variable_lengths is None:
-            raise ValueError("Provide either variables or variable_lengths")
-        if variable_lengths is None:
-            variable_lengths = DAE_vars(len(var) for var in variables)
-        if variables is None:
-            variables = DAE_vars(np.zeros((length,)) for length in variable_lengths)
-        self.variables = variables
-        self.variable_lengths = variable_lengths
-        self.cumulative_lengths = np.cumsum(variable_lengths)
-        np.split()
 
 
 class Objective:
