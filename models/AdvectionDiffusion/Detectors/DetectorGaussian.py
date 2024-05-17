@@ -1,15 +1,17 @@
 import sys
+import warnings
 
-import numpy as np
 import fenics as dl
-import scipy.linalg as la
+import numpy as np
+# import scipy.linalg as la
 import scipy.sparse as sparse
-import scipy.sparse.linalg as sla
+# import scipy.sparse.linalg as sla
 
 sys.path.insert(0, "../source/")
 
 from Detector import Detector
 from myState import myState
+
 
 class DetectorGaussian(Detector):
     """
@@ -25,10 +27,10 @@ class DetectorGaussian(Detector):
     Note that currently it is only an approximation because we are not setting the correct boundary conditions. These,
     in turn, would again require evaluating the convolution everywhere.
     """
-    
+
     eval_mode = "gaussian"
 
-    center = np.array([0.75/2, 0.55/2])
+    center = np.array([0.75 / 2, 0.55 / 2])
 
     def __init__(self, fom, sigma=0.1, **kwargs):
         """! Initializer for the drone class with point-wise measurements
@@ -40,7 +42,7 @@ class DetectorGaussian(Detector):
         """
         super().__init__(**kwargs)
         self.sigma = sigma
-        self.fom=fom
+        self.fom = fom
 
     def compute_convolution(self, state):  # -> myState:
         """
@@ -61,7 +63,7 @@ class DetectorGaussian(Detector):
         where $v$ is our state, and $Psi$ the multivariate Gaussian defined above. We can obtain this convolution by
         solving the heat equation with t=0.5, $k=\sigma^2$.
 
-        There is one caviat to this procedure, which is that Phi was the solution on the infinite-dimensional domain,
+        There is one caveat to this procedure, which is that Phi was the solution on the infinite-dimensional domain,
         but our state is typically defined on a bounded domain $\Omega$. The correct boundary condition to apply on
         a bounded domain would require evaluating the convolution that we want to get in the first place. At least,
         I didn't find a way around yet.
@@ -85,10 +87,10 @@ class DetectorGaussian(Detector):
             return convolution
 
         if state.bool_is_transient:
-            raise NotImplementedError("In MyDroneGaussianEval: time-dependent convolution with Gaussian not implemented yet")
+            raise NotImplementedError("In DetectorGaussian.compute_convolution: time-dependent convolution with Gaussian not implemented yet")
 
         # set diffusion coefficient to be the variance we want
-        diffusion = self.sigma ** 2
+        diffusion = self.sigma**2
 
         # choose the final time to bring the coefficient 1/(4*pi*D*t) into the form 1/(2*pi*sigma**2)
         t_final = 0.5
@@ -170,15 +172,17 @@ class DetectorGaussian(Detector):
         # This is primarily to not get it confused with the original state object in the future
         my_identifiers = {
             "state": state,
-            "history" : "computed by MyDroneGaussianEval.compute_convolution"
+            "history": "computed by DetectorGaussian.compute_convolution",
         }
 
         # bring into state format
-        convolution_state = myState(fom=state.fom,
-                                    state=w,
-                                    bool_is_transient=False,
-                                    parameter=state.parameter,
-                                    other_identifiers=my_identifiers)
+        convolution_state = myState(
+            fom=state.fom,
+            state=w,
+            bool_is_transient=False,
+            parameter=state.parameter,
+            other_identifiers=my_identifiers,
+        )
         # we are saving the convolution in myState-format such that we can easily access its derivative in the future
         # without repeat computations
 
@@ -201,7 +205,7 @@ class DetectorGaussian(Detector):
         """
         flightpath = flight.flightpath
         grid_t = flight.grid_t
-        
+
         # compute convolution with gaussian
         convolution = self.compute_convolution(state=state)
         convolution = convolution.state
@@ -212,7 +216,11 @@ class DetectorGaussian(Detector):
 
         for k in range(n_steps):
             # evaluate convolution-state at position p(t_k)
-            data[k] = convolution(flightpath[k, :])
+            try:
+                data[k] = convolution(flightpath[k, :])
+            except RuntimeError:
+                warnings.warn("DetectorGaussian.measure: flightpath goes outside of computational domain")
+                data[k] = 0.0
 
         return data
 
@@ -244,11 +252,11 @@ class DetectorGaussian(Detector):
         """
         flightpath, grid_t = flight.flightpath, flight.grid_t
         n_spatial = flightpath.shape[1]
-        
+
         # compute convolution with gaussian
         convolution = self.compute_convolution(state=state)
         Du = convolution.get_derivative()
-        
+
         # initialization
         D_data_d_position = np.empty((grid_t.shape[0], 2))  # (time, (dx,dy))
 
@@ -260,11 +268,17 @@ class DetectorGaussian(Detector):
             if state.bool_is_transient:
                 # todo: extend to transient measurements
                 raise NotImplementedError(
-                    "In MyDronePointEval.d_measurement_d_position: still need to bring over code for transient measurements")
+                    "In DetectorGaussian.d_measurement_d_position: still need to bring over code for transient measurements"
+                )
             else:
                 # state is time-independent
-                D_data_d_position[i, :] = Du(flightpath[i, :])
+                try:
+                    D_data_d_position[i, :] = Du(flightpath[i, :])
+                except RuntimeError:
+                    warnings.warn("DetectorGaussian.d_measurement_d_position: flightpath goes outside of computational domain")
 
         # bring into correct shape format
-        D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
+        D_data_d_position = np.hstack(
+            [np.diag(D_data_d_position[:, i]) for i in range(n_spatial)]
+        )
         return D_data_d_position
