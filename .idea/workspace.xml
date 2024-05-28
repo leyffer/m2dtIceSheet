@@ -4,15 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="started on convergence studies">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="just ran the code">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/4_noise.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_noise.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/InverseProblem.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblem.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/InverseProblemBayes.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblemBayesDirichlet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/InverseProblemBayesNeumann.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblemBayesNeumann.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +27,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="navigation_detector" />
+        <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -66,7 +64,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
-    &quot;git-widget-placeholder&quot;: &quot;noise-model&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;infinite-dimensional-setting&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/source&quot;
   }
 }</component>

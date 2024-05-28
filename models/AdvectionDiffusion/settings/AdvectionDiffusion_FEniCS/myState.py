@@ -8,6 +8,7 @@ from State import State
 
 class myState(State):
     state: dl.Function
+    convolution = None
 
     def __init__(
         self,
@@ -21,9 +22,7 @@ class myState(State):
         super().__init__(
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
-
-
-    convolution = None
+        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
 
     def get_derivative(self):
 
@@ -40,7 +39,7 @@ class myState(State):
 
             else:
                 Du = dl.grad(self.state)
-                self.Du = dl.project(Du)
+                self.Du = dl.project(Du, self.gradient_space)
 
         return self.Du
 
