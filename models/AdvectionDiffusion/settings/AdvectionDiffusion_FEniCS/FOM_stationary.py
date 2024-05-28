@@ -65,8 +65,11 @@ class FOM_stationary(FOM):
         bc_left = dl.DirichletBC(self.V, 0, boundary, 1)
         bc_right = dl.DirichletBC(self.V, 0, boundary, 2)
         bc_top_bottom = dl.DirichletBC(self.V, 0, boundary, 3)
-        bc_houses = dl.DirichletBC(self.V, 0, boundary, 4)
-        bcs = [bc_left, bc_right, bc_top_bottom, bc_houses]
+        if self.mesh_shape == "houses":
+            bc_houses = dl.DirichletBC(self.V, 0, boundary, 4)
+            bcs = [bc_left, bc_right, bc_top_bottom, bc_houses]
+        else:
+            bcs = [bc_left, bc_right, bc_top_bottom]
         # TODO: catch the case without houses
 
         # solve the steadystate equation

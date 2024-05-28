@@ -78,6 +78,7 @@ class FOM(FullOrderModel):
 
         # Trial and test space for advection-diffusion eq ('P' == Polynomial)
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
+        self.polyDim = polyDim
         # see ufl.finiteelement.elementlist.show_elements() for finite element family options
 
         # Finite-element dimension
@@ -265,8 +266,11 @@ class FOM(FullOrderModel):
         bc_left = dl.DirichletBC(W.sub(0), (0, 1), boundary, 1)
         bc_right = dl.DirichletBC(W.sub(0), (0, -1), boundary, 2)
         bc_top_bottom = dl.DirichletBC(W.sub(0), (0, 0), boundary, 3)
-        bc_houses = dl.DirichletBC(W.sub(0), (0, 0), boundary, 4)
-        bcW = [bc_left, bc_right, bc_top_bottom, bc_houses]
+        if self.mesh_shape == "houses":
+            bc_houses = dl.DirichletBC(W.sub(0), (0, 0), boundary, 4)
+            bcW = [bc_left, bc_right, bc_top_bottom, bc_houses]
+        else:
+            bcW = [bc_left, bc_right, bc_top_bottom]
 
         # initialize trial and test functions
         v, q = dl.TestFunctions(W)
