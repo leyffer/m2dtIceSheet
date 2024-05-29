@@ -24,38 +24,72 @@ class myState(State):
         )
         self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
 
-    def get_derivative(self):
+        self.final_time = self.grid_t[-1]
+
+    def get_derivative(self, t: float = None):
 
         """
         computes and saves the spatial derivative of the state
         @return:
         """
+        # make sure we don't recompute the derivative every time it gets called
         if self.Du is None:
-            if self.bool_is_transient:
-                # TODO: implement derivative for time dependent states (it's easy, I'm just lazy)
-                raise RuntimeError(
-                    "spatial derivative for transient state still needs to be implemented"
-                )
 
+            self.Du = np.zeros(self.n_steps, dtype=object)
+            for k in range(self.n_steps):
+                du = dl.grad(self.state[k])
+                self.Du[k] = dl.project(du, self.gradient_space)
+
+        if t is None:
+            raise RuntimeError(
+                "transient state myState.get_derivative called without specifying a time at which to evaluate")
+
+        def evaluate_Du(x):
+            return self.apply_interpolation_rule(states=self.Du, t=t, x=x)
+
+        # note: returning a function that evaluates the derivative does cause additional overhead and is not the most
+        # elegant solution. However, the way the addition of the derivatives works in FEniCS, I couldn't find a simple
+        # way to evaluate them at a given point. It works much nicer for the states. (Nicole, May 28, 2024)
+
+        return evaluate_Du
+
+    def get_state(self, t=None):
+        if t is None:
+            raise RuntimeError(
+                "transient state myState.get_state called without specifying a time at which to evaluate")
+
+        return self.apply_interpolation_rule(states=self.state, t=t)
+
+    def apply_interpolation_rule(self, states, t, x=None):
+
+        if t > self.final_time:
+            raise RuntimeError("transient state called for time step beyond simulation horizon")
+
+        k_right = np.argmax(self.grid_t >= t)
+
+        if self.grid_t[k_right] == t:
+            if x is None:
+                return states[k_right]
             else:
-                Du = dl.grad(self.state)
-                self.Du = dl.project(Du, self.gradient_space)
+                return states[k_right](x)
 
-        return self.Du
+        if k_right == 0:
+            raise RuntimeError(
+                "In myState.apply_interpolation_rule: encountered k_right = 0. This happened for time={}".format(t))
 
-    def measure_pointwise(
-        self, position: np.ndarray, time: float | np.ndarray
-    ) -> np.ndarray:
-        """
-        Given positions of type [x,y], return the value of the state at the positions
-        """
-        if self.bool_is_transient:
-            # implement some sort of time interpolation here
-            raise NotImplementedError
-        else:
-            return np.array(
-                [self.state(x, y) for x, y in zip(position[:, 0], position[:, 1])]
-            )
+        t_left = self.grid_t[k_right - 1]
+        t_right = self.grid_t[k_right]
+        t_diff = t_right - t_left
+
+        state_left = states[k_right - 1]
+        state_right = states[k_right]
+        state_diff = state_right - state_left
+
+        if x is not None:
+            return state_left(x) + (t - t_left) * (state_right(x) - state_left(x)) / t_diff
+
+        # apply linear interpolation rule
+        return state_left + (t - t_left) * state_diff / t_diff
 
     def set_convolution(self, convolution, key):
         """
@@ -82,6 +116,24 @@ class myState(State):
             return None
         return self.convolution[key]
 
+    def measure_pointwise(
+            self, position: np.ndarray, t: float | np.ndarray
+    ) -> np.ndarray:
+        """
+        Given positions of type [x,y], return the value of the state at the positions
+
+        # todo: does this function get called? Intuitively this feels redundant with the code in the pointwise drone
+        """
+        print(
+            "myState_stationary.measure_pointwise got called. Why? Shouldn't the pointwise drone class take care of this?")
+
+        state = self.get_state(t=t)
+        return np.array(
+            [state(x, y) for x, y in zip(position[:, 0], position[:, 1])]
+        )
+
+
+# todo: the functions below - why are they here? What are they used for? They seems out of place to me (Nicole, May 28, 2024)
 def make_circle_kernel(radius: float, dx: float) -> np.ndarray:
     """!
     Make a circular uniform kernel

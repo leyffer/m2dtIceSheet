@@ -289,7 +289,7 @@ class FOM(FullOrderModel):
         dl.solve(F == 0, w, bcs=bcW)
         return u
 
-    def plot(self, u, mesh: dl.MeshGeometry = None, ax=None,**kwargs):
+    def plot(self, u, mesh: dl.MeshGeometry = None, ax=None, time: float = 0, **kwargs):
         """! Plot the state u"""
 
         # TODO: distinguish between different types of u
@@ -300,13 +300,17 @@ class FOM(FullOrderModel):
         if isinstance(u, str):
             u = dl.Expression(f"{u}", degree=3)
         if isinstance(u, State):
-            u = u.state
-            # TODO: make compatible with time-dependent states
+            u = u.get_state(t=time)
 
-        plt.figure()
-        c = dl.plot(u, mesh=mesh)
-        plt.colorbar(c)
+        if ax is None:
+            plt.figure()
+            c = dl.plot(u, mesh=mesh)
+            plt.colorbar(c)
+        else:
+            c = dl.plot(u, mesh=mesh)
+            plt.sca(ax)
 
+            return c
     def find_next(
         self, u_old: dl.Function, dt: float, kappa: float = None
     ) -> dl.Function:
@@ -421,5 +425,6 @@ class FOM(FullOrderModel):
             bool_is_transient=True,
             parameter=parameter,
             other_identifiers=other_identifiers,
+            grid_t=grid_t
         )
         return state

@@ -44,20 +44,28 @@ class DetectorPointwise(Detector):
         
         flightpath = flight.flightpath
         grid_t = flight.grid_t
-        
-        if state.bool_is_transient:
-            # todo: extend to transient measurements
-            raise NotImplementedError("In MyDrone.measure_pointwise: still need to bring over code for transient measurements")
-            # old code:
-            # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
-
         data = np.zeros((flightpath.shape[0],))
+
         for k in range(flightpath.shape[0]):
+            state_k = state.get_state(t=grid_t[k])
             try:
-                data[k] = state.state(flightpath[k, :])
+                data[k] = state_k(flightpath[k, :])
             except RuntimeError:
                 warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
                 pass
+
+        # if state.bool_is_transient:
+        #     # todo: extend to transient measurements
+        #     raise NotImplementedError("In MyDrone.measure_pointwise: still need to bring over code for transient measurements")
+        #     # old code:
+        #     # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
+        #
+        # for k in range(flightpath.shape[0]):
+        #     try:
+        #         data[k] = state.state(flightpath[k, :])
+        #     except RuntimeError:
+        #         warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
+        #         pass
         # data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
         return data
 
@@ -87,12 +95,11 @@ class DetectorPointwise(Detector):
         @param state  The state which the drone shall measure, State object
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
+        # helpful initializations
         flightpath, grid_t = flight.flightpath, flight.grid_t
         n_spatial = flightpath.shape[1]
-        
-        # # compute convolution with delta function (not needed for pointwise)
-        # convolution = self.compute_convolution(state=state)
-        Du = state.get_derivative()
+
+        # Du = state.get_derivative()
 
         # initialization
         D_data_d_position = np.zeros((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
@@ -102,18 +109,16 @@ class DetectorPointwise(Detector):
             # doesn't work with multiple positions that's why we can't get rid
             # of this loop
 
-            # apply chain rule
-            if state.bool_is_transient:
-                # todo: extend to transient measurements
-                raise NotImplementedError(
-                    "In DetectorPointwise.d_measurement_d_position: still need to bring over code for transient measurements")
-            else:
-                # state is time-independent
-                try:
-                    D_data_d_position[i, :] = Du(flightpath[i, :])
-                except RuntimeError:
-                    warnings.warn(f"DetectorPointwise.d_measurement_d_position: flightpath goes outside of computational domain")
-                    pass
+            # get derivative
+            Du = state.get_derivative(t=grid_t[i])
+
+            # evaluate at the considered position
+            try:
+                D_data_d_position[i, :] = Du(flightpath[i, :])
+            except RuntimeError:
+                warnings.warn(
+                    f"DetectorPointwise.d_measurement_d_position: flightpath goes outside of computational domain")
+                pass
 
         # stack next to each other horizontally
         D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])

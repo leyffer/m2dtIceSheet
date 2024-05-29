@@ -44,17 +44,29 @@ class State:
         self.bool_is_transient = bool_is_transient
         if bool_is_transient:
             self.grid_t = kwargs.get("grid_t")
+            if self.grid_t is None:
+                raise RuntimeError("No time discretization was passed for transient state")
+            self.n_steps = self.grid_t.shape[0]
 
         # information about the state solution itself
         self.state = state
         self.parameter = parameter
         self.other_identifiers = other_identifiers
 
-    def get_derivative(self):
+    def get_derivative(self, t=None):
         """
         computes and saves the spatial derivative of the state
         @return:
         """
         raise NotImplementedError(
             "user must implement State.get_derivative in subclass"
+        )
+
+    def get_state(self, t=None):
+        """
+        returns the state of the modelled system at a given time
+        @return:
+        """
+        raise NotImplementedError(
+            "user must implement State.get_state in subclass"
         )

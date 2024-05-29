@@ -5,12 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="just ran the code">
+      <change afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState_stationary.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/source/helpers/film_a_movie.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/State.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/State.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,14 +64,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;git-widget-placeholder&quot;: &quot;infinite-dimensional-setting&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/source&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "git-widget-placeholder": "time-dependence",
+    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />
       <recent name="$PROJECT_DIR$/source" />
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion_FEniCS" />
     </key>
@@ -266,7 +269,23 @@
       <option name="project" value="LOCAL" />
       <updated>1715309106798</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="corrected space for derivatives">
+      <option name="closed" value="true" />
+      <created>1716910313759</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1716910313759</updated>
+    </task>
+    <task id="LOCAL-00025" summary="stared on infinite-dimensional setting">
+      <option name="closed" value="true" />
+      <created>1716910405009</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1716910405009</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -313,7 +332,9 @@
     <MESSAGE value="included finite difference comparison in notebook 3" />
     <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
     <MESSAGE value="started on convergence studies" />
-    <option name="LAST_COMMIT_MESSAGE" value="started on convergence studies" />
+    <MESSAGE value="corrected space for derivatives" />
+    <MESSAGE value="stared on infinite-dimensional setting" />
+    <option name="LAST_COMMIT_MESSAGE" value="stared on infinite-dimensional setting" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
