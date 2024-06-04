@@ -4,15 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="just ran the code">
-      <change afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState_stationary.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/source/helpers/film_a_movie.py" afterDir="false" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="transient setting working">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/State.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/State.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/5_transientPDE.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/5_transientPDE.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/OEDUtility.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/OEDUtility.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,12 +59,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "git-widget-placeholder": "time-dependence",
-    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;git-widget-placeholder&quot;: &quot;time-dependence&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />
@@ -285,7 +280,15 @@
       <option name="project" value="LOCAL" />
       <updated>1716910405009</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="transient setting working">
+      <option name="closed" value="true" />
+      <created>1716941812777</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1716941812777</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -334,7 +337,8 @@
     <MESSAGE value="started on convergence studies" />
     <MESSAGE value="corrected space for derivatives" />
     <MESSAGE value="stared on infinite-dimensional setting" />
-    <option name="LAST_COMMIT_MESSAGE" value="stared on infinite-dimensional setting" />
+    <MESSAGE value="transient setting working" />
+    <option name="LAST_COMMIT_MESSAGE" value="transient setting working" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
