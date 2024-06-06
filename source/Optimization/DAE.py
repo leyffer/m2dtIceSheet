@@ -15,7 +15,9 @@ import jax
 jax.config.update("jax_enable_x64", True)
 # import jax.numpy as jnp
 import numpy as np
-import numpy as jnp
+
+jnp = np
+# import numpy as jnp
 
 from InverseProblem import InverseProblem
 from OEDUtility import OEDUtility
@@ -23,6 +25,9 @@ from OEDUtility import OEDUtility
 from collections import namedtuple
 
 # from scipy.integrate import RK45
+# TODO - add "movie" output
+# TODO - add more sources to the solve
+# TODO -
 
 
 class polygon_obstacle:
@@ -86,7 +91,7 @@ class polygon_obstacle:
 DAE_vars = namedtuple("DAE_vars", ["x", "y", "theta", "v", "acc", "omega", "omega_acc"])
 
 
-class Objective:
+class Objective(cyipopt.Problem):
     """Objective class to work with cyipopt"""
 
     def __init__(
@@ -112,6 +117,17 @@ class Objective:
         self.y_final = kwargs.get("y_final", 0.1)
         # Final heading
         self.theta_final = kwargs.get("theta_final", jnp.pi)
+
+        # Use the exact DAE (otherwise just use finite differences)
+        self.use_exact_DAE = kwargs.get("use_exact_DAE", False)
+        self.linear_tolerance = kwargs.get("linear_tolerance", 1e-3)
+
+        # Build a video of the optimization process
+        self.build_video = kwargs.get("build_video", False)
+        if self.build_video:
+            self.video_combined_vars = []
+            self.video_constraint_violation = []
+            self.video_objective = []
 
         # Obstacles
         # Centers
@@ -145,8 +161,9 @@ class Objective:
         # omega_acc
         self.omega_acc_lower = kwargs.get("omega_acc_lower", -200)
         self.omega_acc_upper = kwargs.get("omega_acc_upper", 200)
-        
+
         # Can limit the number of changes for acceleration to get piecewise constant controls
+        # TODO - separate the time grid and control grid (grids should be aligned)
         self.piecewise_constant = kwargs.get("piecewise_constant", None)
 
         self.T = kwargs.get("T", grid_t[-1] - grid_t[0])  # Total time
@@ -162,7 +179,8 @@ class Objective:
 
         self.grid_t = grid_t  # Time grid
         self.h = self.T / self.NK  # Time grid spacing
-        self.reg_strength = kwargs.get("reg_strength", 0.000001)  # Regularization strength
+        self.reg_strength = kwargs.get("reg_strength", 0.000001)
+        # Regularization strength
 
         self.x_shift = 0
         self.y_shift = self.x_shift + self.N_x
@@ -194,7 +212,15 @@ class Objective:
         self.num_equality_constraints = None
         self.num_inequality_constraints = None
         # Do an initialization of the constraints to get constraint numbers
+        self.objective_value = 0.0
         self.constraints(jnp.zeros((self.n,)))
+        super().__init__(
+            n = self.n,
+            m = self.m,
+            lb = self.lb,
+            cl = self.cl,
+            cu = self.cu,
+            )
 
     def OED_objective(self, combined_vars: jnp.ndarray) -> float:
         """OED objective function"""
@@ -215,80 +241,6 @@ class Objective:
         )
         out = jnp.concatenate((out, jnp.zeros((self.n - self.N_x - self.N_y,))))
         return out
-
-    @property
-    def m(self) -> int:
-        """Number of constraints
-
-        :return: int. Number of constraints
-        """
-        return self.num_equality_constraints + self.num_inequality_constraints
-
-    def var_joiner(
-        self,
-        *args,
-    ) -> jnp.ndarray:
-        """Join variables into a single vector
-
-        :param args: tuple[jnp.ndarray]. Variables to join
-        :return: jnp.ndarray. Concatenated vector containing all of the DAE
-            variables
-        """
-        return jnp.concatenate(args, axis=0)
-
-    def var_splitter(self, combined_vars: jnp.ndarray) -> tuple[jnp.ndarray]:
-        """Split variables from a single vector"""
-        return DAE_vars(*tuple(jnp.split(combined_vars, self.cum_var_lengths[:-1])))
-
-    @property
-    def lb(self) -> jnp.ndarray:
-        """Lower bounds on variables
-
-        :return: jnp.ndarray. Vector of lower bounds on all discretized variables
-        """
-        x_lb = jnp.ones((self.N_x,)) * self.x_lower
-        y_lb = jnp.ones((self.N_y,)) * self.y_lower
-        theta_lb = jnp.ones((self.N_theta,)) * self.theta_lower
-        v_lb = jnp.ones((self.N_v,)) * self.v_lower
-        if self.piecewise_constant is not None:
-            acc_lb = np.zeros((self.N_acc,))
-            acc_lb[::self.N_acc//self.piecewise_constant] = self.acc_lower
-        else:
-            acc_lb = jnp.ones((self.N_acc,)) * self.acc_lower
-        omega_lb = jnp.ones((self.N_omega,)) * self.omega_lower
-        if self.piecewise_constant is not None:
-            omega_acc_lb = np.zeros((self.N_omega_acc,))
-            omega_acc_lb[::self.N_omega_acc//self.piecewise_constant] = self.omega_acc_lower
-        else:
-            omega_acc_lb = jnp.ones((self.N_omega_acc,)) * self.omega_acc_lower
-        return self.var_joiner(
-            x_lb, y_lb, theta_lb, v_lb, acc_lb, omega_lb, omega_acc_lb
-        )
-
-    @property
-    def ub(self) -> jnp.ndarray:
-        """Upper bound on variables
-
-        :return: jnp.ndarray. Vector of upper bounds on all discretized variables
-        """
-        x_ub = self.x_upper * jnp.ones((self.N_x,))
-        y_ub = self.y_upper * jnp.ones((self.N_y,))
-        theta_ub = self.theta_upper * jnp.ones((self.N_theta,))
-        v_ub = self.v_upper * jnp.ones((self.N_v,))
-        if self.piecewise_constant is not None:
-            acc_ub = np.zeros((self.N_acc,))
-            acc_ub[::self.N_acc//self.piecewise_constant] = self.acc_upper
-        else:
-            acc_ub = jnp.ones((self.N_acc,)) * self.acc_upper
-        omega_ub = self.omega_upper * jnp.ones((self.N_omega,))
-        if self.piecewise_constant is not None:
-            omega_acc_ub = np.zeros((self.N_omega_acc,))
-            omega_acc_ub[::self.N_omega_acc//self.piecewise_constant] = self.omega_acc_upper
-        else:
-            omega_acc_ub = jnp.ones((self.N_omega_acc,)) * self.omega_acc_upper
-        return self.var_joiner(
-            x_ub, y_ub, theta_ub, v_ub, acc_ub, omega_ub, omega_acc_ub
-        )
 
     def regularization_objective(self, combined_vars: jnp.ndarray) -> float:
         """Regularization objective function
@@ -330,9 +282,10 @@ class Objective:
         :param vars: jnp.ndarray. Combined variables
         :return: jnp.ndarray. Objective value
         """
-        return self.OED_objective(
+        self.objective_value = self.OED_objective(
             combined_vars
         ) + self.reg_strength * self.regularization_objective(combined_vars)
+        return self.objective_value
 
     def gradient(self, combined_vars: jnp.ndarray) -> jnp.ndarray:
         """Objective function gradient
@@ -342,9 +295,91 @@ class Objective:
         :param vars: jnp.ndarray. Combined variables
         :return: jnp.ndarray. Gradient of objective w.r.t. variables
         """
+
+        if self.build_video:
+            self.video(combined_vars, None, self.objective_value)
+
         return self.OED_gradient(
             combined_vars
         ) + self.reg_strength * self.regularization_gradient(combined_vars)
+
+    @property
+    def m(self) -> int:
+        """Number of constraints
+
+        :return: int. Number of constraints
+        """
+        return self.num_equality_constraints + self.num_inequality_constraints
+
+    def var_joiner(
+        self,
+        *args,
+    ) -> jnp.ndarray:
+        """Join variables into a single vector
+
+        :param args: tuple[jnp.ndarray]. Variables to join
+        :return: jnp.ndarray. Concatenated vector containing all of the DAE
+            variables
+        """
+        return jnp.concatenate(args, axis=0)
+
+    def var_splitter(self, combined_vars: jnp.ndarray) -> tuple[jnp.ndarray]:
+        """Split variables from a single vector"""
+        return DAE_vars(*tuple(jnp.split(combined_vars, self.cum_var_lengths[:-1])))
+
+    @property
+    def lb(self) -> jnp.ndarray:
+        """Lower bounds on variables
+
+        :return: jnp.ndarray. Vector of lower bounds on all discretized variables
+        """
+        x_lb = jnp.ones((self.N_x,)) * self.x_lower
+        y_lb = jnp.ones((self.N_y,)) * self.y_lower
+        theta_lb = jnp.ones((self.N_theta,)) * self.theta_lower
+        v_lb = jnp.ones((self.N_v,)) * self.v_lower
+        if self.piecewise_constant is not None:
+            acc_lb = np.zeros((self.N_acc,))
+            acc_lb[:: self.N_acc // self.piecewise_constant] = self.acc_lower
+        else:
+            acc_lb = jnp.ones((self.N_acc,)) * self.acc_lower
+        omega_lb = jnp.ones((self.N_omega,)) * self.omega_lower
+        if self.piecewise_constant is not None:
+            omega_acc_lb = np.zeros((self.N_omega_acc,))
+            omega_acc_lb[:: self.N_omega_acc // self.piecewise_constant] = (
+                self.omega_acc_lower
+            )
+        else:
+            omega_acc_lb = jnp.ones((self.N_omega_acc,)) * self.omega_acc_lower
+        return self.var_joiner(
+            x_lb, y_lb, theta_lb, v_lb, acc_lb, omega_lb, omega_acc_lb
+        )
+
+    @property
+    def ub(self) -> jnp.ndarray:
+        """Upper bound on variables
+
+        :return: jnp.ndarray. Vector of upper bounds on all discretized variables
+        """
+        x_ub = self.x_upper * jnp.ones((self.N_x,))
+        y_ub = self.y_upper * jnp.ones((self.N_y,))
+        theta_ub = self.theta_upper * jnp.ones((self.N_theta,))
+        v_ub = self.v_upper * jnp.ones((self.N_v,))
+        if self.piecewise_constant is not None:
+            acc_ub = np.zeros((self.N_acc,))
+            acc_ub[:: self.N_acc // self.piecewise_constant] = self.acc_upper
+        else:
+            acc_ub = jnp.ones((self.N_acc,)) * self.acc_upper
+        omega_ub = self.omega_upper * jnp.ones((self.N_omega,))
+        if self.piecewise_constant is not None:
+            omega_acc_ub = np.zeros((self.N_omega_acc,))
+            omega_acc_ub[:: self.N_omega_acc // self.piecewise_constant] = (
+                self.omega_acc_upper
+            )
+        else:
+            omega_acc_ub = jnp.ones((self.N_omega_acc,)) * self.omega_acc_upper
+        return self.var_joiner(
+            x_ub, y_ub, theta_ub, v_ub, acc_ub, omega_ub, omega_acc_ub
+        )
 
     def circle_obstacle(
         self, x: jnp.ndarray, y: jnp.ndarray, cx: float, cy: float, rx: float, ry: float
@@ -411,11 +446,31 @@ class Objective:
         """Values to constrain between cl and cu"""
         # Equality constraints
         (x, y, theta, v, acc, omega, omega_acc) = self.var_splitter(combined_vars)
+
+        # Finite difference
         dae_x = (x[1:] - x[:-1]) - self.h * jnp.cos(theta[:-1]) * v[:-1]  # == 0
         dae_y = (y[1:] - y[:-1]) - self.h * jnp.sin(theta[:-1]) * v[:-1]  # == 0
+
+        if self.use_exact_DAE:
+            # Piecewise constant undefined when omega -> 0)
+            dae_x_exact = (x[1:] - x[:-1]) - (v[:-1] / omega[:-1]) * (
+                jnp.sin(theta[:-1] + omega[:-1] * self.h) - jnp.sin(theta[:-1])
+            )  # == 0
+            dae_y_exact = (y[1:] - y[:-1]) - (v[:-1] / omega[:-1]) * (
+                -jnp.cos(theta[:-1] + omega[:-1] * self.h) + jnp.cos(theta[:-1])
+            )  # == 0
+
+            indicator = jnp.abs(omega[:-1]) >= self.linear_tolerance
+            for i, ind in enumerate(indicator):
+                if ind:
+                dae_x.at[i] = dae_x_exact[i]
+                dae_y.at[i] = dae_y_exact[i]
+
         dae_theta = (theta[1:] - theta[:-1]) - self.h * omega[:-1]  # == 0
+        # Average acceleration
         dae_acc = (v[1:] - v[:-1]) - self.h * acc[:-1]  # == 0
         dae_omega_acc = (omega[1:] - omega[:-1]) - self.h * omega_acc[:-1]  # == 0
+
         cons = jnp.concatenate(
             (
                 dae_x,
@@ -506,23 +561,43 @@ class Objective:
         # values = []
         row = 0
         for i in range(self.N_x - 1):
-            columns += [
-                i + 1 + self.x_shift,
-                i + self.x_shift,
-                i + self.theta_shift,
-                i + self.v_shift,
-            ]
-            rows += [row] * 4
+            if self.use_exact_DAE:
+                columns += [
+                    i + 1 + self.x_shift,
+                    i + self.x_shift,
+                    i + self.theta_shift,
+                    i + self.v_shift,
+                    i + self.omega_shift,
+                ]
+                rows += [row] * 5
+            else:
+                columns += [
+                    i + 1 + self.x_shift,
+                    i + self.x_shift,
+                    i + self.theta_shift,
+                    i + self.v_shift,
+                ]
+                rows += [row] * 4
             # values += [1, -1, self.h * jnp.sin(theta[i]) * v[i], -self.h * jnp.cos(theta[i])]
             row += 1
         for i in range(self.N_y - 1):
-            columns += [
-                i + 1 + self.y_shift,
-                i + self.y_shift,
-                i + self.theta_shift,
-                i + self.v_shift,
-            ]
-            rows += [row] * 4
+            if self.use_exact_DAE:
+                columns += [
+                    i + 1 + self.y_shift,
+                    i + self.y_shift,
+                    i + self.theta_shift,
+                    i + self.v_shift,
+                    i + self.omega_shift,
+                ]
+                rows += [row] * 5
+            else:
+                columns += [
+                    i + 1 + self.y_shift,
+                    i + self.y_shift,
+                    i + self.theta_shift,
+                    i + self.v_shift,
+                ]
+                rows += [row] * 4
             # values += [1, -1, -self.h * jnp.cos(theta[i]) * v[i], -self.h * jnp.sin(theta[i])]
             row += 1
         for i in range(self.N_theta - 1):
@@ -590,7 +665,7 @@ class Objective:
         :return: jnp.ndarray. Non-zero values of the Jacobian corresponding to
             the row and column of the jacobian structure
         """
-        (x, y, theta, v, _acc, _omega, _omega_acc) = self.var_splitter(combined_vars)
+        (x, y, theta, v, _acc, omega, _omega_acc) = self.var_splitter(combined_vars)
         rows, _columns = self.jacobianstructure()
         values = np.zeros(rows.shape)
         index = 0
@@ -598,24 +673,75 @@ class Objective:
         # DAE x integration (forward Euler)
         # x[i+1] - x[i] - h * cos(theta[i]) * v[i] = 0
         for i in range(self.N_x - 1):
-            values[index : index + 4] = [
-                1,
-                -1,
-                self.h * jnp.sin(theta[i]) * v[i],
-                -self.h * jnp.cos(theta[i]),
-            ]
-            index += 4
+            if self.use_exact_DAE:
+                if jnp.abs(omega[i]) >= self.linear_tolerance:
+                    values[index : index + 5] = [
+                        1,
+                        -1,
+                        -(v[i] / omega[i])
+                        * (jnp.cos(theta[i] + omega[i] * self.h) - jnp.cos(theta[i])),
+                        -(1 / omega[i])
+                        * (jnp.sin(theta[i] + omega[i] * self.h) - jnp.sin(theta[i])),
+                        (v[i] / (omega[i] ** 2))
+                        * (jnp.sin(theta[i] + omega[i] * self.h) - jnp.sin(theta[i]))
+                        - (v[i] / omega[i])
+                        * (self.h * jnp.cos(theta[i] + omega[i] * self.h)),
+                    ]
+                    index += 5
+                else:
+                    values[index : index + 5] = [
+                        1,  # x[i + 1]
+                        -1,  # x[i]
+                        self.h * jnp.sin(theta[i]) * v[i],  # theta[i]
+                        -self.h * jnp.cos(theta[i]),  # v[i]
+                        0,  # omega[i]
+                    ]
+                    index += 5
+            else:
+                values[index : index + 4] = [
+                    1,
+                    -1,
+                    self.h * jnp.sin(theta[i]) * v[i],
+                    -self.h * jnp.cos(theta[i]),
+                ]
+                index += 4
 
         # DAE y integration (forward Euler)
         # y[i+1] - y[i] - h * sin(theta[i]) * v[i] = 0
         for i in range(self.N_y - 1):
-            values[index : index + 4] = [
-                1,
-                -1,
-                -self.h * jnp.cos(theta[i]) * v[i],
-                -self.h * jnp.sin(theta[i]),
-            ]
-            index += 4
+            if self.use_exact_DAE:
+                if jnp.abs(omega[i]) >= self.linear_tolerance:
+                    values[index : index + 5] = [
+                        1,
+                        -1,
+                        -(v[i] / omega[i])
+                        * (jnp.sin(theta[i] + omega[i] * self.h) - jnp.sin(theta[i])),
+                        -(1 / omega[i])
+                        * (-jnp.cos(theta[i] + omega[i] * self.h) + jnp.cos(theta[i])),
+                        v[i]
+                        / (omega[i] ** 2)
+                        * (-jnp.cos(theta[i] + omega[i] * self.h) + jnp.cos(theta[i]))
+                        - (v[i] / omega[i])
+                        * (self.h * jnp.sin(theta[i] + omega[i] * self.h)),
+                    ]
+                    index += 5
+                else:
+                    values[index : index + 5] = [
+                        1,
+                        -1,
+                        -self.h * jnp.cos(theta[i]) * v[i],
+                        -self.h * jnp.sin(theta[i]),
+                        0,
+                    ]
+                    index += 5
+            else:
+                values[index : index + 4] = [
+                    1,
+                    -1,
+                    -self.h * jnp.cos(theta[i]) * v[i],
+                    -self.h * jnp.sin(theta[i]),
+                ]
+                index += 4
 
         # DAE theta integration (forward Euler)
         # theta[i+1] - theta[i] - h * omega[i] = 0
@@ -673,15 +799,69 @@ class Objective:
                 index += 2
         return values
 
+    def video(self, combined_vars, constraints=None, objective=None):
+        """
+        Video hook
 
-# problem_obj = Objective()
+        Records variables, constraint violations, and objective over the course of an optimization.
+        """
+        if self.build_video:
+            self.video_combined_vars.append(combined_vars)
+            if constraints is None:
+                constraints = self.constraints(combined_vars)
+            self.video_constraint_violation.append(
+                jnp.maximum(self.cl - constraints, 0.0)
+                + jnp.maximum(constraints - self.cu, 0.0)
+            )
+            if objective is None:
+                objective = self.objective(combined_vars)
+            self.video_objective.append(objective)
 
-# problem = cyipopt.Problem(
-#     n=problem_obj.n,  # Number of decision variables
-#     m=problem_obj.m,  # Number of constraints
-#     problem_obj=problem_obj,  # Objective object with "objective" and "gradient" functions
-#     lb=problem_obj.lb,  # Lower bounds for x
-#     ub=problem_obj.ub,  # Upper bounds for x
-#     cl=problem_obj.cl,  # Lower bound for constraints
-#     cu=problem_obj.cu,  # Lower bound for constraints
-# )
+    def intermediate(
+        self,
+        alg_mod,
+        iter_count,
+        obj_value,
+        inf_pr,
+        inf_du,
+        mu,
+        d_norm,
+        regularization_size,
+        alpha_du,
+        alpha_pr,
+        ls_trials,
+    ):
+        """
+        Intermediate callback is run at the end of every IPOPT iteration
+        
+        In this callback, we have additional access to IPOPT values by calling:
+        self.get_current_iterate():
+        Dict with keys: "x", "mult_x_L", "mult_x_U", "g", "mult_g"
+            "x" is variable values (primal)
+            "mult_x_L" is multipliers for lower variable bounds
+            "mult_x_U" is multipliers for upper variable bounds
+            "mult_g" is multipliers for constraints
+        
+        self.get_current_violations()
+        Dict with keys: "x_L_violation", "x_U_violation", "compl_x_L", "compl_x_U", "grad_lag_x", "g_violation", "compl_g"
+            "x_L_violation" is violation of original lower bounds on variables
+            "x_U_violation" is violation of original upper bounds on variables
+            "compl_x_L" is violation of complementarity for lower bounds on variables
+            "compl_x_U" is violation of complementarity for upper bounds on variables
+            "grad_lag_x" is gradient of Lagrangian w.r.t. variables x
+            "g_violation" is violation of constraints
+            "compl_g" is complementarity of constraint
+        
+        Args:
+            :param alg_mod: Algorithm phase: 0 is for regular, 1 is restoration.
+            :param iter_count: The current iteration count.
+            :param obj_value: The unscaled objective value at the current point
+            :param inf_pr: The scaled primal infeasibility at the current point.
+            :param inf_du: The scaled dual infeasibility at the current point.
+            :param mu: The value of the barrier parameter.
+            :param d_norm: The infinity norm (max) of the primal step.
+            :param regularization_size: The value of the regularization term for the Hessian of the Lagrangian in the augmented system.
+            :param alpha_du: The stepsize for the dual variables.
+            :param alpha_pr: The stepsize for the primal variables.
+            :param ls_trials: The number of backtracking line search steps.
+        """
