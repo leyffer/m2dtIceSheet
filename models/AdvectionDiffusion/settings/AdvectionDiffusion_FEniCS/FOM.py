@@ -306,9 +306,10 @@ class FOM(FullOrderModel):
             u = u.state
             # TODO: make compatible with time-dependent states
 
-        plt.figure()
+        # plt.figure()
         c = dl.plot(u, mesh=mesh)
-        plt.colorbar(c)
+        return c
+        # plt.colorbar(c)
 
     def find_next(
         self, u_old: dl.Function, dt: float, kappa: float = None
