@@ -25,68 +25,8 @@ from OEDUtility import OEDUtility
 from collections import namedtuple
 
 # from scipy.integrate import RK45
+
 # TODO - add "movie" output
-# TODO - add more sources to the solve
-# TODO -
-
-
-class polygon_obstacle:
-    """
-    A polygon from vertices listed clockwise.
-
-    Constraints for avoiding the polygon are of the form:
-
-    v_i^T x >= c_i
-
-    where v_i are orthogonal vectors from each polygonal edge and c_i are
-    intercept values.
-
-    Constraints probably will only work well for convex polygons.
-    """
-
-    def __init__(self, vertices):
-        """
-        :param vertices:  polygon vertices in clockwise order
-        """
-        self.vertices = jnp.array(vertices)
-
-    def unit_vec(self, vector: jnp.ndarray):
-        """Unit vector
-
-        :param vector: jnp.ndarray. vector to convert to unit vector
-        :return: jnp.ndarray. unit vector in the direction of vector
-        """
-        return vector / jnp.linalg.norm(vector)
-
-    @property
-    def side_vectors(self):
-        """Unit vectors along perimeter of polygon"""
-        return jnp.array(
-            [
-                self.unit_vec(self.vertices[i] - self.vertices[i - 1])
-                for i in range(len(self.vertices))
-            ]
-        )
-
-    @property
-    def orthogonal_vectors(self):
-        """Unit normal vectors for polygon sides"""
-        return jnp.array([jnp.array([-v[1], v[0]]) for v in self.side_vectors])
-
-    @property
-    def constants(self):
-        """
-        orthogonal . x >= constant
-        """
-        return jnp.array(
-            [
-                jnp.dot(vertex, v)
-                for vertex, v in zip(self.vertices, self.orthogonal_vectors)
-            ]
-        )
-
-
-# %%
 
 DAE_vars = namedtuple("DAE_vars", ["x", "y", "theta", "v", "acc", "omega", "omega_acc"])
 
@@ -109,7 +49,8 @@ class Objective(cyipopt.Problem):
         self.x0 = kwargs.get("x0", 0.7)
         self.y0 = kwargs.get("y0", 0.3)
         # Initial heading
-        self.theta0 = kwargs.get("theta0", 0.0)
+        self.enforce_initial_heading = kwargs.get("enforce_initial_heading", False)
+        self.theta0 = kwargs.get("theta0", np.pi / 2)
 
         # Final position
         self.enforce_final_position = kwargs.get("enforce_final_position", False)
@@ -128,6 +69,7 @@ class Objective(cyipopt.Problem):
             self.video_combined_vars = []
             self.video_constraint_violation = []
             self.video_objective = []
+            self.video_frames = []
 
         # Obstacles
         # Centers
@@ -141,11 +83,11 @@ class Objective(cyipopt.Problem):
 
         # Bound constraints
         # x
-        self.x_lower = kwargs.get("x_lower", 0)
-        self.x_upper = kwargs.get("x_upper", 1)
+        self.x_lower = kwargs.get("x_lower", 0.0)
+        self.x_upper = kwargs.get("x_upper", 1.0)
         # y
-        self.y_lower = kwargs.get("y_lower", 0)
-        self.y_upper = kwargs.get("y_upper", 1)
+        self.y_lower = kwargs.get("y_lower", 0.0)
+        self.y_upper = kwargs.get("y_upper", 1.0)
         # theta (unbounded)
         self.theta_lower = kwargs.get("theta_lower", -jnp.inf)
         self.theta_upper = kwargs.get("theta_upper", jnp.inf)
@@ -153,14 +95,14 @@ class Objective(cyipopt.Problem):
         self.v_lower = kwargs.get("v_lower", 0.1)
         self.v_upper = kwargs.get("v_upper", 3.0)
         # acc
-        self.acc_lower = kwargs.get("acc_lower", -10)
-        self.acc_upper = kwargs.get("acc_upper", 10)
+        self.acc_lower = kwargs.get("acc_lower", -10.0)
+        self.acc_upper = kwargs.get("acc_upper", 10.0)
         # omega
-        self.omega_lower = kwargs.get("omega_lower", -20 * jnp.pi)
-        self.omega_upper = kwargs.get("omega_upper", 20 * jnp.pi)
+        self.omega_lower = kwargs.get("omega_lower", -20.0 * jnp.pi)
+        self.omega_upper = kwargs.get("omega_upper", 20.0 * jnp.pi)
         # omega_acc
-        self.omega_acc_lower = kwargs.get("omega_acc_lower", -200)
-        self.omega_acc_upper = kwargs.get("omega_acc_upper", 200)
+        self.omega_acc_lower = kwargs.get("omega_acc_lower", -200.0)
+        self.omega_acc_upper = kwargs.get("omega_acc_upper", 200.0)
 
         # Can limit the number of changes for acceleration to get piecewise constant controls
         # TODO - separate the time grid and control grid (grids should be aligned)
@@ -207,20 +149,34 @@ class Objective(cyipopt.Problem):
             )
         )
 
-        self.n = self.omega_acc_shift + self.N_omega_acc  # number of variables
+        self.number_of_variables = self.omega_acc_shift + self.N_omega_acc  # number of variables
+
+        # Simplified two parameter mode
+        self.circle_mode = kwargs.get("circle_mode", False)
+        self.circle_center_x = kwargs.get("circle_center_x", 0.75 / 2)
+        self.circle_center_y = kwargs.get("circle_center_y", 0.55 / 2)
+        if self.circle_mode:
+            self.enforce_final_position = False
+            self.enforce_initial_position = False
+            self.enforce_initial_heading = True
+            self.acc_lower = 0.0
+            self.acc_upper = 0.0
+            self.omega_acc_lower = 0.0
+            self.omega_acc_upper = 0.0
 
         self.num_equality_constraints = None
         self.num_inequality_constraints = None
         # Do an initialization of the constraints to get constraint numbers
         self.objective_value = 0.0
-        self.constraints(jnp.zeros((self.n,)))
+        self.constraints(jnp.ones((self.number_of_variables,)))
         super().__init__(
-            n = self.n,
-            m = self.m,
-            lb = self.lb,
-            cl = self.cl,
-            cu = self.cu,
-            )
+            n=self.number_of_variables,
+            m=self.number_of_constraints,
+            lb=self.lower_bounds,
+            ub=self.upper_bounds,
+            cl=self.constraint_lower_bounds,
+            cu=self.constraint_upper_bounds,
+        )
 
     def OED_objective(self, combined_vars: jnp.ndarray) -> float:
         """OED objective function"""
@@ -239,7 +195,7 @@ class Objective(cyipopt.Problem):
                 alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
             )
         )
-        out = jnp.concatenate((out, jnp.zeros((self.n - self.N_x - self.N_y,))))
+        out = jnp.concatenate((out, jnp.zeros((self.number_of_variables - self.N_x - self.N_y,))))
         return out
 
     def regularization_objective(self, combined_vars: jnp.ndarray) -> float:
@@ -296,15 +252,12 @@ class Objective(cyipopt.Problem):
         :return: jnp.ndarray. Gradient of objective w.r.t. variables
         """
 
-        if self.build_video:
-            self.video(combined_vars, None, self.objective_value)
-
         return self.OED_gradient(
             combined_vars
         ) + self.reg_strength * self.regularization_gradient(combined_vars)
 
     @property
-    def m(self) -> int:
+    def number_of_constraints(self) -> int:
         """Number of constraints
 
         :return: int. Number of constraints
@@ -328,7 +281,7 @@ class Objective(cyipopt.Problem):
         return DAE_vars(*tuple(jnp.split(combined_vars, self.cum_var_lengths[:-1])))
 
     @property
-    def lb(self) -> jnp.ndarray:
+    def lower_bounds(self) -> jnp.ndarray:
         """Lower bounds on variables
 
         :return: jnp.ndarray. Vector of lower bounds on all discretized variables
@@ -355,7 +308,7 @@ class Objective(cyipopt.Problem):
         )
 
     @property
-    def ub(self) -> jnp.ndarray:
+    def upper_bounds(self) -> jnp.ndarray:
         """Upper bound on variables
 
         :return: jnp.ndarray. Vector of upper bounds on all discretized variables
@@ -463,8 +416,10 @@ class Objective(cyipopt.Problem):
             indicator = jnp.abs(omega[:-1]) >= self.linear_tolerance
             for i, ind in enumerate(indicator):
                 if ind:
-                dae_x.at[i] = dae_x_exact[i]
-                dae_y.at[i] = dae_y_exact[i]
+                    dae_x[i] = dae_x_exact[i]
+                    dae_y[i] = dae_y_exact[i]
+                    # dae_x.at[i].set(dae_x_exact[i])
+                    # dae_y.at[i].set(dae_y_exact[i])
 
         dae_theta = (theta[1:] - theta[:-1]) - self.h * omega[:-1]  # == 0
         # Average acceleration
@@ -489,6 +444,20 @@ class Objective(cyipopt.Problem):
             final_x = x[-1] - self.x_final  # == 0
             final_y = y[-1] - self.y_final  # == 0
             cons = jnp.concatenate((cons, jnp.array((final_x, final_y))), axis=0)
+        if self.enforce_initial_heading:
+            initial_heading = theta[0] - self.theta0  # ==0
+            cons = jnp.concatenate((cons, jnp.array((initial_heading,))), axis=0)
+
+        if self.circle_mode:
+            initial_x_circle = x[0] - (
+                self.circle_center_x
+                + v[0] / omega[0] * jnp.cos(self.theta0 - jnp.pi / 2)
+            )  # == 0
+            initial_y_circle = y[0] - (
+                self.circle_center_y
+                + v[0] / omega[0] * jnp.sin(self.theta0 - jnp.pi / 2)
+            )  # == 0
+            cons = jnp.concatenate((cons, jnp.array((initial_x_circle, initial_y_circle))), axis=0)
 
         self.num_equality_constraints = len(cons)
 
@@ -511,17 +480,17 @@ class Objective(cyipopt.Problem):
         return cons
 
     @property
-    def cl(self) -> jnp.ndarray:
+    def constraint_lower_bounds(self) -> jnp.ndarray:
         """Constraint lower bounds
 
         Constraints are written to all have zero lower bounds
 
         :return: jnp.ndarray. Constraint lower bounds.
         """
-        return jnp.zeros((self.m,))
+        return jnp.zeros((self.number_of_constraints,))
 
     @property
-    def cu(self) -> jnp.ndarray:
+    def constraint_upper_bounds(self) -> jnp.ndarray:
         """Constraint upper bounds
 
         Equality constraints have an upper bound of zero. Inequality constraints
@@ -648,6 +617,26 @@ class Objective(cyipopt.Problem):
             columns += [self.NK - 1 + self.y_shift]
             rows += [row]
             # values += [1]
+            row += 1
+
+        if self.enforce_initial_heading:
+            # Initial theta
+            columns += [0 + self.theta_shift]
+            rows += [row]
+            # values += [1]
+            row += 1
+
+        if self.circle_mode:
+            # Initial x
+            columns += [0 + self.x_shift, 1 + self.v_shift, 1 + self.omega_shift]
+            rows += [row] * 3
+            # values += [1, 1/omega[1], -v[1]/omega[1]**2]
+            row += 1
+
+            # Initial y
+            columns += [0 + self.y_shift, 1 + self.v_shift, 1 + self.omega_shift]
+            rows += [row] * 3
+            # values += [1, 1/omega[1], -v[1]/omega[1]**2]
             row += 1
 
         for _cx, _cy, _rx, _ry in zip(self.cxs, self.cys, self.rxs, self.rys):
@@ -777,6 +766,27 @@ class Objective(cyipopt.Problem):
             values[index] = 1
             index += 1
 
+        if self.enforce_initial_heading:
+            # Initial theta
+            values[index] = 1
+            index += 1
+
+        if self.circle_mode:
+            # Initial x
+            values[index : index + 3] = [
+                1,
+                -jnp.cos(self.theta0 - jnp.pi / 2) / omega[1],
+                jnp.cos(self.theta0 - jnp.pi / 2) * v[1] / (omega[1] ** 2),
+            ]
+            index += 3
+            # Initial y
+            values[index : index + 3] = [
+                1,
+                -jnp.sin(self.theta0 - jnp.pi / 2) / omega[1],
+                jnp.sin(self.theta0 - jnp.pi / 2) * v[1] / (omega[1] ** 2),
+            ]
+            index += 3
+
         for cx, cy, rx, ry in zip(self.cxs, self.cys, self.rxs, self.rys):
             for i in range(self.N_x):
                 if self.obstacle_shape == "circle":
@@ -810,8 +820,8 @@ class Objective(cyipopt.Problem):
             if constraints is None:
                 constraints = self.constraints(combined_vars)
             self.video_constraint_violation.append(
-                jnp.maximum(self.cl - constraints, 0.0)
-                + jnp.maximum(constraints - self.cu, 0.0)
+                jnp.maximum(self.constraint_lower_bounds - constraints, 0.0)
+                + jnp.maximum(constraints - self.constraint_upper_bounds, 0.0)
             )
             if objective is None:
                 objective = self.objective(combined_vars)
@@ -833,25 +843,25 @@ class Objective(cyipopt.Problem):
     ):
         """
         Intermediate callback is run at the end of every IPOPT iteration
-        
+
         In this callback, we have additional access to IPOPT values by calling:
         self.get_current_iterate():
-        Dict with keys: "x", "mult_x_L", "mult_x_U", "g", "mult_g"
+        Dict:
             "x" is variable values (primal)
             "mult_x_L" is multipliers for lower variable bounds
             "mult_x_U" is multipliers for upper variable bounds
             "mult_g" is multipliers for constraints
-        
+
         self.get_current_violations()
-        Dict with keys: "x_L_violation", "x_U_violation", "compl_x_L", "compl_x_U", "grad_lag_x", "g_violation", "compl_g"
+        Dict:
             "x_L_violation" is violation of original lower bounds on variables
             "x_U_violation" is violation of original upper bounds on variables
             "compl_x_L" is violation of complementarity for lower bounds on variables
             "compl_x_U" is violation of complementarity for upper bounds on variables
             "grad_lag_x" is gradient of Lagrangian w.r.t. variables x
             "g_violation" is violation of constraints
-            "compl_g" is complementarity of constraint
-        
+            "compl_g" is complementarity of constraints
+
         Args:
             :param alg_mod: Algorithm phase: 0 is for regular, 1 is restoration.
             :param iter_count: The current iteration count.
@@ -865,3 +875,94 @@ class Objective(cyipopt.Problem):
             :param alpha_pr: The stepsize for the primal variables.
             :param ls_trials: The number of backtracking line search steps.
         """
+        if self.build_video:
+            iterate = self.get_current_iterate()
+            violations = self.get_current_violations()
+            (x, y, theta, v, acc, omega, omega_acc) = self.var_splitter(iterate["x"])
+
+            self.video_frames.append(
+                {
+                    "iterate": iterate,
+                    "violations": violations,
+                    "alg_mod": alg_mod,
+                    "iter_count": iter_count,
+                    "obj_value": obj_value,
+                    "inf_pr": inf_pr,
+                    "inf_du": inf_du,
+                    "mu": mu,
+                    "d_norm": d_norm,
+                    "regularization_size": regularization_size,
+                    "alpha_du": alpha_du,
+                    "alpha_pr": alpha_pr,
+                    "ls_trials": ls_trials,
+                    "variables": {
+                        "x": x,
+                        "y": y,
+                        "theta": theta,
+                        "v": v,
+                        "acc": acc,
+                        "omega": omega,
+                        "omega_acc": omega_acc,
+                    },
+                    "OED_objective": self.OED_objective(iterate["x"]),
+                    "regularization_objective": self.regularization_objective(
+                        iterate["x"]
+                    ),
+                }
+            )
+
+
+class polygon_obstacle:
+    """
+    A polygon from vertices listed clockwise.
+
+    Constraints for avoiding the polygon are of the form:
+
+    v_i^T x >= c_i
+
+    where v_i are orthogonal vectors from each polygonal edge and c_i are
+    intercept values.
+
+    Constraints probably will only work well for convex polygons.
+    """
+
+    def __init__(self, vertices):
+        """
+        :param vertices:  polygon vertices in clockwise order
+        """
+        self.vertices = jnp.array(vertices)
+
+    def unit_vec(self, vector: jnp.ndarray):
+        """Unit vector
+
+        :param vector: jnp.ndarray. vector to convert to unit vector
+        :return: jnp.ndarray. unit vector in the direction of vector
+        """
+        return vector / jnp.linalg.norm(vector)
+
+    @property
+    def side_vectors(self):
+        """Unit vectors along perimeter of polygon"""
+        return jnp.array(
+            [
+                self.unit_vec(self.vertices[i] - self.vertices[i - 1])
+                for i in range(len(self.vertices))
+            ]
+        )
+
+    @property
+    def orthogonal_vectors(self):
+        """Unit normal vectors for polygon sides"""
+        return jnp.array([jnp.array([-v[1], v[0]]) for v in self.side_vectors])
+
+    @property
+    def constants(self):
+        """
+        orthogonal . x >= constant
+        """
+        return jnp.array(
+            [
+                jnp.dot(vertex, v)
+                for vertex, v in zip(self.vertices, self.orthogonal_vectors)
+            ]
+        )
