@@ -22,7 +22,8 @@ class myState(State):
         super().__init__(
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
-        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
+        # Gradient space is Vector space of one dimension lower than FOM dimension
+        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim - 1) # Discontinuous Galerkin
 
     def get_derivative(self):
 

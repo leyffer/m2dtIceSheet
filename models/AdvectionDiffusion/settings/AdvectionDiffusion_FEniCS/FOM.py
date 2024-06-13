@@ -80,9 +80,6 @@ class FOM(FullOrderModel):
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
         # see ufl.finiteelement.elementlist.show_elements() for finite element family options
-      
-        # Vector space for gradient
-        self.V2 = dl.VectorFunctionSpace(self.mesh, "DG", polyDim-1) # Discontinuous Galerkin
 
         # Finite-element dimension
         self.nFE = self.V.dim()
