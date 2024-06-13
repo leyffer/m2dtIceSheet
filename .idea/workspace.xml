@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="just ran the code">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;nicolearetz&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/leyffer/m2dtIceSheet.git&quot;,
+    &quot;accountId&quot;: &quot;d0dc0d60-b623-476c-a768-9c0b67dd2014&quot;
+  }
+}</component>
+  <component name="IgnoredFileRootStore">
+    <option name="generatedRoots">
+      <set>
+        <option value="$PROJECT_DIR$/.idea" />
+      </set>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2Tnfj0qMZZCFJ4D8mDjpOIofA34" />
+  <component name="ProjectLevelVcsManager">
+    <OptionsSetting value="false" id="Update" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;git-widget-placeholder&quot;: &quot;infinite-dimensional-setting&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/source&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/source" />
+      <recent name="$PROJECT_DIR$/models/AdvectionDiffusion_FEniCS" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/graveyard" />
+      <recent name="$PROJECT_DIR$/models/AdvectionDiffusion" />
+      <recent name="$PROJECT_DIR$/source/leftover" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-babbdf50b680-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.15989.155" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="" />
+      <created>1691683896538</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1691683896538</updated>
+    </task>
+    <task id="LOCAL-00001" summary="put in the class structure (c.f. discussion on Oct 27)">
+      <created>1698774394651</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1698774394651</updated>
+    </task>
+    <task id="LOCAL-00002" summary="started restructuring the FEniCS advection-diffusion FOM class">
+      <created>1698787380750</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1698787380750</updated>
+    </task>
+    <task id="LOCAL-00003" summary="integrated the prior into the full-order model">
+      <created>1698791664269</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1698791664269</updated>
+    </task>
+    <task id="LOCAL-00004" summary="copied over minimum code for drone class, missing gaussian and uniform measurements">
+      <created>1698794617041</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1698794617041</updated>
+    </task>
+    <task id="LOCAL-00005" summary="up to utility function">
+      <created>1698963941366</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1698963941366</updated>
+    </task>
+    <task id="LOCAL-00006" summary="started to optimize derivative functions">
+      <created>1698969483058</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1698969483058</updated>
+    </task>
+    <task id="LOCAL-00007" summary="copied over derivative functions, but not correct yet">
+      <created>1699257866492</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1699257866492</updated>
+    </task>
+    <task id="LOCAL-00008" summary="minimally working example (FEniCS) from model to utility fct gradients">
+      <created>1699384265758</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1699384265758</updated>
+    </task>
+    <task id="LOCAL-00009" summary="renamed folder">
+      <created>1699384298165</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1699384298165</updated>
+    </task>
+    <task id="LOCAL-00010" summary="added more comments to the explanation notebook">
+      <created>1699390804351</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1699390804351</updated>
+    </task>
+    <task id="LOCAL-00011" summary="added more comments to the explanation notebook">
+      <created>1699394756164</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1699394756164</updated>
+    </task>
+    <task id="LOCAL-00012" summary="outsourced point-wise measurements into their own MyDrone-subclass">
+      <created>1700591165246</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1700591165246</updated>
+    </task>
+    <task id="LOCAL-00013" summary="improved integration-type measurements">
+      <created>1706032025158</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1706032025158</updated>
+    </task>
+    <task id="LOCAL-00014" summary="before starting on derivatives for truncated domain type measurements">
+      <created>1706567665212</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1706567665212</updated>
+    </task>
+    <task id="LOCAL-00015" summary="- truncated domain derivatives,&#10;- optimized solve for heat equation (Gaussian measurements),&#10;- added documentation strings for all drone measurement classes&#10;- approximated boundary conditions for Weierstrass-trick">
+      <created>1707849448872</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1707849448872</updated>
+    </task>
+    <task id="LOCAL-00016" summary="fixed notebook 1 merge error">
+      <created>1715099978137</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1715099978137</updated>
+    </task>
+    <task id="LOCAL-00017" summary="provide custom forcing centers to FOM">
+      <option name="closed" value="true" />
+      <created>1715102412704</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1715102412704</updated>
+    </task>
+    <task id="LOCAL-00018" summary="adjusted notebook 2 for custom forcing centers">
+      <option name="closed" value="true" />
+      <created>1715102733432</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1715102733432</updated>
+    </task>
+    <task id="LOCAL-00019" summary="tested positional derivatives (notebook 3)">
+      <option name="closed" value="true" />
+      <created>1715125110350</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1715125110350</updated>
+    </task>
+    <task id="LOCAL-00020" summary="included finite difference comparison in notebook 3">
+      <option name="closed" value="true" />
+      <created>1715128162743</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1715128162743</updated>
+    </task>
+    <task id="LOCAL-00021" summary="included finite difference comparison in notebook 3">
+      <option name="closed" value="true" />
+      <created>1715266260697</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1715266260697</updated>
+    </task>
+    <task id="LOCAL-00022" summary="consistent noise model (Dirichlet and Neumann BC)">
+      <option name="closed" value="true" />
+      <created>1715292613704</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1715292613704</updated>
+    </task>
+    <task id="LOCAL-00023" summary="started on convergence studies">
+      <option name="closed" value="true" />
+      <created>1715309106798</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1715309106798</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_NEW_TODO" value="false" />
+    <MESSAGE value="put in the class structure (c.f. discussion on Oct 27)" />
+    <MESSAGE value="started restructuring the FEniCS advection-diffusion FOM class" />
+    <MESSAGE value="integrated the prior into the full-order model" />
+    <MESSAGE value="copied over minimum code for drone class, missing gaussian and uniform measurements" />
+    <MESSAGE value="up to utility function" />
+    <MESSAGE value="started to optimize derivative functions" />
+    <MESSAGE value="copied over derivative functions, but not correct yet" />
+    <MESSAGE value="minimally working example (FEniCS) from model to utility fct gradients" />
+    <MESSAGE value="renamed folder" />
+    <MESSAGE value="added more comments to the explanation notebook" />
+    <MESSAGE value="outsourced point-wise measurements into their own MyDrone-subclass" />
+    <MESSAGE value="improved integration-type measurements" />
+    <MESSAGE value="before starting on derivatives for truncated domain type measurements" />
+    <MESSAGE value="- truncated domain derivatives,&#10;- optimized solve for heat equation (Gaussian measurements),&#10;- added documentation strings for all drone measurement classes&#10;- approximated boundary conditions for Weierstrass-trick" />
+    <MESSAGE value="fixed notebook 1 merge error" />
+    <MESSAGE value="provide custom forcing centers to FOM" />
+    <MESSAGE value="adjusted notebook 2 for custom forcing centers" />
+    <MESSAGE value="tested positional derivatives (notebook 3)" />
+    <MESSAGE value="included finite difference comparison in notebook 3" />
+    <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
+    <MESSAGE value="started on convergence studies" />
+    <option name="LAST_COMMIT_MESSAGE" value="started on convergence studies" />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+</project>
