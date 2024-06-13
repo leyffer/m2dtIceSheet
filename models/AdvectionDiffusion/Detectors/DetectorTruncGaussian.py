@@ -149,7 +149,7 @@ class DetectorTruncGaussian(Detector):
         n_spatial = flightpath.shape[1]
         
         # parts of the chain rule (only compute once)
-        grad_p = flight.d_position_d_control   # derivative of position
+        # grad_p = flight.d_position_d_control   # derivative of position
         # todo: optimize this computation such that we don't repeat it as often
         Du = state.get_derivative()  # spatial derivative of the state
 

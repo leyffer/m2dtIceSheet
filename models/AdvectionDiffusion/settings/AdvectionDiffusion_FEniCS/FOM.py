@@ -76,10 +76,13 @@ class FOM(FullOrderModel):
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
 
-        # Trial and test space for advection-diffusion eq ('P' == Polynomial)
+        # Trial and test space for advection-diffusion eq ('P' == Polynomial, 'CG' = Continuous Gelerkin)
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
         # see ufl.finiteelement.elementlist.show_elements() for finite element family options
+      
+        # Vector space for gradient
+        self.V2 = dl.VectorFunctionSpace(self.mesh, "DG", polyDim-1) # Discontinuous Galerkin
 
         # Finite-element dimension
         self.nFE = self.V.dim()
@@ -198,6 +201,9 @@ class FOM(FullOrderModel):
         order of meshDim * meshDim
         @return  Mesh geometry
         """
+        if self.mesh_shape == "square":
+            return dl.UnitSquareMesh(meshDim, meshDim, diagonal="right")
+
         together = mshr.Rectangle(dl.Point(0.0, 0.0), dl.Point(1.0, 1.0))
 
         if self.mesh_shape == "houses":
@@ -225,6 +231,8 @@ class FOM(FullOrderModel):
                 boundary[f] = 2
             elif dl.near(mp[1], 0.0) or dl.near(mp[1], 1):  # walls
                 boundary[f] = 3
+            elif self.mesh_shape == "square":
+                continue
             elif dl.near(mp[0], 0.25) or dl.near(mp[0], 0.5):
                 if 0.15 <= mp[1] and mp[1] <= 0.4:
                     boundary[f] = 4
@@ -303,9 +311,10 @@ class FOM(FullOrderModel):
             u = u.state
             # TODO: make compatible with time-dependent states
 
-        plt.figure()
+        # plt.figure()
         c = dl.plot(u, mesh=mesh)
-        plt.colorbar(c)
+        return c
+        # plt.colorbar(c)
 
     def find_next(
         self, u_old: dl.Function, dt: float, kappa: float = None
