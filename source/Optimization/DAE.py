@@ -66,10 +66,7 @@ class Objective(cyipopt.Problem):
         # Build a video of the optimization process
         self.build_video = kwargs.get("build_video", False)
         if self.build_video:
-            self.video_combined_vars = []
-            self.video_constraint_violation = []
-            self.video_objective = []
-            self.video_frames = []
+            self.video_frames = {}
 
         # Obstacles
         # Centers
@@ -880,8 +877,7 @@ class Objective(cyipopt.Problem):
             violations = self.get_current_violations()
             (x, y, theta, v, acc, omega, omega_acc) = self.var_splitter(iterate["x"])
 
-            self.video_frames.append(
-                {
+            self.video_frames[iter_count] = {
                     "iterate": iterate,
                     "violations": violations,
                     "alg_mod": alg_mod,
@@ -909,7 +905,6 @@ class Objective(cyipopt.Problem):
                         iterate["x"]
                     ),
                 }
-            )
 
 
 class polygon_obstacle:
