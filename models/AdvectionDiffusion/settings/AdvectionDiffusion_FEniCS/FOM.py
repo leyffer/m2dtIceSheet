@@ -79,6 +79,7 @@ class FOM(FullOrderModel):
         # Trial and test space for advection-diffusion eq ('P' == Polynomial, 'CG' = Continuous Gelerkin)
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
+        self.gradient_space = dl.VectorFunctionSpace(self.mesh, 'DG', self.polyDim - 1) # Discontinuous Galerkin
         # see ufl.finiteelement.elementlist.show_elements() for finite element family options
 
         # Finite-element dimension
