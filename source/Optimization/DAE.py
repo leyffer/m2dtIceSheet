@@ -43,6 +43,10 @@ class Objective(cyipopt.Problem):
     ):
         self.utility = oed_utility
         self.inversion = inversion
+        self.OED_utility_mode = kwargs.get("OED_utility_mode", "A")
+        self.OED_mix = kwargs.get("OED_mix", None)
+        if self.OED_utility_mode.lower() == "mix" and self.OED_mix is None:
+            raise ValueError("OED mixture specified, but no coefficients provided in OED_mix")
 
         # Initial position
         self.enforce_initial_position = kwargs.get("enforce_initial_position", True)
@@ -178,20 +182,111 @@ class Objective(cyipopt.Problem):
     def OED_objective(self, combined_vars: jnp.ndarray) -> float:
         """OED objective function"""
         (x, y, _theta, _v, _acc, _omega, _omega_acc) = self.var_splitter(combined_vars)
-        return self.utility.eval_utility_A(
-            self.inversion.compute_posterior(
-                alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+        if self.OED_utility_mode.lower() == "a":
+            return self.utility.eval_utility_A(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
             )
-        )
+        if self.OED_utility_mode.lower() == "d":
+            return self.utility.eval_utility_D(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
+            )
+        if self.OED_utility_mode.lower() == "dinv":
+            return self.utility.eval_utility_Dinv(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
+            )
+        if self.OED_utility_mode.lower() == "e":
+            return self.utility.eval_utility_E(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
+            )
+        if self.OED_utility_mode.lower() == "mix":
+            out = 0.0
+            if self.OED_mix.get("A", False):
+                out += self.OED_mix.get("A") * self.utility.eval_utility_A(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            if self.OED_mix.get("D", False):
+                out += self.OED_mix.get("D") * self.utility.eval_utility_D(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            if self.OED_mix.get("Dinv", False):
+                out += self.OED_mix.get("Dinv") * self.utility.eval_utility_Dinv(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            if self.OED_mix.get("E", False):
+                out += self.OED_mix.get("E") * self.utility.eval_utility_E(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            return out
 
     def OED_gradient(self, combined_vars: jnp.ndarray) -> jnp.ndarray:
         """Gradient of OED objective function"""
         (x, y, _theta, _v, _acc, _omega, _omega_acc) = self.var_splitter(combined_vars)
-        out = self.utility.d_utilA_d_position(
-            self.inversion.compute_posterior(
-                alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+        if self.OED_utility_mode.lower() == "a":
+            out = self.utility.d_utilA_d_position(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
             )
-        )
+        elif self.OED_utility_mode.lower() == "d":
+            out = self.utility.d_utilD_d_position(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
+            )
+        elif self.OED_utility_mode.lower() == "dinv":
+            out = self.utility.d_utilDinv_d_position(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
+            )
+        elif self.OED_utility_mode.lower() == "e":
+            out = self.utility.d_utilE_d_position(
+                self.inversion.compute_posterior(
+                    alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                )
+            )
+        elif self.OED_utility_mode.lower() == "mix":
+            out = jnp.zeros((self.N_x + self.N_y,))
+            if self.OED_mix.get("A", False):
+                out += self.OED_mix.get("A") * self.utility.d_utilA_d_position(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            if self.OED_mix.get("D", False):
+                out += self.OED_mix.get("D") * self.utility.d_utilD_d_position(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            if self.OED_mix.get("Dinv", False):
+                out += self.OED_mix.get("Dinv") * self.utility.d_utilDinv_d_position(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
+            if self.OED_mix.get("E", False):
+                out += self.OED_mix.get("E") * self.utility.d_utilE_d_position(
+                    self.inversion.compute_posterior(
+                        alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
+                    )
+                )
         out = jnp.concatenate((out, jnp.zeros((self.number_of_variables - self.N_x - self.N_y,))))
         return out
 

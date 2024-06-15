@@ -1,7 +1,10 @@
-import numpy as np
-import scipy.linalg as la
+"""!OED objective functions and their gradients"""
+
+import warnings
 from typing import Optional
 
+import numpy as np
+import scipy.linalg as la
 from Posterior import Posterior
 
 
@@ -92,7 +95,7 @@ class OEDUtility:
         @param posterior:
         @return: float
         """
-        return np.max(posterior.eigvals)
+        return posterior.eigvals[0]
 
     def d_utility_d_control(self, posterior: Posterior, mode=None):
         """
@@ -387,7 +390,22 @@ class OEDUtility:
         are not repeated). We can recover top eigenvalue and eigenvector through
         power iteration and get the derivative using an outer product (I think
         this translates well to infinite dimension)
+
+        d/dp max_eig(covariance) = d max_eig/d covariance * d covariance/d p
+
+        d max_eig/d covariance = max_eig_vector max_eig_vector^*
+        if a single eigen value, otherwise does not hold. Safer to use finite differences...
         """
-        raise NotImplementedError(
-            "OEDUtility.d_utilE_d_position: still need to understand how to get the eigenvalue derivative"
+        max_eigvector = posterior.eigvectors[0]
+        der = posterior.d_PostCov_d_position()
+        der = np.outer(max_eigvector, max_eigvector) @ der
+        gradient = np.hstack([np.trace(der[i]) for i in range(len(der))])
+        warnings.warn(
+            "OEDUtility.d_utilE_d_position: eigenvalue derivative may not be accurate.\n"
+            + "   Decreasing the max_eigenvalue tends to produce repeated eigenvalues (gradient formula not accurate).\n"
+            + "   It may be safer to use finite differences."
         )
+        return gradient
+        # raise NotImplementedError(
+        #     "OEDUtility.d_utilE_d_position: still need to understand how to get the eigenvalue derivative"
+        # )

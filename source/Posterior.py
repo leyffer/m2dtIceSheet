@@ -237,7 +237,7 @@ class Posterior:
         Currently the inverse posterior covariance matrix gets computed
         explicitly. We need to change this to use its action only
 
-        @return: eigenvalues, eigenvectors
+        @return: eigenvalues (ascending order), eigenvectors
         """
         # only compute once
 
@@ -255,7 +255,7 @@ class Posterior:
         Currently the inverse posterior covariance matrix gets computed
         explicitly. We need to change this to use its action only
 
-        @return: eigenvalues
+        @return: eigenvalues (descending order)
         """
         # solve eigenvalue problem
         eigvals, _ = self._eigh
@@ -265,6 +265,21 @@ class Posterior:
         eigvals = 1 / eigvals
 
         return eigvals
+    
+    @property
+    def eigvectors(self):
+        """
+        computes and returns the eigenvectors of the posterior covariance matrix
+        Currently the inverse posterior covariance matrix gets computed
+        explicitly. We need to change this to use its action only
+
+        @return: eigenvectors (descending order for covariance; ascending for inverse covariance)
+        """
+        # solve eigenvalue problem
+        _, eigvectors = self._eigh
+        # TODO: switch to the action of the inverse covariance matrix instead
+
+        return eigvectors
 
     def d_invPostCov_d_control(self):
         """
