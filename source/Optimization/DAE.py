@@ -46,7 +46,9 @@ class Objective(cyipopt.Problem):
         self.OED_utility_mode = kwargs.get("OED_utility_mode", "A")
         self.OED_mix = kwargs.get("OED_mix", None)
         if self.OED_utility_mode.lower() == "mix" and self.OED_mix is None:
-            raise ValueError("OED mixture specified, but no coefficients provided in OED_mix")
+            raise ValueError(
+                "OED mixture specified, but no coefficients provided in OED_mix"
+            )
 
         # Initial position
         self.enforce_initial_position = kwargs.get("enforce_initial_position", True)
@@ -150,7 +152,9 @@ class Objective(cyipopt.Problem):
             )
         )
 
-        self.number_of_variables = self.omega_acc_shift + self.N_omega_acc  # number of variables
+        self.number_of_variables = (
+            self.omega_acc_shift + self.N_omega_acc
+        )  # number of variables
 
         # Simplified two parameter mode
         self.circle_mode = kwargs.get("circle_mode", False)
@@ -287,7 +291,9 @@ class Objective(cyipopt.Problem):
                         alpha=jnp.concatenate((x, y), axis=0), grid_t=self.grid_t
                     )
                 )
-        out = jnp.concatenate((out, jnp.zeros((self.number_of_variables - self.N_x - self.N_y,))))
+        out = jnp.concatenate(
+            (out, jnp.zeros((self.number_of_variables - self.N_x - self.N_y,)))
+        )
         return out
 
     def regularization_objective(self, combined_vars: jnp.ndarray) -> float:
@@ -549,7 +555,9 @@ class Objective(cyipopt.Problem):
                 self.circle_center_y
                 + v[0] / omega[0] * jnp.sin(self.theta0 - jnp.pi / 2)
             )  # == 0
-            cons = jnp.concatenate((cons, jnp.array((initial_x_circle, initial_y_circle))), axis=0)
+            cons = jnp.concatenate(
+                (cons, jnp.array((initial_x_circle, initial_y_circle))), axis=0
+            )
 
         self.num_equality_constraints = len(cons)
 
@@ -973,33 +981,31 @@ class Objective(cyipopt.Problem):
             (x, y, theta, v, acc, omega, omega_acc) = self.var_splitter(iterate["x"])
 
             self.video_frames[iter_count] = {
-                    "iterate": iterate,
-                    "violations": violations,
-                    "alg_mod": alg_mod,
-                    "iter_count": iter_count,
-                    "obj_value": obj_value,
-                    "inf_pr": inf_pr,
-                    "inf_du": inf_du,
-                    "mu": mu,
-                    "d_norm": d_norm,
-                    "regularization_size": regularization_size,
-                    "alpha_du": alpha_du,
-                    "alpha_pr": alpha_pr,
-                    "ls_trials": ls_trials,
-                    "variables": {
-                        "x": x,
-                        "y": y,
-                        "theta": theta,
-                        "v": v,
-                        "acc": acc,
-                        "omega": omega,
-                        "omega_acc": omega_acc,
-                    },
-                    "OED_objective": self.OED_objective(iterate["x"]),
-                    "regularization_objective": self.regularization_objective(
-                        iterate["x"]
-                    ),
-                }
+                "iterate": iterate,
+                "violations": violations,
+                "alg_mod": alg_mod,
+                "iter_count": iter_count,
+                "obj_value": obj_value,
+                "inf_pr": inf_pr,
+                "inf_du": inf_du,
+                "mu": mu,
+                "d_norm": d_norm,
+                "regularization_size": regularization_size,
+                "alpha_du": alpha_du,
+                "alpha_pr": alpha_pr,
+                "ls_trials": ls_trials,
+                "variables": {
+                    "x": x,
+                    "y": y,
+                    "theta": theta,
+                    "v": v,
+                    "acc": acc,
+                    "omega": omega,
+                    "omega_acc": omega_acc,
+                },
+                "OED_objective": self.OED_objective(iterate["x"]),
+                "regularization_objective": self.regularization_objective(iterate["x"]),
+            }
 
 
 class polygon_obstacle:

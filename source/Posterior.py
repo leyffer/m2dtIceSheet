@@ -41,7 +41,7 @@ class Posterior:
     d_G_d_position = None
 
     def __init__(
-        self, inversion: InverseProblem, flight : "Flight", data: np.ndarray, **kwargs
+        self, inversion: InverseProblem, flight: "Flight", data: np.ndarray, **kwargs
     ):
         """
         initialization of the posterior distribution.
@@ -73,7 +73,7 @@ class Posterior:
         self.n_timesteps = self.grid_t.shape[0]  # number of time steps
 
         # information about the posterior covariance
-        #self.para2obs = self.para2obs
+        # self.para2obs = self.para2obs
 
         # information about the posterior mean
         self.data = data
@@ -200,7 +200,9 @@ class Posterior:
 
         if self.covar is None:
             # only compute once
-            self.covar = la.inv(self.compute_inverse_covariance(inv_prior_factor=1.0/prior_factor))
+            self.covar = la.inv(
+                self.compute_inverse_covariance(inv_prior_factor=1.0 / prior_factor)
+            )
 
         return self.covar
 
@@ -265,7 +267,7 @@ class Posterior:
         eigvals = 1 / eigvals
 
         return eigvals
-    
+
     @property
     def eigvectors(self):
         """
@@ -299,7 +301,9 @@ class Posterior:
             return self.d_invCov_d_control
 
         # derivative of the parameter-to-observable map
-        dG = np.empty((self.n_timesteps, self.n_parameters, self.n_controls))  # initialization
+        dG = np.empty(
+            (self.n_timesteps, self.n_parameters, self.n_controls)
+        )  # initialization
 
         for i in range(self.n_parameters):
             # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
@@ -354,7 +358,9 @@ class Posterior:
         dG = self.d_G_d_position
         if dG is None:
             # derivative of the parameter-to-observable map
-            dG = np.empty((self.n_timesteps, self.n_parameters, self.n_spatial * self.n_timesteps))  # initialization
+            dG = np.empty(
+                (self.n_timesteps, self.n_parameters, self.n_spatial * self.n_timesteps)
+            )  # initialization
 
             for i in range(self.n_parameters):
                 # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
@@ -431,6 +437,7 @@ class Posterior:
         covar_inv_derivative = self.d_invPostCov_d_position()
 
         # apply chain rule (matrix form) to get the derivative (be careful about the order!)
-        return [-PostCov @ covar_inv_derivative[i] @ PostCov for i in range(self.n_spatial * self.n_timesteps)]
-
-
+        return [
+            -PostCov @ covar_inv_derivative[i] @ PostCov
+            for i in range(self.n_spatial * self.n_timesteps)
+        ]
