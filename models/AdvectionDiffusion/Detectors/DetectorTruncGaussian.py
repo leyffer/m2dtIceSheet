@@ -145,7 +145,8 @@ class DetectorTruncGaussian(Detector):
         @param state  The state which the drone shall measure, State object
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
-        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
+        # alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
+        flightpath = flight.flightpath
         n_spatial = flightpath.shape[1]
         
         # parts of the chain rule (only compute once)

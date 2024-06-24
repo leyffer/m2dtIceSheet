@@ -6,6 +6,7 @@ import numpy as np
 
 import scipy.interpolate as scipy_interpolate
 from scipy.ndimage import convolve, gaussian_filter
+
 # from tqdm import tqdm
 
 # import scipy.sparse.linalg as sla
@@ -53,7 +54,7 @@ def make_truncated_gaussian_kernel(
     sigma: float,
     dy: float = None,
     anti_alias_scale: int = 4,
-    truncate:bool = True,
+    truncate: bool = True,
 ) -> np.ndarray:
     """!
     Make a truncated Gaussian kernel
@@ -130,13 +131,18 @@ class Convolution:
         if mode.lower() == "truncgaussian":
             self.kernel = make_truncated_gaussian_kernel(radius, dx, sigma, dy)
         elif mode.lower() == "gaussian":
-            self.kernel = make_truncated_gaussian_kernel(4*sigma, dx, sigma, dy, truncate=False)
+            self.kernel = make_truncated_gaussian_kernel(
+                4 * sigma, dx, sigma, dy, truncate=False
+            )
         elif mode.lower() == "uniform":
             self.kernel = make_circle_kernel(radius, dx, dy)
         elif mode.lower() == "pointwise":
             self.kernel = np.array([[1.0]])
         else:
-            raise ValueError("Specify uniform or gaussian for kernel type")
+            raise ValueError(
+                'Specify "uniform", "truncgaussian", "pointwise", or "gaussian"'
+                + "for kernel mode"
+            )
 
         if debug:
             print("sampling the state")
@@ -229,6 +235,7 @@ class Convolution:
         grad_y = self.interp_grad_y(xi[:, 0], xi[:, 1], grid=False)
         return np.hstack((grad_x.reshape((-1, 1)), grad_y.reshape((-1, 1))))
 
+
 class DetectorApprox(Detector):
     """
     This class uses an interpolated approximation to the state to speed up
@@ -277,7 +284,7 @@ class DetectorApprox(Detector):
         self.resolution = resolution
         self.eval_mode = eval_mode
 
-    def compute_convolution(self, state):  # -> myState:
+    def compute_convolution(self, state) -> Convolution:
         """
         We approximate the convolution of the state with the given kernel
         function
@@ -304,8 +311,9 @@ class DetectorApprox(Detector):
         """! Get measurements along the flight path at the drone location
 
         To get the measurements, we proceed the following way:
-        1) we compute the convolution of the state with the Gaussian everywhere in the domain. This step is outsourced
-        to compute_convolution. We save the convolution as a field, so we never need to compute it again.
+        1) we compute the convolution of the state with the Gaussian everywhere
+        in the domain. This step is outsourced to compute_convolution. We save
+        the convolution as a field, so we never need to compute it again.
         2) We take point-wise evaluations of this convolution field.
 
         @param flightpath  The trajectory of the drone
@@ -321,7 +329,7 @@ class DetectorApprox(Detector):
         return convolution(flightpath)
 
     def d_measurement_d_position(self, flight, state):
-        """
+        r"""
         derivative of the measurement function for a given flight in direction of the flight's positions flightpath.
         For measurements of the form
         $$
@@ -333,22 +341,26 @@ class DetectorApprox(Detector):
         = \int_{\Omega} D_y \Phi(x, y=p(t)) u(x, t) dx.
         $$
 
-        Since the position is determined by <spatial dimension>*<number of time steps> parameters, and a measurement
-        has <number of time steps> entries, the return of this function has to have shape
+        Since the position is determined by <spatial dimension>*<number of time
+        steps> parameters, and a measurement has <number of time steps> entries,
+        the return of this function has to have shape
 
         $$ <number of time steps> \times <spatial dimension>*<number of time steps> $$
 
-        The columns should be ordered such that the first <number of time steps> columns are for the first spatial
-        dimension (x direction), the next <number of time steps> columns for the second (y-direction), etc.
+        The columns should be ordered such that the first <number of time steps>
+        columns are for the first spatial dimension (x direction), the next
+        <number of time steps> columns for the second (y-direction), etc.
 
-        @param flight: the flight parameterization of the drone. Contains, in particular, the flightpath `flightpath`,
-        the flight controls `alpha`, and the time discretization `grid_t`, Flight object
+        @param flight: the flight parameterization of the drone. Contains, in
+        particular, the flightpath `flightpath`, the flight controls `alpha`,
+        and the time discretization `grid_t`, Flight object
         @param state  The state which the drone shall measure, State object
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
         if state.bool_is_transient:
             raise NotImplementedError(
-                "In DetectorTruncGaussian(approx).d_measurement_d_position: still need to bring over code for transient measurements"
+                "In DetectorTruncGaussian(approx).d_measurement_d_position:"
+                + " still need to bring over code for transient measurements"
             )
 
         flightpath, _grid_t = flight.flightpath, flight.grid_t
@@ -364,18 +376,30 @@ class DetectorApprox(Detector):
         )
         return D_data_d_position
 
+
 class DetectorTruncGaussian(DetectorApprox):
+    """Truncated Gaussian detector"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, eval_mode="truncgaussian", **kwargs)
 
+
 class DetectorGaussian(DetectorApprox):
+    """Gaussian detector"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, eval_mode="gaussian", **kwargs)
 
+
 class DetectorUniform(DetectorApprox):
+    """Uniform detector"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, eval_mode="uniform", **kwargs)
 
+
 class DetectorPointwise(DetectorApprox):
+    """Pointwise detector"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, eval_mode="pointwise", **kwargs)

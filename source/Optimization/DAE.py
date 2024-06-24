@@ -1,32 +1,34 @@
 """
-Functions and 
+Functions and optimization class to do the discretized DAE optimization
 """
 
+import os
+import pickle as pkl
 import sys
 
 sys.path.insert(0, "../source/")
-
+from collections import namedtuple
 from functools import cached_property
-from typing import Literal
+from typing import Dict
 
 import cyipopt
-import jax
-
-jax.config.update("jax_enable_x64", True)
-# import jax.numpy as jnp
+import matplotlib.pyplot as plt
 import numpy as np
-
-jnp = np
-# import numpy as jnp
-
 from InverseProblem import InverseProblem
+from moviepy.editor import ImageSequenceClip
 from OEDUtility import OEDUtility
+from tqdm import tqdm
 
-from collections import namedtuple
+FRAME_DIRECTORY = ".temp_frames"
+
 
 # from scipy.integrate import RK45
+# import jax
 
-# TODO - add "movie" output
+# jax.config.update("jax_enable_x64", True)
+# import jax.numpy as jnp
+jnp = np
+# import numpy as jnp
 
 DAE_vars = namedtuple("DAE_vars", ["x", "y", "theta", "v", "acc", "omega", "omega_acc"])
 
@@ -155,6 +157,19 @@ class Objective(cyipopt.Problem):
         self.number_of_variables = (
             self.omega_acc_shift + self.N_omega_acc
         )  # number of variables
+
+        # Initial condition
+        initial_condition = kwargs.get("initial_condition", None)
+        if initial_condition is not None:
+            (x, y, theta, _v, _acc, _omega, _omega_acc) = self.var_splitter(
+                initial_condition
+            )
+            self.x0 = x[0]
+            self.y0 = y[0]
+            self.x_final = x[-1]
+            self.y_final = y[-1]
+            self.theta0 = theta[0]
+            self.theta_final = theta[-1]
 
         # Simplified two parameter mode
         self.circle_mode = kwargs.get("circle_mode", False)
@@ -1006,6 +1021,181 @@ class Objective(cyipopt.Problem):
                 "OED_objective": self.OED_objective(iterate["x"]),
                 "regularization_objective": self.regularization_objective(iterate["x"]),
             }
+
+def make_video_from_frames(frames_filename:str, video_filename:str, frame_directory:str = None,grid_t: np.ndarray = np.linspace(0, 4, 401)):
+    if frame_directory is None:
+        frame_directory = FRAME_DIRECTORY
+    frames_dict = load_video_frames(frames_filename)
+    clear_frames_dir()
+    frames_to_png(frames_dict, frame_directory, grid_t)
+    frames_to_video(video_filename, frame_directory)
+
+def save_video_frames(frames_dict: Dict, frames_filename: str):
+    """Save video frames using pickle"""
+    with open(frames_filename, "wb") as f:
+        pkl.dump(frames_dict, f)
+
+
+def load_video_frames(frames_filename: str) -> Dict:
+    """Load video frames using pickle"""
+    with open(frames_filename, "rb") as f:
+        frames_dict = pkl.load(f)
+    return frames_dict
+
+
+def clear_frames_dir():
+    """Deletes everything in the frames directory"""
+    for filename in os.listdir(FRAME_DIRECTORY):
+        file_path = os.path.join(FRAME_DIRECTORY, filename)
+        try:
+            if os.path.isfile(file_path):  # Check if it's a file
+                os.remove(file_path)
+        except OSError as e:
+            print(f"Error removing file: {filename} ({e})")
+
+
+def generate_plot(
+    frames_dict: Dict,
+    frame_index: int,
+    grid_t_drone: np.ndarray = np.linspace(0, 4, 401),
+):
+    """Generate the plot of the"""
+    fig = plt.figure(figsize=(10, 5), dpi=200)
+    gs = fig.add_gridspec(
+        nrows=2, ncols=4, width_ratios=[1, 1, 1, 1], wspace=0.4, hspace=0.2
+    )  # Add wspace for padding
+
+    # Define subplots using indexing based on gs
+    ax_A = fig.add_subplot(gs[0:2, 0:2])
+    ax_B = fig.add_subplot(gs[0, 2])
+    ax_C = fig.add_subplot(gs[1, 2], sharex=ax_B)
+    ax_D = fig.add_subplot(gs[0, 3])
+    ax_E = fig.add_subplot(gs[1, 3], sharex=ax_D)
+
+    plt.sca(ax_A)
+    # fom.plot(state)
+    plt.imshow(np.abs(B[:, :, -1] - B[:, :, -2]), extent=[0, 1, 0, 1])
+    cxs = [(0.5 + 0.25) / 2, (0.75 + 0.6) / 2]
+    cys = [(0.4 + 0.15) / 2, (0.85 + 0.6) / 2]
+    rxs = [(0.5 - 0.25) / 2, (0.75 - 0.6) / 2]
+    rys = [(0.4 - 0.15) / 2, (0.85 - 0.6) / 2]
+    # square obstacles
+    for cx, cy, rx, ry in zip(cxs, cys, rxs, rys):
+        plt.plot(
+            [cx + rx, cx + rx, cx - rx, cx - rx, cx + rx],
+            [cy - ry, cy + ry, cy + ry, cy - ry, cy - ry],
+            "k",
+        )
+
+    (initial_x, initial_y) = (
+        frames_dict[0]["variables"]["x"],
+        frames_dict[0]["variables"]["y"],
+    )
+    plt.plot(initial_x, initial_y, label="Initial path")
+
+    x = frames_dict[frame_index]["variables"]["x"]
+    y = frames_dict[frame_index]["variables"]["y"]
+    plt.plot(x, y, label="Optimized path", color="red")
+    plt.scatter(x[0], y[0], marker="o", color="red")
+    plt.legend()
+    plt.xlabel("$x$")
+    plt.ylabel("$y$")
+
+    plt.sca(ax_B)
+    plt.title("Controls")
+    plt.plot(grid_t_drone, frames_dict[frame_index]["variables"]["v"], label="$v$")
+    plt.plot(
+        grid_t_drone, frames_dict[frame_index]["variables"]["omega"], label="$\omega$"
+    )
+    max_val = max(
+        max(np.max(frames_dict[i]["variables"]["v"]) for i in frames_dict),
+        max(np.max(frames_dict[i]["variables"]["omega"]) for i in frames_dict),
+    )
+    min_val = min(
+        min(np.min(frames_dict[i]["variables"]["v"]) for i in frames_dict),
+        min(np.min(frames_dict[i]["variables"]["omega"]) for i in frames_dict),
+    )
+    plt.ylim([min_val, max_val])
+    plt.legend()
+
+    plt.sca(ax_C)
+    plt.plot(
+        grid_t_drone, frames_dict[frame_index]["variables"]["acc"], label="$dv/dt$"
+    )
+    plt.plot(
+        grid_t_drone,
+        frames_dict[frame_index]["variables"]["omega_acc"],
+        label="$d\omega / dt$",
+    )
+    max_val = max(
+        max(np.max(frames_dict[i]["variables"]["acc"]) for i in frames_dict),
+        max(np.max(frames_dict[i]["variables"]["omega_acc"]) for i in frames_dict),
+    )
+    min_val = min(
+        min(np.min(frames_dict[i]["variables"]["acc"]) for i in frames_dict),
+        min(np.min(frames_dict[i]["variables"]["omega_acc"]) for i in frames_dict),
+    )
+    plt.ylim([min_val, max_val])
+    plt.xlabel("Time")
+    plt.title("Control derivatives")
+    plt.legend()
+
+    plt.sca(ax_D)
+    objective_values = []
+    for i in frames_dict:
+        objective_values.append(frames_dict[i]["obj_value"])
+    plt.plot(objective_values)
+    plt.scatter([frame_index], [objective_values[frame_index]])
+    plt.title("OED-Objective")
+
+    plt.sca(ax_E)
+    dual_inf = []
+    for i in frames_dict:
+        dual_inf.append(frames_dict[i]["inf_du"])
+    plt.plot(dual_inf, label="Dual")
+    plt.scatter([frame_index], [dual_inf[frame_index]])
+    plt.yscale("log")
+
+    plt.sca(ax_E)
+    primal_inf = []
+    for i in frames_dict:
+        primal_inf.append(frames_dict[i]["inf_pr"])
+    plt.plot(primal_inf, label="Primal")
+    plt.scatter([frame_index], [primal_inf[frame_index]])
+    plt.yscale("log")
+    plt.title("Infeasibility")
+    plt.xlabel("Iteration")
+    plt.legend()
+
+    ax_B.get_xaxis().set_visible(False)
+    ax_D.get_xaxis().set_visible(False)
+
+    return fig
+
+
+def frames_to_png(frames_dict: Dict, frame_directory:str = None,grid_t: np.ndarray = np.linspace(0, 4, 401)):
+    """Take frames dictionary and translate into .png images in the frame_directory directory"""
+    if frame_directory is None:
+        frame_directory = FRAME_DIRECTORY
+    # Create a directory to store the frames (optional)
+    os.makedirs(frame_directory, exist_ok=True)  # Create directory if it doesn't exist
+
+    print(f"Making figures and saving them to {frame_directory}")
+    # Generate frames and save them as PNGs
+    for i in tqdm(frames_dict.keys()):
+        generate_plot(frames_dict, i, grid_t)
+        plt.savefig(f"{frame_directory}/frame_{i + 1:05d}.png")
+        plt.clf()  # Clear the figure to avoid overlapping plots
+
+def frames_to_video(filename:str, frame_directory:str = None):
+    """Use moviepy to combine the frames into a video"""
+    if frame_directory is None:
+        frame_directory = FRAME_DIRECTORY
+
+    clip = ImageSequenceClip(os.path.abspath(frame_directory)), fps=10)
+    clip.write_videofile(filename)
+
+    print(f"Video frames generated and saved as {filename}")
 
 
 class polygon_obstacle:

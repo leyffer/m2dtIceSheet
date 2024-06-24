@@ -14,7 +14,7 @@ from myState import myState
 
 
 class DetectorGaussian(Detector):
-    """
+    r"""
     In this drone class, we model measurements at time t of a state u to be of the form:
     d(t) = 1/|c(t)| \int_{\Omega} u(x, t) Phi(x, p(t)) dx
     where
@@ -45,7 +45,7 @@ class DetectorGaussian(Detector):
         self.fom = fom
 
     def compute_convolution(self, state):  # -> myState:
-        """
+        r"""
         In this function we approximate the convolution of the state $v$ with the multivariate Gaussian $Psi$,
         $Psi(x, y) = \frac{1}{\sqrt( (2 \pi \sigma^2 )^n ) \exp( - \| x-y \|^2 / (2 \sigma^2) )}$
         following the "Weierstrass-trick":
