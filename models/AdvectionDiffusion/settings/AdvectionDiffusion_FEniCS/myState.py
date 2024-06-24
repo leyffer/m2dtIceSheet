@@ -81,4 +81,4 @@ class myState(State):
     def get_convolution(self, key):
         if self.convolution is None:
             return None
-        return self.convolution[key]
+        return self.convolution.get(key)
