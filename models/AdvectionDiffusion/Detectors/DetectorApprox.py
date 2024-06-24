@@ -96,7 +96,7 @@ class Convolution:
         state: "State",
         radius: float = 0.2,
         sigma: float = 0.1,
-        mode: str = "gaussian",
+        mode: str = "apprx_gaussian",
         resolution: int = 100,
         debug: bool = False,
     ):
@@ -128,20 +128,20 @@ class Convolution:
         )
         dy = yy[1] - yy[0]
 
-        if mode.lower() == "truncgaussian":
+        if mode.lower() in ["apprx_truncgaussian", "truncgaussian"]:
             self.kernel = make_truncated_gaussian_kernel(radius, dx, sigma, dy)
-        elif mode.lower() == "gaussian":
+        elif mode.lower() in ["apprx_gaussian" or "gaussian"]:
             self.kernel = make_truncated_gaussian_kernel(
                 4 * sigma, dx, sigma, dy, truncate=False
             )
-        elif mode.lower() == "uniform":
+        elif mode.lower() in ["apprx_uniform" or "uniform"]:
             self.kernel = make_circle_kernel(radius, dx, dy)
-        elif mode.lower() == "pointwise":
+        elif mode.lower() in ["apprx_pointwise" or "pointwise"]:
             self.kernel = np.array([[1.0]])
         else:
             raise ValueError(
-                'Specify "uniform", "truncgaussian", "pointwise", or "gaussian"'
-                + "for kernel mode"
+                'Specify "apprx_uniform", "apprx_truncgaussian", "apprx_pointwise",'
+                + 'or "apprx_gaussian" for kernel mode'
             )
 
         if debug:
@@ -172,7 +172,7 @@ class Convolution:
         if debug:
             print("convolving the state")
         # Convolve and normalize for convolutions outside of the domain
-        # if mode.lower() == "gaussian":
+        # if mode.lower() == "apprx_gaussian":
         #     self.weight = gaussian_filter(indicator, sigma=sigma, )
         self.weight = np.maximum(
             convolve(indicator, self.kernel, mode="constant"),
@@ -267,7 +267,7 @@ class DetectorApprox(Detector):
         radius: float = 0.2,
         sigma=0.1,
         resolution: int = 100,
-        eval_mode: str = "gaussian",
+        eval_mode: str = "apprx_gaussian",
         **kwargs
     ):
         """! Initializer for the drone class with point-wise measurements
@@ -381,25 +381,25 @@ class DetectorTruncGaussian(DetectorApprox):
     """Truncated Gaussian detector"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, eval_mode="truncgaussian", **kwargs)
+        super().__init__(*args, eval_mode="apprx_truncgaussian", **kwargs)
 
 
 class DetectorGaussian(DetectorApprox):
     """Gaussian detector"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, eval_mode="gaussian", **kwargs)
+        super().__init__(*args, eval_mode="apprx_gaussian", **kwargs)
 
 
 class DetectorUniform(DetectorApprox):
     """Uniform detector"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, eval_mode="uniform", **kwargs)
+        super().__init__(*args, eval_mode="apprx_uniform", **kwargs)
 
 
 class DetectorPointwise(DetectorApprox):
     """Pointwise detector"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, eval_mode="pointwise", **kwargs)
+        super().__init__(*args, eval_mode="apprx_pointwise", **kwargs)
