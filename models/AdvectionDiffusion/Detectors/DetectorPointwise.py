@@ -47,26 +47,12 @@ class DetectorPointwise(Detector):
         data = np.zeros((flightpath.shape[0],))
 
         for k in range(flightpath.shape[0]):
-            state_k = state.get_state(t=grid_t[k])
             try:
-                data[k] = state_k(flightpath[k, :])
+                data[k] = state.get_state(t=grid_t[k], x=flightpath[k, :])
             except RuntimeError:
                 warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
                 pass
 
-        # if state.bool_is_transient:
-        #     # todo: extend to transient measurements
-        #     raise NotImplementedError("In MyDrone.measure_pointwise: still need to bring over code for transient measurements")
-        #     # old code:
-        #     # return [state[k].at(*flightpath[k, :]) for k in range(flightpath.shape[0])]
-        #
-        # for k in range(flightpath.shape[0]):
-        #     try:
-        #         data[k] = state.state(flightpath[k, :])
-        #     except RuntimeError:
-        #         warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
-        #         pass
-        # data = np.array([state.state(flightpath[k, :]) for k in range(flightpath.shape[0])])
         return data
 
     def d_measurement_d_position(self, flight: "Flight", state:"State"):
@@ -109,12 +95,10 @@ class DetectorPointwise(Detector):
             # doesn't work with multiple positions that's why we can't get rid
             # of this loop
 
-            # get derivative
-            Du = state.get_derivative(t=grid_t[i])
-
             # evaluate at the considered position
             try:
-                D_data_d_position[i, :] = Du(flightpath[i, :])
+                # get derivative at the prescribed position
+                D_data_d_position[i, :] = state.get_derivative(t=grid_t[i], x=flightpath[i, :])
             except RuntimeError:
                 warnings.warn(
                     f"DetectorPointwise.d_measurement_d_position: flightpath goes outside of computational domain")

@@ -28,7 +28,7 @@ class myState_stationary(myState):
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
 
-    def get_derivative(self, t=None):
+    def get_derivative(self, t=None, x=None):
 
         """
         computes and saves the spatial derivative of the state
@@ -38,13 +38,18 @@ class myState_stationary(myState):
             Du = dl.grad(self.state)
             self.Du = dl.project(Du, self.gradient_space)
 
+        if x is not None:
+            return self.Du(x)
+
         return self.Du
 
-    def get_state(self, t=None):
+    def get_state(self, t=None, x=None):
         """
         returns the state of the modelled system at a given time. In the stationary setting, the same state is returned
         for all possible times
 
         @return:
         """
+        if x is not None:
+            return self.state(x)
         return self.state

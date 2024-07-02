@@ -22,7 +22,7 @@ class DetectorTruncGaussian(Detector):
 
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, fom, grid_t=None, sigma=0.1, radius=0.2, bool_truncate=True, **kwargs):
+    def __init__(self, fom, grid_t=None, sigma=0.025, radius=0.05, bool_truncate=True, **kwargs):
         """! Initializer for the drone class with truncated Gaussian-type measurements
 
         @param fom  Full-order-model (FOM) object. The drone takes
@@ -34,7 +34,7 @@ class DetectorTruncGaussian(Detector):
         super().__init__(grid_t=grid_t, **kwargs)
         self.sigma = sigma
         self.radius = radius
-        self.meshDim = kwargs.get("meshDim", 50)
+        self.meshDim = kwargs.get("meshDim", 10)
 
     def measure(self, flight, state) -> np.ndarray:
         """! Get measurements along the flight path at the drone location
@@ -83,10 +83,7 @@ class DetectorTruncGaussian(Detector):
             for i in range(coordinates.shape[0]):
                 try:
                     # take measurement if inside the domain
-                    if state.bool_is_transient:
-                        vals[i] = state.state[k](flightpath[k, :] + coordinates[i, :])
-                    else:
-                        vals[i] = state.state(flightpath[k, :] + coordinates[i, :])
+                    vals[i] = state.get_state(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
                 except(RuntimeError):
                     # mark point as outside the domain
                     inside[i] = 0
@@ -147,11 +144,6 @@ class DetectorTruncGaussian(Detector):
         """
         alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
         n_spatial = flightpath.shape[1]
-        
-        # parts of the chain rule (only compute once)
-        grad_p = flight.d_position_d_control   # derivative of position
-        # todo: optimize this computation such that we don't repeat it as often
-        Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
         n_steps = flightpath.shape[0]
@@ -173,11 +165,8 @@ class DetectorTruncGaussian(Detector):
 
             for i in range(coordinates.shape[0]):
                 try:
-                    # take measurement if inside the domain
-                    if state.bool_is_transient:
-                        vals[i, :] = Du[k](flightpath[k, :] + coordinates[i, :])
-                    else:
-                        vals[i, :] = Du(flightpath[k, :] + coordinates[i, :])
+                    # evaluate the derivative
+                    vals[i, :] = state.get_derivative(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
                 except(RuntimeError):
                     # mark point as outside the domain
                     inside[i] = 0

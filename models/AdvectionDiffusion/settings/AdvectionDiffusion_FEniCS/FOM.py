@@ -374,7 +374,7 @@ class FOM(FullOrderModel):
 
         # sol[0] = dl.Function(self.V)
         # sol[0].interpolate(m_init)
-        sol[0] = m_init
+        sol[0] = dl.project(m_init, self.V)
 
         # Integrate in time over the time grid
         for k in range(1, sol.shape[0]):

@@ -26,7 +26,7 @@ class myState(State):
 
         self.final_time = self.grid_t[-1]
 
-    def get_derivative(self, t: float = None):
+    def get_derivative(self, t: float = None, x=None):
 
         """
         computes and saves the spatial derivative of the state
@@ -44,6 +44,8 @@ class myState(State):
             raise RuntimeError(
                 "transient state myState.get_derivative called without specifying a time at which to evaluate")
 
+        if x is not None:
+            return self.apply_interpolation_rule(states=self.Du, t=t, x=x)
         def evaluate_Du(x):
             return self.apply_interpolation_rule(states=self.Du, t=t, x=x)
 
@@ -53,12 +55,12 @@ class myState(State):
 
         return evaluate_Du
 
-    def get_state(self, t=None):
+    def get_state(self, t=None, x=None):
         if t is None:
             raise RuntimeError(
                 "transient state myState.get_state called without specifying a time at which to evaluate")
 
-        return self.apply_interpolation_rule(states=self.state, t=t)
+        return self.apply_interpolation_rule(states=self.state, t=t, x=x)
 
     def apply_interpolation_rule(self, states, t, x=None):
 
@@ -86,7 +88,8 @@ class myState(State):
         state_diff = state_right - state_left
 
         if x is not None:
-            return state_left(x) + (t - t_left) * (state_right(x) - state_left(x)) / t_diff
+            eval_left = state_left(x)
+            return eval_left + (t - t_left) * (state_right(x) - eval_left) / t_diff
 
         # apply linear interpolation rule
         return state_left + (t - t_left) * state_diff / t_diff
