@@ -5,7 +5,7 @@ import sys
 
 
 sys.path.insert(0, "../source/")
-from myState import myState as State
+from myState_stationary import myState_stationary as State
 
 import fenics as dl
 

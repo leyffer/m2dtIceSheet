@@ -18,7 +18,7 @@ class DetectorUniform(Detector):
 
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, grid_t=None, radius=0.1, **kwargs):
+    def __init__(self, grid_t=None, radius=0.05, **kwargs):
         """! Initializer for the drone class with uniform measurements
 
         @param fom  Full-order-model (FOM) object. The drone takes
@@ -29,7 +29,7 @@ class DetectorUniform(Detector):
         """
         super().__init__(grid_t=grid_t, **kwargs)
         self.radius = radius
-        self.meshDim = kwargs.get("meshDim", 50)
+        self.meshDim = kwargs.get("meshDim", 10)
 
     def measure(self, flight, state) -> np.ndarray:
         """! Get measurements along the flight path at the drone location
@@ -73,13 +73,10 @@ class DetectorUniform(Detector):
             inside = np.ones((coordinates.shape[0],))
 
             for i in range(coordinates.shape[0]):
-                if state.bool_is_transient:
-                    vals[i] = state.state[k](flightpath[k, :] + coordinates[i, :])
-                else:
-                    try:
-                        vals[i] = state.state(flightpath[k, :] + coordinates[i, :])
-                    except(RuntimeError):
-                        inside[i] = 0
+                try:
+                    vals[i] = state.get_state(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
+                except(RuntimeError):
+                    inside[i] = 0
 
             # integrate over reference domain
             u = dl.Function(V)
@@ -137,7 +134,7 @@ class DetectorUniform(Detector):
         # parts of the chain rule (only compute once)
         grad_p = flight.d_position_d_control  # derivative of position
         # todo: optimize this computation such that we don't repeat it as often
-        Du = state.get_derivative()  # spatial derivative of the state
+        # Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
         n_steps = flightpath.shape[0]
@@ -155,16 +152,13 @@ class DetectorUniform(Detector):
             inside = np.ones((coordinates.shape[0],))
 
             for i in range(coordinates.shape[0]):
-                if state.bool_is_transient:
-                    vals[i, :] = Du[k](flightpath[k, :] + coordinates[i, :])
-                else:
-                    try:
-                        vals[i, :] = Du(flightpath[k, :] + coordinates[i, :])
-                    except(RuntimeError):
-                        inside[i] = 0
-                        # while not implemented, interrupt here already to know early
-                        raise NotImplementedError(
-                            "In MyDroneUniformEval.d_measurement_d_position: encountered overlap with edge of domain.")
+                try:
+                    vals[i, :] = state.get_derivative(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
+                except(RuntimeError):
+                    inside[i] = 0
+                    # while not implemented, interrupt here already to know early
+                    raise NotImplementedError(
+                        "In MyDroneUniformEval.d_measurement_d_position: encountered overlap with edge of domain.")
 
             # integrate over reference domain
             val = np.zeros((vals.shape[1],))
