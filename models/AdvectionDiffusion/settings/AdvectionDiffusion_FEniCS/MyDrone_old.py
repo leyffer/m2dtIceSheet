@@ -190,3 +190,5 @@ class MyDrone(Drone):
         raise NotImplementedError(
             "still need to do the maths for other measurement types"
         )
+
+# todo: since this file has even _old in its name, can we savely delete it? The name does imply so.

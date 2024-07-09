@@ -45,9 +45,6 @@ class MyDrone(Drone):
         (Gaussian radius) and `radius_uniform`
         """
         super().__init__(navigation=navigation, detector=detector)
-
-        #self.grid_t = grid_t if grid_t is not None else np.arange(0, 4 + 1e-2, 1e-2)
-
         self.path_class = CirclePath
 
         # TODO: get parameterization for other eval modes, in particular give them a common name, not individual ones:
@@ -57,41 +54,6 @@ class MyDrone(Drone):
     def path(self, alpha: np.ndarray) -> CirclePath:
         """Instantiate the path class with alpha"""
         return self.path_class(alpha=alpha, center=self.center)
-
-    # def get_trajectory(
-    #     self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
-    # ) -> Tuple[np.ndarray, np.ndarray]:
-    #     """! Get the trajectory of the drone given the flight parameters alpha
-    #     @param alpha  The specified flight parameters
-    #     @param grid_t  the time grid on which the drone position shall be computed
-    #     @return  Position over flight path
-    #     """
-    #     # default time grid if None is provided
-    #     if grid_t is None:
-    #         grid_t = self.grid_t
-
-    #     return self.path(alpha).position(grid_t), grid_t
-
-    # def d_position_d_control(
-    #     self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
-    # ):
-    #     """
-    #     Computes the derivative of the flightpath with respect to the control parameters in alpha.
-    #     This class is problem specific and needs to be written by the user.
-
-    #     @param alpha:
-    #     @param grid_t:
-    #     @return:
-    #     """
-    #     # for the Drone class
-    #     if grid_t is None:
-    #         grid_t = self.grid_t
-
-    #     d_speed = self.path(alpha).d_position_d_velocity(grid_t).T
-    #     d_radius = self.path(alpha).d_position_d_radius(grid_t).T
-
-    #     return np.array([d_radius, d_speed])
-
 
     def measure_pointwise(
         self, flightpath: np.ndarray, grid_t: np.ndarray, state: State

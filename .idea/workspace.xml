@@ -6,8 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="transient setting working">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/5_transientPDE.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/5_transientPDE.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/OEDUtility.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/OEDUtility.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorTruncGaussian.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorTruncGaussian.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorUniform.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorUniform.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone_old.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone_old.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,12 +63,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;git-widget-placeholder&quot;: &quot;time-dependence&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "git-widget-placeholder": "measurement-memory",
+    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />

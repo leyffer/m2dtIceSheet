@@ -79,7 +79,22 @@ class Detector:
         the flight controls `alpha`, and the time discretization `grid_t`, Flight object
         @param state  The state which the drone shall measure, State object
         """
-        raise NotImplementedError("Detector.measure: Needs to be implemented in subclass")
+        flightpath = flight.flightpath
+        grid_t = flight.grid_t
+
+        # initialization
+        n_steps = flightpath.shape[0]
+        data = np.NaN * np.ones((n_steps,))
+
+        for k in range(n_steps):
+            data[k] = self.measure_at_position(pos=flightpath[k, :],
+                                               t=grid_t[k],
+                                               state=state)
+
+        return data
+
+    def measure_at_position(self, pos, t, state, **kwargs):
+        raise NotImplementedError("Needs to be implemented in subclass")
 
     def d_measurement_d_position(self, flight, state):
         """
