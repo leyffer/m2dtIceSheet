@@ -29,7 +29,7 @@ class myState(State):
         self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
 
         self.final_time = self.grid_t[-1]
-        self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 2 * self.fom.meshDim))
+        self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 5 * self.fom.meshDim))
 
     def get_derivative(self, t: float = None, x=None):
 
