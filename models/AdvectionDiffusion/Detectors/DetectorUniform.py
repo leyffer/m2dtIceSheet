@@ -28,10 +28,17 @@ class DetectorUniform(Detector):
         (Gaussian radius) and `radius_uniform`
         """
         super().__init__(grid_t=grid_t, **kwargs)
+
+        # define subdomain
         self.radius = radius
         self.meshDim = kwargs.get("meshDim", 10)
+        self.ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=self.radius), self.meshDim)
+        self.V = dl.FunctionSpace(self.ref_domain, 'P', 1)
+        self.val_integral_ref = dl.assemble(1 * dl.dx(domain=self.ref_domain))
 
-    def measure(self, flight, state) -> np.ndarray:
+        self.bool_remember_measurements = kwargs.get("bool_remember_measurements", True)
+
+    def measure_at_position(self, pos, t, state, bool_from_memory=True):
         """! Get measurements along the flight path at the drone location
 
         To compute the measurements on the subdomain B(t), we proceed the following way:
@@ -53,47 +60,33 @@ class DetectorUniform(Detector):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
-        
-        flightpath = flight.flightpath
-        grid_t = flight.grid_t
+        if self.bool_remember_measurements and bool_from_memory:
+            return state.remember_measurement(pos=pos, t=t, detector=self)
 
-        # initialization
-        n_steps = flightpath.shape[0]
-        data = np.NaN * np.ones((n_steps,))
+        coordinates = self.ref_domain.coordinates()
+        vals = np.zeros((coordinates.shape[0],))
+        inside = np.ones((coordinates.shape[0],))
 
-        # define subdomain
-        ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=self.radius), self.meshDim)
-        V = dl.FunctionSpace(ref_domain, 'P', 1)
-        val_integral_ref = dl.assemble(1 * dl.dx(domain=ref_domain))
+        for i in range(coordinates.shape[0]):
+            try:
+                vals[i] = state.get_state(t=t, x=pos + coordinates[i, :])
+            except(RuntimeError):
+                inside[i] = 0
 
-        for k in range(n_steps):
+        # integrate over reference domain
+        u = dl.Function(self.V)
+        u.vector().vec().array = vals
+        val = dl.assemble(u * dl.dx(domain=self.ref_domain))
 
-            coordinates = ref_domain.coordinates()
-            vals = np.zeros((coordinates.shape[0], ))
-            inside = np.ones((coordinates.shape[0],))
+        #  compute re-weighting
+        if sum(inside) == inside.shape[0]:
+            val_integral = self.val_integral_ref
+        else:
+            u = dl.Function(self.V)
+            u.vector().vec().array = inside
+            val_integral = dl.assemble(u * dl.dx(domain=self.ref_domain))
 
-            for i in range(coordinates.shape[0]):
-                try:
-                    vals[i] = state.get_state(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
-                except(RuntimeError):
-                    inside[i] = 0
-
-            # integrate over reference domain
-            u = dl.Function(V)
-            u.vector().vec().array = vals
-            val = dl.assemble(u * dl.dx(domain=ref_domain))
-
-            #  compute re-weighting
-            if sum(inside) == inside.shape[0]:
-                val_integral = val_integral_ref
-            else:
-                u = dl.Function(V)
-                u.vector().vec().array = inside
-                val_integral = dl.assemble(u * dl.dx(domain=ref_domain))
-
-            data[k] = val / val_integral
-
-        return data
+        return val / val_integral
 
     def d_measurement_d_position(self, flight, state):
         """

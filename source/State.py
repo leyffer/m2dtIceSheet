@@ -26,6 +26,8 @@ class State:
     grid_t: np.ndarray = None  # time discretization of the state solution
     Du = None
 
+    measurement_memory = None
+
     def __init__(
         self, fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
     ) -> None:
@@ -69,4 +71,9 @@ class State:
         """
         raise NotImplementedError(
             "user must implement State.get_state in subclass"
+        )
+
+    def remember_measurement(self, pos, t):
+        raise NotImplementedError(
+            "user must implement State.remember_measurement in subclass"
         )

@@ -34,24 +34,12 @@ class DetectorPointwise(Detector):
         warnings.warn("For pointwise measurements, measurements are taken from the un-convolved state.")
         return state
 
-    def measure(self, flight: "Flight", state: "State") -> np.ndarray:
-        """! Get measurements along the flight path at the drone location
-
-        @param flightpath  The trajectory of the drone
-        @param grid_t  the time discretization on which the flightpath lives
-        @param state  The state which the drone shall measure, State object
-        """
-        
-        flightpath = flight.flightpath
-        grid_t = flight.grid_t
-        data = np.zeros((flightpath.shape[0],))
-
-        for k in range(flightpath.shape[0]):
-            try:
-                data[k] = state.get_state(t=grid_t[k], x=flightpath[k, :])
-            except RuntimeError:
-                warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
-                pass
+    def measure_at_position(self, pos, t, state):
+        try:
+            data = state.get_state(t=t, x=pos)
+        except RuntimeError:
+            warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
+            pass
 
         return data
 
