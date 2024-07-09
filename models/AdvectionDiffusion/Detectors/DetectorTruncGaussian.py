@@ -68,7 +68,7 @@ class DetectorTruncGaussian(Detector):
         @param state  The state which the drone shall measure, State object
         """
         if self.bool_remember_measurements and bool_from_memory:
-            return state.remember_measurement(pos=pos, t=t)
+            return state.remember_measurement(pos=pos, t=t, detector=self)
 
         coordinates = self.ref_domain.coordinates()
         vals = np.zeros((coordinates.shape[0],))

@@ -38,7 +38,7 @@ class DetectorUniform(Detector):
 
         self.bool_remember_measurements = kwargs.get("bool_remember_measurements", True)
 
-    def measure_at_position(self, pos, t, state):
+    def measure_at_position(self, pos, t, state, bool_from_memory=True):
         """! Get measurements along the flight path at the drone location
 
         To compute the measurements on the subdomain B(t), we proceed the following way:
@@ -60,6 +60,8 @@ class DetectorUniform(Detector):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
+        if self.bool_remember_measurements and bool_from_memory:
+            return state.remember_measurement(pos=pos, t=t, detector=self)
 
         coordinates = self.ref_domain.coordinates()
         vals = np.zeros((coordinates.shape[0],))

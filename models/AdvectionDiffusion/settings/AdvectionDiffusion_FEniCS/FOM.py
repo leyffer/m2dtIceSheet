@@ -70,6 +70,7 @@ class FOM(FullOrderModel):
 
         # Discretization
         self.mesh_shape = mesh_shape
+        self.meshDim = meshDim
         self.mesh = self.create_mesh(meshDim)
         self.boundary_marker = self.create_boundary_marker()
 

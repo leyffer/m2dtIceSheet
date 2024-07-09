@@ -10,6 +10,10 @@ class myState(State):
     state: dl.Function
     convolution = None
 
+    memory_tree = None
+    memory_cell2vertex = None
+    memory_cell_coordinates = None
+
     def __init__(
         self,
         fom: "FOM",
@@ -25,6 +29,7 @@ class myState(State):
         self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
 
         self.final_time = self.grid_t[-1]
+        self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 2 * self.fom.meshDim))
 
     def get_derivative(self, t: float = None, x=None):
 
@@ -57,6 +62,7 @@ class myState(State):
 
     def get_state(self, t=None, x=None):
         if t is None:
+            # todo: doesn't this error also happen right now when the state is stationary?
             raise RuntimeError(
                 "transient state myState.get_state called without specifying a time at which to evaluate")
 
@@ -93,6 +99,72 @@ class myState(State):
 
         # apply linear interpolation rule
         return state_left + (t - t_left) * state_diff / t_diff
+
+    def setup_measurement_memory(self, meshDim: int):
+        """
+        initializations for saving measurements on a mesh
+        """
+        # create mesh in which measurements will be stored
+        mesh = self.fom.create_mesh(meshDim=meshDim)
+        V = dl.FunctionSpace(mesh, "P", 1)
+        self.memory_cell_coordinates = mesh.coordinates()
+
+        # build a tree for locating cells within the mesh
+        self.memory_tree = dl.BoundingBoxTree()
+        self.memory_tree.build(mesh)
+        self.memory_cell2vertex = mesh.topology()(mesh.topology().dim(), 0)
+        # memory_cell2nodes returns, for a given cell number the node numbers of the cells edges
+
+        self.memory_vertex2dof = dl.vertex_to_dof_map(V)
+
+        # create a function in which measurements will be stored
+        self.measurement_memory = dl.Function(V)
+
+        # set all entries to NaN (since no measurements have been computed yet)
+        self.measurement_memory.vector().vec().array = np.nan * np.ones(V.dim())
+
+    def remember_measurement(self, pos, t, detector):
+        """
+        Check if a measurement has already been taken at position pos and time t (or at least in their vicinity).
+        If so, return it. If not, compute the missing entries on the memory mesh.
+        """
+        # test if we already know a value for this position and time
+        stored_data = self.measurement_memory(pos)
+        # todo: this part won't work with transient measurements yet
+
+        # if so, return it
+        if not np.isnan(stored_data):
+            return stored_data
+
+        # if not, find out in which mesh cell pos is located
+        p = dl.Point(pos)
+        cell_numbers = self.memory_tree.compute_entity_collisions(p)
+        # all cells in the tree that contain p (multiple cells are possible if p is on cell boundary)
+
+        for cell_no in cell_numbers:
+
+            # identify the nodes for this cell element
+            node_numbers = self.memory_cell2vertex(cell_no)
+            node_coordinates = self.memory_cell_coordinates[node_numbers]
+
+            # compute those missing values (probably 6 if transient, 3 if stationary)
+            for i, node_no in enumerate(node_numbers):
+
+                # get position in dof map for the node we are looking at
+                dof_no = self.memory_vertex2dof[node_no]
+
+                if np.isnan(self.measurement_memory.vector().vec().array[dof_no]):
+                    # compute data for this node
+                    data = detector.measure_at_position(pos=node_coordinates[i, :], t=t, state=self,
+                                                        bool_from_memory=False)
+                    # setting bool_from_memory to False ensures that we are actually computing a measurement
+                    # and that we don't run into an infinite loop
+
+                    # store this data in memory
+                    self.measurement_memory.vector().vec().array[dof_no] = data
+
+        # return the evaluation
+        return self.measurement_memory(p)
 
     def set_convolution(self, convolution, key):
         """
