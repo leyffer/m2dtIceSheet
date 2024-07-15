@@ -18,7 +18,7 @@ class DetectorUniform(Detector):
 
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, grid_t=None, radius=0.1, **kwargs):
+    def __init__(self, grid_t=None, radius=0.05, **kwargs):
         """! Initializer for the drone class with uniform measurements
 
         @param fom  Full-order-model (FOM) object. The drone takes
@@ -28,10 +28,17 @@ class DetectorUniform(Detector):
         (Gaussian radius) and `radius_uniform`
         """
         super().__init__(grid_t=grid_t, **kwargs)
-        self.radius = radius
-        self.meshDim = kwargs.get("meshDim", 50)
 
-    def measure(self, flight, state) -> np.ndarray:
+        # define subdomain
+        self.radius = radius
+        self.meshDim = kwargs.get("meshDim", 10)
+        self.ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=self.radius), self.meshDim)
+        self.V = dl.FunctionSpace(self.ref_domain, 'P', 1)
+        self.val_integral_ref = dl.assemble(1 * dl.dx(domain=self.ref_domain))
+
+        self.bool_remember_measurements = kwargs.get("bool_remember_measurements", True)
+
+    def measure_at_position(self, pos, t, state, bool_from_memory=True):
         """! Get measurements along the flight path at the drone location
 
         To compute the measurements on the subdomain B(t), we proceed the following way:
@@ -53,50 +60,33 @@ class DetectorUniform(Detector):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
-        
-        flightpath = flight.flightpath
-        grid_t = flight.grid_t
+        if self.bool_remember_measurements and bool_from_memory:
+            return state.remember_measurement(pos=pos, t=t, detector=self)
 
-        # initialization
-        n_steps = flightpath.shape[0]
-        data = np.NaN * np.ones((n_steps,))
+        coordinates = self.ref_domain.coordinates()
+        vals = np.zeros((coordinates.shape[0],))
+        inside = np.ones((coordinates.shape[0],))
 
-        # define subdomain
-        ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=self.radius), self.meshDim)
-        V = dl.FunctionSpace(ref_domain, 'P', 1)
-        val_integral_ref = dl.assemble(1 * dl.dx(domain=ref_domain))
+        for i in range(coordinates.shape[0]):
+            try:
+                vals[i] = state.get_state(t=t, x=pos + coordinates[i, :])
+            except(RuntimeError):
+                inside[i] = 0
 
-        for k in range(n_steps):
+        # integrate over reference domain
+        u = dl.Function(self.V)
+        u.vector().vec().array = vals
+        val = dl.assemble(u * dl.dx(domain=self.ref_domain))
 
-            coordinates = ref_domain.coordinates()
-            vals = np.zeros((coordinates.shape[0], ))
-            inside = np.ones((coordinates.shape[0],))
+        #  compute re-weighting
+        if sum(inside) == inside.shape[0]:
+            val_integral = self.val_integral_ref
+        else:
+            u = dl.Function(self.V)
+            u.vector().vec().array = inside
+            val_integral = dl.assemble(u * dl.dx(domain=self.ref_domain))
 
-            for i in range(coordinates.shape[0]):
-                if state.bool_is_transient:
-                    vals[i] = state.state[k](flightpath[k, :] + coordinates[i, :])
-                else:
-                    try:
-                        vals[i] = state.state(flightpath[k, :] + coordinates[i, :])
-                    except(RuntimeError):
-                        inside[i] = 0
-
-            # integrate over reference domain
-            u = dl.Function(V)
-            u.vector().vec().array = vals
-            val = dl.assemble(u * dl.dx(domain=ref_domain))
-
-            #  compute re-weighting
-            if sum(inside) == inside.shape[0]:
-                val_integral = val_integral_ref
-            else:
-                u = dl.Function(V)
-                u.vector().vec().array = inside
-                val_integral = dl.assemble(u * dl.dx(domain=ref_domain))
-
-            data[k] = val / val_integral
-
-        return data
+        return val / val_integral
 
     def d_measurement_d_position(self, flight, state):
         """
@@ -137,7 +127,7 @@ class DetectorUniform(Detector):
         # parts of the chain rule (only compute once)
         # grad_p = flight.d_position_d_control  # derivative of position
         # todo: optimize this computation such that we don't repeat it as often
-        Du = state.get_derivative()  # spatial derivative of the state
+        # Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
         n_steps = flightpath.shape[0]
@@ -155,16 +145,13 @@ class DetectorUniform(Detector):
             inside = np.ones((coordinates.shape[0],))
 
             for i in range(coordinates.shape[0]):
-                if state.bool_is_transient:
-                    vals[i, :] = Du[k](flightpath[k, :] + coordinates[i, :])
-                else:
-                    try:
-                        vals[i, :] = Du(flightpath[k, :] + coordinates[i, :])
-                    except(RuntimeError):
-                        inside[i] = 0
-                        # while not implemented, interrupt here already to know early
-                        raise NotImplementedError(
-                            "In MyDroneUniformEval.d_measurement_d_position: encountered overlap with edge of domain.")
+                try:
+                    vals[i, :] = state.get_derivative(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
+                except(RuntimeError):
+                    inside[i] = 0
+                    # while not implemented, interrupt here already to know early
+                    raise NotImplementedError(
+                        "In MyDroneUniformEval.d_measurement_d_position: encountered overlap with edge of domain.")
 
             # integrate over reference domain
             val = np.zeros((vals.shape[1],))

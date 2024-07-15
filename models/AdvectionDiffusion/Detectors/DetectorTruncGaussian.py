@@ -22,7 +22,7 @@ class DetectorTruncGaussian(Detector):
 
     center = np.array([0.75/2, 0.55/2])
 
-    def __init__(self, fom, grid_t=None, sigma=0.1, radius=0.2, bool_truncate=True, **kwargs):
+    def __init__(self, fom, grid_t=None, sigma=0.025, radius=0.05, bool_truncate=True, **kwargs):
         """! Initializer for the drone class with truncated Gaussian-type measurements
 
         @param fom  Full-order-model (FOM) object. The drone takes
@@ -32,11 +32,19 @@ class DetectorTruncGaussian(Detector):
         (Gaussian radius) and `radius_uniform`
         """
         super().__init__(grid_t=grid_t, **kwargs)
+
         self.sigma = sigma
         self.radius = radius
-        self.meshDim = kwargs.get("meshDim", 50)
+        self.meshDim = kwargs.get("meshDim", 10)
+        self.ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=self.radius), self.meshDim)
+        self.V = dl.FunctionSpace(self.ref_domain, 'P', 1)
+        weight = f'exp(-0.5 * ((x[0]-0)*((x[0]-0)) + (x[1]-0)*(x[1]-0)) / {self.sigma ** 2})'
+        self.weight_fct = dl.Expression(weight, degree=1)
+        self.val_integral_ref = dl.assemble(self.weight_fct * dl.dx(domain=self.ref_domain))
 
-    def measure(self, flight, state) -> np.ndarray:
+        self.bool_remember_measurements = kwargs.get("bool_remember_measurements", True)
+
+    def measure_at_position(self, pos, t, state, bool_from_memory=True):
         """! Get measurements along the flight path at the drone location
 
         To compute the measurements on the subdomain B(t), we proceed the following way:
@@ -59,59 +67,40 @@ class DetectorTruncGaussian(Detector):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
-        
-        flightpath = flight.flightpath
-        grid_t = flight.grid_t
+        if self.bool_remember_measurements and bool_from_memory:
+            return state.remember_measurement(pos=pos, t=t, detector=self)
 
-        # initialization
-        n_steps = flightpath.shape[0]
-        data = np.NaN * np.ones((n_steps,))
+        coordinates = self.ref_domain.coordinates()
+        vals = np.zeros((coordinates.shape[0],))
+        inside = np.ones((coordinates.shape[0],))
 
-        # define subdomain
-        ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=np.min([self.radius, 4*self.sigma])), self.meshDim)
-        V = dl.FunctionSpace(ref_domain, 'P', 1)
-        weight = f'exp(-0.5 * ((x[0]-0)*((x[0]-0)) + (x[1]-0)*(x[1]-0)) / {self.sigma ** 2})'
-        weight_fct = dl.Expression(weight, degree=1)
-        val_integral_ref = dl.assemble(weight_fct * dl.dx(domain=ref_domain))
+        for i in range(coordinates.shape[0]):
+            try:
+                # take measurement if inside the domain
+                vals[i] = state.get_state(t=t, x=pos + coordinates[i, :])
+            except(RuntimeError):
+                # mark point as outside the domain
+                inside[i] = 0
 
-        for k in range(n_steps):
+        # integrate over reference domain
+        u = dl.Function(self.V)
+        u.vector().vec().array = vals
+        val = dl.assemble(u * self.weight_fct * dl.dx(domain=self.ref_domain))
 
-            coordinates = ref_domain.coordinates()
-            vals = np.zeros((coordinates.shape[0],))
-            inside = np.ones((coordinates.shape[0],))
+        #  compute re-weighting
+        if sum(inside) == inside.shape[0]:
+            # use reference integral value (save some compute time)
+            val_integral = self.val_integral_ref
+            # in this case, we know that the circle didn't overlap with the edges of the domain
+            # so we know that the integral is just the one we computed at the reference
+        else:
+            # the circle overlapped with the edges of the domain
+            # for computing the weight function, we need to exclude those points
+            u = dl.Function(self.V)
+            u.vector().vec().array = inside
+            val_integral = dl.assemble(u * self.weight_fct * dl.dx(domain=self.ref_domain))
 
-            for i in range(coordinates.shape[0]):
-                try:
-                    # take measurement if inside the domain
-                    if state.bool_is_transient:
-                        vals[i] = state.state[k](flightpath[k, :] + coordinates[i, :])
-                    else:
-                        vals[i] = state.state(flightpath[k, :] + coordinates[i, :])
-                except(RuntimeError):
-                    # mark point as outside the domain
-                    inside[i] = 0
-
-            # integrate over reference domain
-            u = dl.Function(V)
-            u.vector().vec().array = vals
-            val = dl.assemble(u * weight_fct * dl.dx(domain=ref_domain))
-
-            #  compute re-weighting
-            if sum(inside) == inside.shape[0]:
-                # use reference integral value (save some compute time)
-                val_integral = val_integral_ref
-                # in this case, we know that the circle didn't overlap with the edges of the domain
-                # so we know that the integral is just the one we computed at the reference
-            else:
-                # the circle overlapped with the edges of the domain
-                # for computing the weight function, we need to exclude those points
-                u = dl.Function(V)
-                u.vector().vec().array = inside
-                val_integral = dl.assemble(u * weight_fct * dl.dx(domain=ref_domain))
-
-            data[k] = val / val_integral
-
-        return data
+        return val / val_integral
 
     def d_measurement_d_position(self, flight, state):
         """
@@ -148,11 +137,6 @@ class DetectorTruncGaussian(Detector):
         # alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
         flightpath = flight.flightpath
         n_spatial = flightpath.shape[1]
-        
-        # parts of the chain rule (only compute once)
-        # grad_p = flight.d_position_d_control   # derivative of position
-        # todo: optimize this computation such that we don't repeat it as often
-        Du = state.get_derivative()  # spatial derivative of the state
 
         # initialization
         n_steps = flightpath.shape[0]
@@ -174,11 +158,8 @@ class DetectorTruncGaussian(Detector):
 
             for i in range(coordinates.shape[0]):
                 try:
-                    # take measurement if inside the domain
-                    if state.bool_is_transient:
-                        vals[i, :] = Du[k](flightpath[k, :] + coordinates[i, :])
-                    else:
-                        vals[i, :] = Du(flightpath[k, :] + coordinates[i, :])
+                    # evaluate the derivative
+                    vals[i, :] = state.get_derivative(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
                 except(RuntimeError):
                     # mark point as outside the domain
                     inside[i] = 0

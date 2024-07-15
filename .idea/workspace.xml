@@ -4,13 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="just ran the code">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="measurement memory now works">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,14 +59,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;git-widget-placeholder&quot;: &quot;infinite-dimensional-setting&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/source&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "git-widget-placeholder": "measurement-memory",
+    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />
       <recent name="$PROJECT_DIR$/source" />
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion_FEniCS" />
     </key>
@@ -266,7 +264,47 @@
       <option name="project" value="LOCAL" />
       <updated>1715309106798</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="corrected space for derivatives">
+      <option name="closed" value="true" />
+      <created>1716910313759</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1716910313759</updated>
+    </task>
+    <task id="LOCAL-00025" summary="stared on infinite-dimensional setting">
+      <option name="closed" value="true" />
+      <created>1716910405009</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1716910405009</updated>
+    </task>
+    <task id="LOCAL-00026" summary="transient setting working">
+      <option name="closed" value="true" />
+      <created>1716941812777</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1716941812777</updated>
+    </task>
+    <task id="LOCAL-00027" summary="cleaned up some of the detector code such that more overarching code is in the parent class">
+      <option name="closed" value="true" />
+      <created>1720551825155</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1720551825155</updated>
+    </task>
+    <task id="LOCAL-00028" summary="measurement memory now works">
+      <option name="closed" value="true" />
+      <created>1720561477549</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1720561477549</updated>
+    </task>
+    <option name="localTasksCounter" value="29" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -292,7 +330,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="put in the class structure (c.f. discussion on Oct 27)" />
     <MESSAGE value="started restructuring the FEniCS advection-diffusion FOM class" />
     <MESSAGE value="integrated the prior into the full-order model" />
     <MESSAGE value="copied over minimum code for drone class, missing gaussian and uniform measurements" />
@@ -313,7 +350,12 @@
     <MESSAGE value="included finite difference comparison in notebook 3" />
     <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
     <MESSAGE value="started on convergence studies" />
-    <option name="LAST_COMMIT_MESSAGE" value="started on convergence studies" />
+    <MESSAGE value="corrected space for derivatives" />
+    <MESSAGE value="stared on infinite-dimensional setting" />
+    <MESSAGE value="transient setting working" />
+    <MESSAGE value="cleaned up some of the detector code such that more overarching code is in the parent class" />
+    <MESSAGE value="measurement memory now works" />
+    <option name="LAST_COMMIT_MESSAGE" value="measurement memory now works" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

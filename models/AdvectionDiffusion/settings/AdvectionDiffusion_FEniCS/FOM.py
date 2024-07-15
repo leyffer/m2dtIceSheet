@@ -70,6 +70,7 @@ class FOM(FullOrderModel):
 
         # Discretization
         self.mesh_shape = mesh_shape
+        self.meshDim = meshDim
         self.mesh = self.create_mesh(meshDim)
         self.boundary_marker = self.create_boundary_marker()
 
@@ -295,7 +296,7 @@ class FOM(FullOrderModel):
         dl.solve(F == 0, w, bcs=bcW)
         return u
 
-    def plot(self, u, mesh: dl.MeshGeometry = None, ax=None,**kwargs):
+    def plot(self, u, mesh: dl.MeshGeometry = None, ax=None, time: float = 0, **kwargs):
         """! Plot the state u"""
 
         # TODO: distinguish between different types of u
@@ -306,14 +307,17 @@ class FOM(FullOrderModel):
         if isinstance(u, str):
             u = dl.Expression(f"{u}", degree=3)
         if isinstance(u, State):
-            u = u.state
-            # TODO: make compatible with time-dependent states
+            u = u.get_state(t=time)
 
-        # plt.figure()
-        c = dl.plot(u, mesh=mesh)
-        return c
-        # plt.colorbar(c)
+        if ax is None:
+            plt.figure()
+            c = dl.plot(u, mesh=mesh)
+            plt.colorbar(c)
+        else:
+            c = dl.plot(u, mesh=mesh)
+            plt.sca(ax)
 
+            return c
     def find_next(
         self, u_old: dl.Function, dt: float, kappa: float = None
     ) -> dl.Function:
@@ -377,7 +381,7 @@ class FOM(FullOrderModel):
 
         # sol[0] = dl.Function(self.V)
         # sol[0].interpolate(m_init)
-        sol[0] = m_init
+        sol[0] = dl.project(m_init, self.V)
 
         # Integrate in time over the time grid
         for k in range(1, sol.shape[0]):
@@ -428,5 +432,6 @@ class FOM(FullOrderModel):
             bool_is_transient=True,
             parameter=parameter,
             other_identifiers=other_identifiers,
+            grid_t=grid_t
         )
         return state

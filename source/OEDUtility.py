@@ -26,7 +26,7 @@ class OEDUtility:
     def __init__(self, default_mode: Optional[str] = "D") -> None:
         """! initialization for OEDUtility class
 
-        @param default_mode: OED utility criterion (A, D, or E), E is only partially supported
+        @param default_mode: OED utility criterion (A, D, or E), E is only partially supported, also D-inverse and D-log
         """
         # remember which mode we are in per default
         self.default_mode = default_mode
@@ -53,6 +53,9 @@ class OEDUtility:
         if mode == "D":
             return self.eval_utility_D(posterior)
 
+        if mode == "D-log":
+            return np.log(self.eval_utility_D(posterior))  # natural logarithm
+
         if mode == "D-inverse":
             return self.eval_utility_Dinv(posterior)
 
@@ -78,7 +81,6 @@ class OEDUtility:
         @param posterior:
         @return: float
         """
-        # TODO: should we compute the inverse or the log instead? The values get very big
         return np.prod(posterior.eigvals)
 
     def eval_utility_Dinv(self, posterior: Posterior):
@@ -120,6 +122,17 @@ class OEDUtility:
 
         if mode == "D":
             return self.d_utilD_d_control(posterior)
+
+        if mode == "D-log":
+            deriv = self.d_utilD_d_control(posterior)
+            f = self.eval_utility_D(posterior)
+
+            test = np.array([deriv[0] / f, deriv[1] / f])
+            deriv = deriv / f
+            if not np.isclose(deriv, test).all():
+                raise RuntimeError("division in D-log derivative failed")
+
+            return deriv
 
         if mode == "D-inverse":
             return self.d_utilDinv_d_control(posterior)
@@ -267,10 +280,8 @@ class OEDUtility:
         computes the derivative of the OED-utility function for the given
         posterior w.r.t. the control parameters.
         @param posterior: Posterior
-        @param mode: string: "A", "D", "D-inverse", "E"
+        @param mode: string: "A", "D", "D-inverse", "E", "D-log"
         @return:
-
-        # TODO: we also need to support d_utility_d_position
         """
 
         # use default mode if none is provided
@@ -282,6 +293,17 @@ class OEDUtility:
 
         if mode == "D":
             return self.d_utilD_d_position(posterior)
+
+        if mode == "D-log":
+            deriv = self.d_utilD_d_position(posterior)
+            f = self.eval_utility_D(posterior)
+
+            test = np.array([deriv[0] / f, deriv[1] / f])
+            deriv = deriv / f
+            if not np.isclose(deriv, test).all():
+                raise RuntimeError("division in D-log derivative failed")
+
+            return deriv
 
         if mode == "D-inverse":
             return self.d_utilDinv_d_position(posterior)
