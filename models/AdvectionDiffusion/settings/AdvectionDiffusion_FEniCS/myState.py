@@ -26,7 +26,8 @@ class myState(State):
         super().__init__(
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
-        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
+        # Gradient space is Vector space of one dimension lower than FOM dimension
+        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim - 1) # Discontinuous Galerkin
 
         self.final_time = self.grid_t[-1]
         self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 5 * self.fom.meshDim))
@@ -187,9 +188,7 @@ class myState(State):
         self.convolution[key] = convolution
 
     def get_convolution(self, key):
-        if self.convolution is None:
-            return None
-        return self.convolution[key]
+        return self.convolution.get(key)
 
     def measure_pointwise(
             self, position: np.ndarray, t: float | np.ndarray
