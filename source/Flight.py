@@ -9,9 +9,10 @@ import numpy as np
 
 class Flight():
     """
-    A flight is the realization of given control parameters alpha. It is specific to it - any alpha should have its
-    own associated flight. And no changing alpha after the fact. The flight stores all information that is known about
-    it:
+    A flight is the realization of given control parameters alpha. It is
+    specific to it - any alpha should have its own associated flight. And no
+    changing alpha after the fact. The flight stores all information that is
+    known about it:
 
     - the control parameterization alpha
     - the time grid
@@ -19,15 +20,17 @@ class Flight():
     - the flightpath it takes on this time grid (produced by the navigation system)
     - the derivative of its path with respect to its position (not computed at initialization)
 
-    Since the flight outsources the computations of these quantities to the Navigation system, the user probably doesn't
-    need to change this class unless in very special cases. If so, please make a child class for compatibility.
+    Since the flight outsources the computations of these quantities to the
+    Navigation system, the user probably doesn't need to change this class
+    unless in very special cases. If so, please make a child class for
+    compatibility.
     """
 
     def __init__(self, navigation : "Navigation", alpha, grid_t: np.ndarray = None):
-        """ ! Initialization of Flight class
+        """! Initialization of Flight class
 
-        Creates the flight associated to the control parameters alpha. The navigation system describes how to get
-        the flightpath from it.
+        Creates the flight associated to the control parameters alpha. The
+        navigation system describes how to get the flightpath from it.
 
         @param navigation: Navigation system, for interpreting control parameter alpha
         @param alpha: control parameter, likely np.ndarray but could also be user-specific
@@ -64,10 +67,12 @@ class Flight():
     @cached_property
     def d_position_d_control(self):
         """
-        Computes the derivative of the flight path with respect to the control parameters alpha by calling the
-        corresponding function in flight.navigation system. Since this derivative is alpha dependent, but alpha is
-        fixed for any flight, we store this derivative for future use within this flight (flight.d_pos_d_con). This is why
-        for getting this derivative,
+        Computes the derivative of the flight path with respect to the control
+        parameters alpha by calling the corresponding function in
+        flight.navigation system. Since this derivative is alpha dependent, but
+        alpha is fixed for any flight, we store this derivative for future use
+        within this flight (flight.d_pos_d_con). This is why for getting this
+        derivative,
         flight.d_position_d_control
         should be called, and **not**
         flight.navigation.d_position_d_control(flight)

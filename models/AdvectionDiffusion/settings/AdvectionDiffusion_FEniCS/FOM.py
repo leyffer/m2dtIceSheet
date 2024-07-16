@@ -78,9 +78,10 @@ class FOM(FullOrderModel):
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
 
-        # Trial and test space for advection-diffusion eq ('P' == Polynomial)
+        # Trial and test space for advection-diffusion eq ('P' == Polynomial, 'CG' = Continuous Gelerkin)
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
+        self.gradient_space = dl.VectorFunctionSpace(self.mesh, 'DG', self.polyDim - 1) # Discontinuous Galerkin
         # see ufl.finiteelement.elementlist.show_elements() for finite element family options
 
         # Finite-element dimension
@@ -200,6 +201,9 @@ class FOM(FullOrderModel):
         order of meshDim * meshDim
         @return  Mesh geometry
         """
+        if self.mesh_shape == "square":
+            return dl.UnitSquareMesh(meshDim, meshDim, diagonal="right")
+
         together = mshr.Rectangle(dl.Point(0.0, 0.0), dl.Point(1.0, 1.0))
 
         if self.mesh_shape == "houses":
@@ -227,6 +231,8 @@ class FOM(FullOrderModel):
                 boundary[f] = 2
             elif dl.near(mp[1], 0.0) or dl.near(mp[1], 1):  # walls
                 boundary[f] = 3
+            elif self.mesh_shape == "square":
+                continue
             elif dl.near(mp[0], 0.25) or dl.near(mp[0], 0.5):
                 if 0.15 <= mp[1] and mp[1] <= 0.4:
                     boundary[f] = 4

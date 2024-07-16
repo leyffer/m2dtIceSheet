@@ -256,9 +256,9 @@ class myState(State):
         self.convolution[key] = convolution
 
     def get_convolution(self, key):
-        if self.convolution is None:
-            return None
-        return self.convolution[key]
+        if isinstance(self.convolution, dict):
+            return self.convolution.get(key)
+        return None
 
     def measure_pointwise(
             self, position: np.ndarray, t: float | np.ndarray
