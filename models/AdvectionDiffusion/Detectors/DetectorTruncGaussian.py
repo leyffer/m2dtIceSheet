@@ -9,6 +9,10 @@ sys.path.insert(0, "../source/")
 
 from Detector import Detector
 
+
+# todo: the only difference between DetectorTruncGaussian and DetectorUniform is the weight function. The classes should
+#  be merged so that there's less code we need to keep updated
+
 class DetectorTruncGaussian(Detector):
     """
     In this drone class, we model measurements at time t of a state u to be of the form:
@@ -102,92 +106,104 @@ class DetectorTruncGaussian(Detector):
 
         return val / val_integral
 
-    def d_measurement_d_position(self, flight, state):
+    def derivative_at_position(self, pos, t, state, bool_from_memory=False):
         """
-        TODO - lots of overlap with this and the other derivative with respect to controls
-
-        derivative of the measurement function for a given flightpath in position
-        The derivative can be computed via the chain rule. For computing the derivative of the integral over the
-        circle, we proceed similar as in self.measure, but project the spatial derivative of the state onto the
-        reference mesh. Ideally, in the future, we do both within the one function to save on some iterations.
-
-        Note:
-        This function throws an error when the circle around the drone extends beyond the domain Omega. This is because
-        in this case, the measurements are only evaluating the part of the circle within Omega, and the integral is
-        also only normalized w.r.t. this subsection. For the derivative, we then need to also compute hte derivative of
-        this section. It's doable, but very problem dependent (unless we approximate it numerically). Therefore, it's
-        not implemented yet.
-
-        # todo: already compute the derivative as a part of self.measure
-        # todo: accept that the circle might extend beyond Omega and approximate the derivative in this case
-
-        Since the position is determined by <spatial dimension>*<number of time steps> parameters, and a measurement
-        has <number of time steps> entries, the return of this function has to have shape
-
-        $$ <number of time steps> \times <spatial dimension>*<number of time steps> $$
-
-        The columns should be ordered such that the first <number of time steps> columns are for the first spatial
-        dimension (x direction), the next <number of time steps> columns for the second (y-direction), etc.
-
-        @param flight: the flight parameterization of the drone. Contains, in particular, the flightpath `flightpath`,
-        the flight controls `alpha`, and the time discretization `grid_t`, Flight object
-        @param state  The state which the drone shall measure, State object
-        @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
+        computes the state's measurement derivative (w.r.t. the position) at time t and position pos
         """
-        alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
-        n_spatial = flightpath.shape[1]
+        if self.bool_remember_measurements and bool_from_memory:
+            return state.remember_measurement(pos=pos, t=t, detector=self)
 
-        # initialization
-        n_steps = flightpath.shape[0]
-        D_data_d_position = np.empty((n_steps, 2))  # (time, (dx, dy))
+        coordinates = self.ref_domain.coordinates()
+        vals = np.zeros((coordinates.shape[0], 2))  # (time, (dx,dy))
+        inside = np.ones((coordinates.shape[0],))
 
-        # define subdomain
-        ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=np.min([self.radius, 4 * self.sigma])),
-                                        self.meshDim)
-        V = dl.FunctionSpace(ref_domain, 'P', 1)
-        weight = f'exp(-0.5 * ((x[0]-0)*((x[0]-0)) + (x[1]-0)*(x[1]-0)) / {self.sigma ** 2})'
-        weight_fct = dl.Expression(weight, degree=1)
-        val_integral_ref = dl.assemble(weight_fct * dl.dx(domain=ref_domain))
-
-        for k in range(n_steps):
-
-            coordinates = ref_domain.coordinates()
-            vals = np.zeros((coordinates.shape[0], 2))  # (time, (dx,dy))
-            inside = np.ones((coordinates.shape[0],))
-
-            for i in range(coordinates.shape[0]):
-                try:
-                    # evaluate the derivative
-                    vals[i, :] = state.get_derivative(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
-                except(RuntimeError):
-                    # mark point as outside the domain
-                    inside[i] = 0
-                    # while not implemented, interrupt here already to know early
-                    raise NotImplementedError(
-                        "In MyDroneTruncGaussianEval.d_measurement_d_position: encountered overlap with edge of domain.")
-
-            # integrate over reference domain
-            val = np.zeros((vals.shape[1],))
-            for i in range(val.shape[0]):
-                u = dl.Function(V)
-                u.vector().vec().array = vals[:, i]
-                val[i] = dl.assemble(u * weight_fct * dl.dx(domain=ref_domain))
-                # todo: this loop is very inefficient, there's likely a smarter way to integrate each element of a vector
-
-            #  compute re-weighting
-            if sum(inside) == inside.shape[0]:
-                # use reference integral value (save some compute time)
-                val_integral = val_integral_ref
-                # in this case, we know that the circle didn't overlap with the edges of the domain
-                # so we know that the integral is just the one we computed at the reference
-            else:
-                # the circle overlapped with the edges of the domain
-                # for computing the weight function, we need to exclude those points
+        for i in range(coordinates.shape[0]):
+            try:
+                # take measurement if inside the domain
+                vals[i, :] = state.get_derivative(t=t, x=pos + coordinates[i, :])
+            except(RuntimeError):
+                # mark point as outside the domain
+                inside[i] = 0
                 raise NotImplementedError(
-                    "In MyDroneTruncGaussianEval.d_measurement_d_position: encountered overlap with edge of domain.")
+                    "In MyDroneTruncGaussianEval.derivative_at_position: encountered overlap with edge of domain.")
 
-            D_data_d_position[k, :] = val / val_integral
+        # integrate over reference domain
+        val = np.zeros((vals.shape[1],))
+        for i in range(val.shape[0]):
+            u = dl.Function(self.V)
+            u.vector().vec().array = vals[:, i]
+            val[i] = dl.assemble(u * self.weight_fct * dl.dx(domain=self.ref_domain))
+            # todo: this loop is very inefficient, there's likely a smarter way to integrate each element of a vector
 
-        # bring into correct shape format
-        D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
-        return D_data_d_position
+        #  compute re-weighting
+        if sum(inside) == inside.shape[0]:
+            # use reference integral value (save some compute time)
+            val_integral = self.val_integral_ref
+            # in this case, we know that the circle didn't overlap with the edges of the domain
+            # so we know that the integral is just the one we computed at the reference
+        else:
+            # the circle overlapped with the edges of the domain
+            # for computing the weight function, we need to exclude those points
+            raise NotImplementedError(
+                "In MyDroneTruncGaussianEval.derivative_at_position: encountered overlap with edge of domain.")
+
+        return val / val_integral
+
+    # def d_measurement_d_position(self, flight, state):
+    #     alpha, flightpath, grid_t = flight.alpha, flight.flightpath, flight.grid_t
+    #     n_spatial = flightpath.shape[1]
+    #
+    #     # initialization
+    #     n_steps = flightpath.shape[0]
+    #     D_data_d_position = np.empty((n_steps, 2))  # (time, (dx, dy))
+    #
+    #     # define subdomain
+    #     ref_domain = mshr.generate_mesh(mshr.Circle(c=dl.Point(0.0, 0.0), r=np.min([self.radius, 4 * self.sigma])),
+    #                                     self.meshDim)
+    #     V = dl.FunctionSpace(ref_domain, 'P', 1)
+    #     weight = f'exp(-0.5 * ((x[0]-0)*((x[0]-0)) + (x[1]-0)*(x[1]-0)) / {self.sigma ** 2})'
+    #     weight_fct = dl.Expression(weight, degree=1)
+    #     val_integral_ref = dl.assemble(weight_fct * dl.dx(domain=ref_domain))
+    #
+    #     for k in range(n_steps):
+    #
+    #         coordinates = ref_domain.coordinates()
+    #         vals = np.zeros((coordinates.shape[0], 2))  # (time, (dx,dy))
+    #         inside = np.ones((coordinates.shape[0],))
+    #
+    #         for i in range(coordinates.shape[0]):
+    #             try:
+    #                 # evaluate the derivative
+    #                 vals[i, :] = state.get_derivative(t=grid_t[k], x=flightpath[k, :] + coordinates[i, :])
+    #             except(RuntimeError):
+    #                 # mark point as outside the domain
+    #                 inside[i] = 0
+    #                 # while not implemented, interrupt here already to know early
+    #                 raise NotImplementedError(
+    #                     "In MyDroneTruncGaussianEval.d_measurement_d_position: encountered overlap with edge of domain.")
+    #
+    #         # integrate over reference domain
+    #         val = np.zeros((vals.shape[1],))
+    #         for i in range(val.shape[0]):
+    #             u = dl.Function(V)
+    #             u.vector().vec().array = vals[:, i]
+    #             val[i] = dl.assemble(u * weight_fct * dl.dx(domain=ref_domain))
+    #             # todo: this loop is very inefficient, there's likely a smarter way to integrate each element of a vector
+    #
+    #         #  compute re-weighting
+    #         if sum(inside) == inside.shape[0]:
+    #             # use reference integral value (save some compute time)
+    #             val_integral = val_integral_ref
+    #             # in this case, we know that the circle didn't overlap with the edges of the domain
+    #             # so we know that the integral is just the one we computed at the reference
+    #         else:
+    #             # the circle overlapped with the edges of the domain
+    #             # for computing the weight function, we need to exclude those points
+    #             raise NotImplementedError(
+    #                 "In MyDroneTruncGaussianEval.d_measurement_d_position: encountered overlap with edge of domain.")
+    #
+    #         D_data_d_position[k, :] = val / val_integral
+    #
+    #     # bring into correct shape format
+    #     D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
+    #     return D_data_d_position

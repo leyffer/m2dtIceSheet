@@ -122,6 +122,29 @@ class Detector:
         @param state  The state which the drone shall measure, State object
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
-        raise NotImplementedError(
-            "Detector.d_measurement_d_control: Needs to be implemented in subclass"
-        )
+        # helpful initializations
+        flightpath, grid_t = flight.flightpath, flight.grid_t
+        n_spatial = flightpath.shape[1]
+
+        # Du = state.get_derivative()
+
+        # initialization
+        D_data_d_position = np.zeros((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
+
+        for i in range(grid_t.shape[0]):
+            # the FEniCS evaluation of the Du at a position unfortunately
+            # doesn't work with multiple positions that's why we can't get rid
+            # of this loop
+
+            # evaluate at the considered position
+            D_data_d_position[i, :] = self.derivative_at_position(pos=flightpath[i, :], t=grid_t[i], state=state)
+
+        # stack next to each other horizontally
+        D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
+        return D_data_d_position
+
+    def derivative_at_position(self, pos, t, state):
+        """
+        computes the state's measurement derivative (w.r.t. the position) at time t and position pos
+        """
+        raise NotImplementedError("derivative_at_position needs to be implemented in subclass")
