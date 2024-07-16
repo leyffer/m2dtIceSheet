@@ -136,6 +136,12 @@ class InverseProblem:
         yolo = self.apply_noise_covar_inv(measurement_data)
         return measurement_data.T @ yolo
 
+    def compute_L2norm2(self, measurement_data):
+        if self.mass_matrix is None:
+            self.mass_matrix = self.compute_mass_matrix()
+
+        return measurement_data.T @ (self.mass_matrix @ measurement_data)
+
     def apply_noise_covar_inv(self, measurement_data):
         """! Apply the inverse noise covariance matrix to the observations ` measurement_data`, i.e., compute
         $$

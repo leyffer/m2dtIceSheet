@@ -12,7 +12,11 @@ class myState(State):
 
     memory_tree = None
     memory_cell2vertex = None
+    memory_vertex2dof = None
     memory_cell_coordinates = None
+    measurement_memory = None
+    derivative_memory = None
+    bools_new_memories = True
 
     def __init__(
         self,
@@ -26,10 +30,10 @@ class myState(State):
         super().__init__(
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
-        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim)
+        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim - 1)
 
         self.final_time = self.grid_t[-1]
-        self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 5 * self.fom.meshDim))
+        self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 20 * self.fom.meshDim))
 
     def get_derivative(self, t: float = None, x=None):
 
@@ -69,7 +73,14 @@ class myState(State):
         return self.apply_interpolation_rule(states=self.state, t=t, x=x)
 
     def apply_interpolation_rule(self, states, t, x=None):
+        """
+        applies this state's interpolation rule for t to the passed collection of states. The ordering in the argument
+        states needs to correspond to self.grid_t.
 
+        For our transient state here, we interpolate linearly between the entries at positions k_right-1 and k_right,
+        where k_right is chosen as the smallest index such that self.grid_t[k_right] >= t. Note that this is self.grid_t,
+        which may be different from the drone.grid_t.
+        """
         if t > self.final_time:
             raise RuntimeError("transient state called for time step beyond simulation horizon")
 
@@ -118,10 +129,26 @@ class myState(State):
         self.memory_vertex2dof = dl.vertex_to_dof_map(V)
 
         # create a function in which measurements will be stored
-        self.measurement_memory = dl.Function(V)
+        self.measurement_memory = np.zeros(self.n_steps, dtype=object)
+        self.derivative_memory = np.zeros(self.n_steps, dtype=object)
+        # we need one instance for each time step (for stationary model, n_steps = 1)
 
-        # set all entries to NaN (since no measurements have been computed yet)
-        self.measurement_memory.vector().vec().array = np.nan * np.ones(V.dim())
+        for k in range(self.n_steps):
+            # initialize FEniCS function on the mesh
+            memory_k = dl.Function(V)
+
+            # set all entries to NaN (since no measurements have been computed yet)
+            memory_k.vector().vec().array = np.nan * np.ones(V.dim())
+
+            # include into the memory
+            self.measurement_memory[k] = memory_k
+
+        # in order to not recompute the derivatives when no new memories have been added, we toggle these booleans
+        # whenever the memory functions are modified
+        self.bools_new_memories = [False] * self.n_steps
+
+        # the space into which we project the derivatives of the momorized measurements
+        self.memory_derivative_space = dl.VectorFunctionSpace(mesh, "DG", 0)  # piecewise constants
 
     def remember_measurement(self, pos, t, detector):
         """
@@ -129,7 +156,8 @@ class myState(State):
         If so, return it. If not, compute the missing entries on the memory mesh.
         """
         # test if we already know a value for this position and time
-        stored_data = self.measurement_memory(pos)
+        stored_data = self.apply_interpolation_rule(states=self.measurement_memory, t=t, x=pos)
+        # stored_data = self.measurement_memory(pos)
         # todo: this part won't work with transient measurements yet
 
         # if so, return it
@@ -140,6 +168,16 @@ class myState(State):
         p = dl.Point(pos)
         cell_numbers = self.memory_tree.compute_entity_collisions(p)
         # all cells in the tree that contain p (multiple cells are possible if p is on cell boundary)
+
+        # find out at which position we need to look in the memory array
+        k_right = np.argmax(self.grid_t >= t)
+
+        # we also need to compute measurements at the previous position
+        # (because we are intrpolating between measurements)
+        # only exception is if we are already at position 0 (this happens in the stationary case, or when t=0)
+        time_step_numbers = [k_right]
+        if k_right > 0:
+            time_step_numbers.append(k_right - 1)
 
         for cell_no in cell_numbers:
 
@@ -153,18 +191,49 @@ class myState(State):
                 # get position in dof map for the node we are looking at
                 dof_no = self.memory_vertex2dof[node_no]
 
-                if np.isnan(self.measurement_memory.vector().vec().array[dof_no]):
-                    # compute data for this node
-                    data = detector.measure_at_position(pos=node_coordinates[i, :], t=t, state=self,
-                                                        bool_from_memory=False)
-                    # setting bool_from_memory to False ensures that we are actually computing a measurement
-                    # and that we don't run into an infinite loop
+                for k in time_step_numbers:
 
-                    # store this data in memory
-                    self.measurement_memory.vector().vec().array[dof_no] = data
+                    if np.isnan(self.measurement_memory[k].vector().vec().array[dof_no]):
+                        # compute data for this node
+                        data = detector.measure_at_position(pos=node_coordinates[i, :], t=self.grid_t[k], state=self,
+                                                            bool_from_memory=False)
+                        # note:
+                        # setting bool_from_memory to False ensures that we are actually computing a measurement
+                        # and that we don't run into an infinite loop
+
+                        # todo: passing t=self.grid_t[k] here is a potential source of error because it relies on the
+                        #  interpolation method down the road identifying k again as the corresponding index.
+                        #  Instead, we should pass k directly
+
+                        # store this data in memory
+                        self.measurement_memory[k].vector().vec().array[dof_no] = data
+
+                        # mark that these memories have been modified since the last computation of the derivatives
+                        self.bools_new_memories[k] = True
 
         # return the evaluation
-        return self.measurement_memory(p)
+        return self.apply_interpolation_rule(states=self.measurement_memory, t=t, x=pos)
+
+    def remember_derivative(self, pos, t, detector):
+        """
+        In this function we compute the derivative of the memories stored in memory. We do **not** compute them with
+        the chain rule, but use FEniCS functionality. This is for consistency: the memory measurements are build to be
+        the field over which we optimize, so the derivatives should be of this field. Of course this means that the
+        derivatives are not necessarily the ones we'd get from the chain rule - but that's the cost of using an
+        approximation. The best choice is probably to start with the memory on until close enough to the minimum, and
+        then toggle it off to remove the approximation error.
+        """
+        # update the derivatives of the measurements
+        for k in range(self.n_steps):
+            if self.bools_new_memories[k]:
+                d_memory_k = dl.grad(self.measurement_memory[k])
+                self.derivative_memory[k] = dl.project(d_memory_k, self.memory_derivative_space)
+                # todo: this is not the correct space into which we need to project, need piecewise constants
+
+                # track changes for memory_k from this point forward agin
+                self.bools_new_memories[k] = False
+
+        return self.apply_interpolation_rule(states=self.derivative_memory, t=t, x=pos)
 
     def set_convolution(self, convolution, key):
         """
@@ -206,7 +275,6 @@ class myState(State):
         return np.array(
             [state(x, y) for x, y in zip(position[:, 0], position[:, 1])]
         )
-
 
 # todo: the functions below - why are they here? What are they used for? They seems out of place to me (Nicole, May 28, 2024)
 def make_circle_kernel(radius: float, dx: float) -> np.ndarray:

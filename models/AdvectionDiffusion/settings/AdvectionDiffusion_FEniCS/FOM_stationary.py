@@ -113,6 +113,7 @@ class FOM_stationary(FOM):
             state=sol,
             bool_is_transient=False,
             parameter=parameter,
+            memory_meshDim=self.memory_meshDim,
             other_identifiers=other_identifiers,
         )
         return state
