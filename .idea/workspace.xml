@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="simplified code for derivative computations">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorTruncGaussian.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorTruncGaussian.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorUniform.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorUniform.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM_stationary.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
-    </list>
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="gradient computed from memory terms" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -333,7 +324,15 @@
       <option name="project" value="LOCAL" />
       <updated>1721150426224</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="gradient computed from memory terms">
+      <option name="closed" value="true" />
+      <created>1721162864326</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1721162864326</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -359,7 +358,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="up to utility function" />
     <MESSAGE value="started to optimize derivative functions" />
     <MESSAGE value="copied over derivative functions, but not correct yet" />
     <MESSAGE value="minimally working example (FEniCS) from model to utility fct gradients" />
@@ -384,7 +382,8 @@
     <MESSAGE value="tested measurement memory, made plans for next steps" />
     <MESSAGE value="measurement memory for time-dependent states" />
     <MESSAGE value="simplified code for derivative computations" />
-    <option name="LAST_COMMIT_MESSAGE" value="simplified code for derivative computations" />
+    <MESSAGE value="gradient computed from memory terms" />
+    <option name="LAST_COMMIT_MESSAGE" value="gradient computed from memory terms" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
