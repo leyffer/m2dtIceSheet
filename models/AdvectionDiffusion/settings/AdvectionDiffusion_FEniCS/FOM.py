@@ -73,6 +73,7 @@ class FOM(FullOrderModel):
         self.meshDim = meshDim
         self.mesh = self.create_mesh(meshDim)
         self.boundary_marker = self.create_boundary_marker()
+        self.memory_meshDim = kwargs.get("memory_meshDim", 20 * self.meshDim)
 
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
@@ -431,6 +432,7 @@ class FOM(FullOrderModel):
             state=sol,
             bool_is_transient=True,
             parameter=parameter,
+            memory_meshDim=self.memory_meshDim,
             other_identifiers=other_identifiers,
             grid_t=grid_t
         )

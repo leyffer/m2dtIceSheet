@@ -9,7 +9,8 @@ from myState import myState
 class myState_stationary(myState):
     state: dl.Function
     convolution = None
-    grid_t = [0]
+    grid_t = np.array([0])
+    n_steps = 1
 
     def __init__(
             self,
@@ -29,7 +30,6 @@ class myState_stationary(myState):
         )
 
     def get_derivative(self, t=None, x=None):
-
         """
         computes and saves the spatial derivative of the state
         @return:
@@ -55,6 +55,18 @@ class myState_stationary(myState):
 
         @return:
         """
-        if x is not None:
-            return self.state(x)
-        return self.state
+        if x is None:
+            return self.state
+        return self.state(x)
+
+    def apply_interpolation_rule(self, states, t, x=None):
+        """
+        applies this state's interpolation rule for t to the passed collection of states. The ordering in the argument
+        states needs to correspond to self.grid_t, such that states[0] is for t=0.
+
+        In the stationary setting, we always return the evaluation of the very first entry of states, corresponding
+        to t=0.
+        """
+        if x is None:
+            return states[0]
+        return states[0](x)
