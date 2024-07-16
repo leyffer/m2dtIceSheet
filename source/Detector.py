@@ -143,7 +143,7 @@ class Detector:
         D_data_d_position = np.hstack([np.diag(D_data_d_position[:, i]) for i in range(n_spatial)])
         return D_data_d_position
 
-    def derivative_at_position(self, pos, t, state):
+    def derivative_at_position(self, pos, t, state, **kwargs):
         """
         computes the state's measurement derivative (w.r.t. the position) at time t and position pos
         """
