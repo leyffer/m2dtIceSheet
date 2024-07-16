@@ -76,6 +76,13 @@ class Objective(cyipopt.Problem):
         if self.build_video:
             self.video_frames = {}
 
+        self.NK = kwargs.get("NK", grid_t.shape[0])  # Number of control variables
+        self.grid_t = grid_t  # Time grid
+        self.T = kwargs.get("T", grid_t[-1] - grid_t[0])  # Total time
+        self.h = self.T / self.NK  # Time grid spacing
+
+        self.L = kwargs.get("L", 3.0)  # Maximum path length
+
         # Obstacles
         # Centers
         self.cxs = kwargs.get("cxs", [(0.5 + 0.25) / 2, (0.75 + 0.6) / 2])
@@ -103,19 +110,20 @@ class Objective(cyipopt.Problem):
         self.acc_lower = kwargs.get("acc_lower", -10.0)
         self.acc_upper = kwargs.get("acc_upper", 10.0)
         # omega
-        self.omega_lower = kwargs.get("omega_lower", -20.0 * jnp.pi)
-        self.omega_upper = kwargs.get("omega_upper", 20.0 * jnp.pi)
+        self.omega_lower = kwargs.get("omega_lower", -jnp.pi / self.h)
+        self.omega_upper = kwargs.get("omega_upper", jnp.pi / self.h)
         # omega_acc
-        self.omega_acc_lower = kwargs.get("omega_acc_lower", -200.0)
-        self.omega_acc_upper = kwargs.get("omega_acc_upper", 200.0)
+        self.omega_acc_lower = kwargs.get(
+            "omega_acc_lower", -2.0 * jnp.pi / self.h / self.h
+        )
+        self.omega_acc_upper = kwargs.get(
+            "omega_acc_upper", 2.0 * jnp.pi / self.h / self.h
+        )
 
         # Can limit the number of changes for acceleration to get piecewise constant controls
         # TODO - separate the time grid and control grid (grids should be aligned)
         self.piecewise_constant = kwargs.get("piecewise_constant", None)
 
-        self.T = kwargs.get("T", grid_t[-1] - grid_t[0])  # Total time
-
-        self.NK = kwargs.get("NK", grid_t.shape[0])  # Number of control variables
         self.N_x = kwargs.get("N_x", self.NK)  # Number of x
         self.N_y = kwargs.get("N_y", self.NK)  # Number of y
         self.N_theta = kwargs.get("N_theta", self.NK)  # Number of theta
@@ -124,8 +132,6 @@ class Objective(cyipopt.Problem):
         self.N_omega = kwargs.get("N_omega", self.NK)  # Number of omega
         self.N_omega_acc = kwargs.get("N_omega_acc", self.NK)  # Number of omega_acc
 
-        self.grid_t = grid_t  # Time grid
-        self.h = self.T / self.NK  # Time grid spacing
         self.reg_strength = kwargs.get("reg_strength", 0.000001)
         # Regularization strength
 
@@ -320,6 +326,11 @@ class Objective(cyipopt.Problem):
         (_x, _y, _theta, _v, acc, _omega, omega_acc) = self.var_splitter(combined_vars)
         # return (jnp.sum(v**2) + jnp.sum(omega**2))
         return jnp.sum(acc**2) + jnp.sum(omega_acc**2)
+        # return jnp.sum(acc**2) + jnp.sum(2 - jnp.cos(omega * self.h))
+        # return jnp.sum(acc**2) + jnp.sum(2 - jnp.cos(omega * self.h)) + jnp.sum(omega_acc ** 2)
+        # return jnp.sum(acc**2) + jnp.sum(jnp.sin(omega * self.h)**2)
+        # return jnp.sum(acc**2) + jnp.sum(jnp.sin(omega * self.h)**2) + jnp.sum(omega_acc ** 2)
+        # return jnp.sum(acc**2) + jnp.sum(jnp.sin(omega_acc * self.h)**2) + jnp.sqrt(self.reg_strength) * jnp.sum(omega_acc**2)
 
     def regularization_gradient(self, combined_vars: jnp.ndarray):
         """Regularization objective function gradient
@@ -337,9 +348,12 @@ class Objective(cyipopt.Problem):
         # acc = jnp.zeros(acc.shape)
         acc = 2 * acc
         omega = jnp.zeros(omega.shape)
+        # omega = self.h * jnp.sin(omega*self.h)
+        # omega = 2 * self.h * jnp.sin(omega * self.h) * jnp.cos(omega * self.h)
         # omega = 2*omega
         # omega_acc = jnp.zeros(omega_acc.shape)
         omega_acc = 2 * omega_acc
+        # omega_acc = 2 * self.h * jnp.sin(omega_acc * self.h) * jnp.cos(omega_acc * self.h) + 2 * jnp.sqrt(self.reg_strength) * omega_acc
 
         return self.var_joiner(x, y, theta, v, acc, omega, omega_acc)
 
@@ -591,6 +605,10 @@ class Objective(cyipopt.Problem):
                     (cons, self.diamond_obstacle(x, y, cx, cy, rx, ry)), axis=0
                 )  # >= 0
 
+        # Maximum length
+        max_length = self.L / self.h - jnp.sum(v)  # >= 0
+        cons = jnp.concatenate((cons, jnp.array(max_length).reshape((1,))), axis=0)
+
         self.num_inequality_constraints = len(cons) - self.num_equality_constraints
         return cons
 
@@ -760,6 +778,12 @@ class Objective(cyipopt.Problem):
                 rows += [row, row]
                 # values += [dx[i], dy[i]]
                 row += 1
+
+        # Max length
+        columns += [i + self.v_shift for i in range(self.N_v)]
+        rows += [row] * self.N_v
+        # values += [-1] * self.N_v
+
         return (jnp.array(rows, dtype=int), jnp.array(columns, dtype=int))
 
     def jacobian(self, combined_vars: jnp.ndarray) -> jnp.ndarray:
@@ -922,6 +946,11 @@ class Objective(cyipopt.Problem):
                         jnp.sign(y[i] - cy) / ry,
                     ]
                 index += 2
+
+        # Max length
+        values[index : index + self.N_v] = -1
+        index += self.N_v
+
         return values
 
     def video(self, combined_vars, constraints=None, objective=None):
@@ -1022,13 +1051,21 @@ class Objective(cyipopt.Problem):
                 "regularization_objective": self.regularization_objective(iterate["x"]),
             }
 
-def make_video_from_frames(frames_filename:str, video_filename:str, frame_directory:str = None,grid_t: np.ndarray = np.linspace(0, 4, 401)):
+
+def make_video_from_frames(
+    frames_filename: str,
+    video_filename: str,
+    frame_directory: str = None,
+    grid_t: np.ndarray = np.linspace(0, 4, 401),
+):
+    """From a pickled file containing frame information, create a video"""
     if frame_directory is None:
         frame_directory = FRAME_DIRECTORY
     frames_dict = load_video_frames(frames_filename)
     clear_frames_dir()
     frames_to_png(frames_dict, frame_directory, grid_t)
     frames_to_video(video_filename, frame_directory)
+
 
 def save_video_frames(frames_dict: Dict, frames_filename: str):
     """Save video frames using pickle"""
@@ -1059,7 +1096,7 @@ def generate_plot(
     frame_index: int,
     grid_t_drone: np.ndarray = np.linspace(0, 4, 401),
 ):
-    """Generate the plot of the"""
+    """Generate the plot for a video frame"""
     fig = plt.figure(figsize=(10, 5), dpi=200)
     gs = fig.add_gridspec(
         nrows=2, ncols=4, width_ratios=[1, 1, 1, 1], wspace=0.4, hspace=0.2
@@ -1173,7 +1210,11 @@ def generate_plot(
     return fig
 
 
-def frames_to_png(frames_dict: Dict, frame_directory:str = None,grid_t: np.ndarray = np.linspace(0, 4, 401)):
+def frames_to_png(
+    frames_dict: Dict,
+    frame_directory: str = None,
+    grid_t: np.ndarray = np.linspace(0, 4, 401),
+):
     """Take frames dictionary and translate into .png images in the frame_directory directory"""
     if frame_directory is None:
         frame_directory = FRAME_DIRECTORY
@@ -1187,15 +1228,82 @@ def frames_to_png(frames_dict: Dict, frame_directory:str = None,grid_t: np.ndarr
         plt.savefig(f"{frame_directory}/frame_{i + 1:05d}.png")
         plt.clf()  # Clear the figure to avoid overlapping plots
 
-def frames_to_video(filename:str, frame_directory:str = None):
+
+def frames_to_video(filename: str, frame_directory: str = None):
     """Use moviepy to combine the frames into a video"""
     if frame_directory is None:
         frame_directory = FRAME_DIRECTORY
 
-    clip = ImageSequenceClip(os.path.abspath(frame_directory)), fps=10)
+    clip = ImageSequenceClip(os.path.abspath(frame_directory), fps=10)
     clip.write_videofile(filename)
 
     print(f"Video frames generated and saved as {filename}")
+
+
+def arc_length_interpolation(vertices, n_points):
+    """Interpolate between some vertices using equally spaced points"""
+    # Calculate arc length between each pair of vertices
+    distances = np.sqrt(np.sum(np.diff(vertices, axis=0) ** 2, axis=1))
+    cumulative_distances = np.insert(np.cumsum(distances), 0, 0)
+    total_length = cumulative_distances[-1]
+
+    # Generate evenly spaced points along the arc length
+    even_spaced_points = np.linspace(0, total_length, n_points)
+
+    # Interpolate points
+    interp_points = np.zeros((n_points, vertices.shape[1]))
+    for i in range(vertices.shape[1]):
+        interp_points[:, i] = np.interp(
+            even_spaced_points, cumulative_distances, vertices[:, i]
+        )
+
+    return interp_points
+
+
+def make_initial_condition(
+    points, grid_t, correct_theta: bool = True, compute_controls: bool = True
+):
+    """Makes initial condition for optimization"""
+    initial_x = points[:, 0]
+    initial_y = points[:, 1]
+
+    initial_theta = np.arctan2(
+        np.diff(initial_y, append=0.0), np.diff(initial_x, append=0.0)
+    )  # potential discontinuities from atan2 range
+
+    if correct_theta:
+        # fix discontinuities
+        for i in range(len(initial_theta) - 1):
+            while np.abs(initial_theta[i] - initial_theta[i + 1]) > np.pi:
+                if initial_theta[i] - initial_theta[i + 1] > np.pi:
+                    initial_theta[i + 1] += 2 * np.pi
+                if initial_theta[i] - initial_theta[i + 1] <= -np.pi:
+                    initial_theta[i + 1] -= 2 * np.pi
+    if compute_controls:
+        initial_v = np.sqrt(
+            np.diff(initial_y, append=0.0) ** 2 + np.diff(initial_x, append=0.0) ** 2
+        ) / np.diff(grid_t, append=1.0)
+        initial_acc = np.diff(initial_v, append=0.0)
+        initial_omega = np.diff(initial_theta, append=0.0)
+        initial_omega_acc = np.diff(initial_omega, append=0.0)
+    else:
+        initial_v = np.ones(initial_x.shape)
+        initial_acc = np.zeros(initial_x.shape)
+        initial_omega = np.ones(initial_x.shape)
+        initial_omega_acc = np.zeros(initial_x.shape)
+
+    return np.concatenate(
+        (
+            initial_x,
+            initial_y,
+            initial_theta,
+            initial_v,
+            initial_acc,
+            initial_omega,
+            initial_omega_acc,
+        ),
+        axis=0,
+    )
 
 
 class polygon_obstacle:
