@@ -87,9 +87,12 @@ class Detector:
         data = np.NaN * np.ones((n_steps,))
 
         for k in range(n_steps):
-            data[k] = self.measure_at_position(pos=flightpath[k, :],
-                                               t=grid_t[k],
-                                               state=state)
+            try:
+                data[k] = self.measure_at_position(pos=flightpath[k, :],
+                                                t=grid_t[k],
+                                                state=state)
+            except RuntimeError:
+                data[k] = 0.0
 
         return data
 
