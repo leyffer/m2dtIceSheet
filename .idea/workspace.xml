@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="convergence plot for memory terms" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="convergence plot for memory terms">
+      <change beforePath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -55,12 +57,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;git-widget-placeholder&quot;: &quot;measurement-memory&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />
