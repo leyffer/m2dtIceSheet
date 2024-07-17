@@ -269,56 +269,9 @@ class myState(State):
         # todo: does this function get called? Intuitively this feels redundant with the code in the pointwise drone
         """
         print(
-            "myState_stationary.measure_pointwise got called. Why? Shouldn't the pointwise drone class take care of this?")
+            "myState.measure_pointwise got called. Why? Shouldn't the pointwise drone class take care of this?")
 
         state = self.get_state(t=t)
         return np.array(
             [state(x, y) for x, y in zip(position[:, 0], position[:, 1])]
         )
-
-# todo: the functions below - why are they here? What are they used for? They seems out of place to me (Nicole, May 28, 2024)
-def make_circle_kernel(radius: float, dx: float) -> np.ndarray:
-    """!
-    Make a circular uniform kernel
-
-    @param radius  the radius of the kernel
-    @param dx  the grid spacing of the space that the kernel will be applied to
-    @return  a 2D kernel centered at zero with 1's everywhere within the radius
-        of zero
-
-    TODO - allow for values between 0-1 on the boundary of the circle
-        (anti-aliasing based on fraction of a grid square filled)
-    """
-    w = int(np.ceil(radius / dx))
-    x = np.linspace(-w * dx, w * dx, 2 * w + 1)
-    y = np.linspace(-w * dx, w * dx, 2 * w + 1)
-    X, Y = np.meshgrid(x, y)
-    return (X**2 + Y**2 < radius**2).astype(
-        float
-    )  # no partial cells, but that would be nice
-
-
-def make_truncated_gaussian_kernel(
-    radius: float, dx: float, sigma: float
-) -> np.ndarray:
-    """!
-    Make a truncated Gaussian kernel
-
-    @param radius  the radius of the kernel (truncation)
-    @param dx  the grid spacing of the space that the kernel will be applied to
-    @param sigma  the sigma parameter of the Gaussian
-    """
-    w = int(np.ceil(radius / dx))
-    x = np.linspace(-w * dx, w * dx, 2 * w + 1)
-    y = np.linspace(-w * dx, w * dx, 2 * w + 1)
-    X, Y = np.meshgrid(x, y)
-    r_squared = X**2 + Y**2
-    truncation = (r_squared < radius**2).astype(
-        float
-    )  # no partial cells, but that would be nice
-    return (
-        np.exp(-0.5 * r_squared / (sigma**2))
-        / sigma
-        / np.sqrt(2 * np.pi)
-        * truncation
-    )

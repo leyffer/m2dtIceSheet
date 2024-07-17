@@ -11,6 +11,7 @@ sys.path.insert(0, "../source/")
 
 from Detector import Detector
 from myState import myState
+from myState_stationary import myState_stationary
 
 
 class DetectorGaussian(Detector):
@@ -176,7 +177,7 @@ class DetectorGaussian(Detector):
         }
 
         # bring into state format
-        convolution_state = myState(
+        convolution_state = type(state)(
             fom=state.fom,
             state=w,
             bool_is_transient=False,

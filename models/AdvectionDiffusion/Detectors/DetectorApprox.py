@@ -130,13 +130,13 @@ class Convolution:
 
         if mode.lower() in ["apprx_truncgaussian", "truncgaussian"]:
             self.kernel = make_truncated_gaussian_kernel(radius, dx, sigma, dy)
-        elif mode.lower() in ["apprx_gaussian" or "gaussian"]:
+        elif mode.lower() in ["apprx_gaussian", "gaussian"]:
             self.kernel = make_truncated_gaussian_kernel(
                 4 * sigma, dx, sigma, dy, truncate=False
             )
-        elif mode.lower() in ["apprx_uniform" or "uniform"]:
+        elif mode.lower() in ["apprx_uniform", "uniform"]:
             self.kernel = make_circle_kernel(radius, dx, dy)
-        elif mode.lower() in ["apprx_pointwise" or "pointwise"]:
+        elif mode.lower() in ["apprx_pointwise", "pointwise"]:
             self.kernel = np.array([[1.0]])
         else:
             raise ValueError(
