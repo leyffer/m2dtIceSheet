@@ -1,4 +1,5 @@
 from typing import Optional, List, Any
+
 # from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
 
 import scipy.sparse as sparse
@@ -7,6 +8,7 @@ import numpy as np
 from FullOrderModel import FullOrderModel as FOM
 from Drone import Drone
 from State import State
+import warnings
 
 
 # FOM converts parameters to states
@@ -15,19 +17,29 @@ from State import State
 
 class InverseProblem:
     """! InverseProblem class
-    In this class we provide all functions needed for handling the inverse problem, starting from its setup to its
-    solution. In particular, for the OED problem, we provide:
+    In this class we provide all functions needed for handling the inverse
+    problem, starting from its setup to its solution. In particular, for the OED
+    problem, we provide:
 
-    - a call that applies the inverse posterior covariance matrix for given flight path parameters
+    - a call that applies the inverse posterior covariance matrix for given
+      flight path parameters
     - a call to compute the posterior mean
-    - the option to apply a reduction in parameter space (e.g., with active subspaces)
+    - the option to apply a reduction in parameter space (e.g., with active
+      subspaces)
 
     Note: the details on the last part are not clear yet
 
-    By default, for consistency with the old code, we are using the **deterministic** inverse problem here where the
-    noise is weighted by an arbitrary inner product matrix. The full Bayesian version where the noise model is
-    consistent with time continuous measurements is slightly more involved. The computations for it are therefore
-    outsourced into the subclass InverseProblemBayes.
+    By default, for consistency with the old code, we are using the
+    **deterministic** inverse problem here where the noise is weighted by an
+    arbitrary inner product matrix. The full Bayesian version where the noise
+    model is consistent with time continuous measurements is slightly more
+    involved. The computations for it are therefore outsourced into the subclass
+    InverseProblemBayes.
+
+    self.states are the computed responses to particular parameter bases, e.g.,
+    an elementary basis (each row of np.eye(self.n_parameters))
+
+
     """
 
     c_scaling = 1e3
@@ -58,7 +70,7 @@ class InverseProblem:
 
     # TODO: write other functions required for this class
     # TODO: set up connection to hIppylib
-    
+
     @property
     def n_time_steps(self):
         if isinstance(self.grid_t, np.ndarray):
@@ -88,7 +100,9 @@ class InverseProblem:
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
 
-        A = sparse.diags([1, -1], offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps))
+        A = sparse.diags(
+            [1, -1], offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps)
+        )
         A = sparse.csr_matrix(A + A.T)
         A[0, 0] = 1
         A[-1, -1] = 1
@@ -105,27 +119,33 @@ class InverseProblem:
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
 
-        M = sparse.diags(np.array([2, 1]) / 6, offsets=[0, 1], shape=(self.n_time_steps, self.n_time_steps))
+        M = sparse.diags(
+            np.array([2, 1]) / 6,
+            offsets=[0, 1],
+            shape=(self.n_time_steps, self.n_time_steps),
+        )
         M = sparse.csr_matrix(M + M.T)
         M[0, 0] /= 2
         M[-1, -1] /= 2
         M *= delta_t
 
         return M
+
     def sample_noise(self, n_samples: int = 1) -> np.ndarray:
         """! Method for sampling
 
         @param n_samples  number of samples to draw
         @return  The samples
         """
-        # TODO: sampling the noise model is just for show, it's not necessarily needed. However, it's a very nice show
-        #  and helps visualizing the data a lot, so ... implement it!
+        # TODO: sampling the noise model is just for show, it's not necessarily
+        # needed. However, it's a very nice show and helps visualizing the data
+        # a lot, so ... implement it!
         raise NotImplementedError(
             "InverseProblem.sample: still need to check how exactly we are setting up the noise model"
         )
 
     def compute_noisenorm2(self, measurement_data):
-        """! Computes the noise norm squared of `measurement data`, i.e., compute
+        r"""! Computes the noise norm squared of `measurement data`, i.e., compute
         $$
         measurement_data^T \Sigma_{noise}^{-1} measurement_data
         $$
@@ -163,7 +183,11 @@ class InverseProblem:
         return Kd
 
     def apply_para2obs(
-        self, parameter : np.ndarray, state: Optional[State] = None, flight: Optional["Flight"] = None, **kwargs
+        self,
+        parameter: np.ndarray,
+        state: Optional[State] = None,
+        flight: Optional["Flight"] = None,
+        **kwargs
     ):
         """!
         Applies the parameter-to-observable map:
@@ -185,26 +209,26 @@ class InverseProblem:
             state = self.fom.solve(parameter=parameter)
         else:
             if (state.parameter != parameter).any():
-                raise RuntimeError("In InverseProblem.apply_para2obs: state and parameter do not match")
+                raise RuntimeError(
+                    "In InverseProblem.apply_para2obs: state and parameter do not match"
+                )
 
         # determine flight path
         if flight is None:
             flight = self.drone.navigation.create_flight(alpha=kwargs.get("alpha"))
 
         # fly out and measure
-        observation = self.drone.measure(
-            flight=flight, state=state
-        )
+        observation = self.drone.measure(flight=flight, state=state)
 
         return observation, flight, state
 
     # TODO - cache posterior for optimization
     def compute_posterior(
         self,
-        flight : Optional["Flight"] = None,
-        alpha : Optional[np.ndarray] = None,
+        flight: Optional["Flight"] = None,
+        alpha: Optional[np.ndarray] = None,
         grid_t: Optional[np.ndarray] = None,
-        data: Optional[np.ndarray] = None
+        data: Optional[np.ndarray] = None,
     ):
         """
         Computes the posterior distribution for a given flight and measurement data obtained along this flight.
@@ -221,6 +245,7 @@ class InverseProblem:
         """
         # import class for the posterior
         from Posterior import Posterior
+
         # TODO: the import is here instead of outside the class definition to avoid a circular import. It's not the best
         #  solution, we should revisit this for efficiency
 
@@ -228,13 +253,13 @@ class InverseProblem:
             # if no flight is provided, we compute the one corresponding to the control parameters alpha
             if alpha is None:
                 # if no control parameters are provided, something went wrong.
-                raise RuntimeError("neither a flight nor valid control parameters were provided")
+                raise RuntimeError(
+                    "neither a flight nor valid control parameters were provided"
+                )
             flight = self.drone.plan_flight(alpha=alpha, grid_t=grid_t)
 
         # initialize posterior
-        posterior = Posterior(
-            inversion=self, flight=flight, data=data
-        )
+        posterior = Posterior(inversion=self, flight=flight, data=data)
         return posterior
 
     def compute_states(
@@ -282,14 +307,12 @@ class InverseProblem:
     def get_states(self):
         """
         returns self.states
-        If self.states has not yet been set, they get computed assuming the unit basis
+        If self.states has not yet been set, they get computed assuming the elementary basis
         @return:
         """
 
         if self.states is None:
-            print("WARNING:InverseProblem.get_states was called. This means the user didn't actively precompute the "
-                  "states. This is ok, but it is error prone. Pleae just call InverseProblem.precompute_states() "
-                  "first in the future.")
+            warnings.warn("InverseProblem.get_states: No saved states. Computing with elementary basis.")
 
             # precompute states assuming unit basis
             self.compute_states(parameters=np.eye(self.n_parameters))

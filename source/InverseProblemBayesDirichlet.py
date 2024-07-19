@@ -1,15 +1,18 @@
-from typing import Optional, List, Any
-# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
+import warnings
+from typing import Any, List, Optional
 
+import numpy as np
+import scipy.linalg as la
 import scipy.sparse as sparse
 import scipy.sparse.linalg as sla
-import scipy.linalg as la
-import numpy as np
-
-from FullOrderModel import FullOrderModel as FOM
 from Drone import Drone
-from State import State
+from FullOrderModel import FullOrderModel as FOM
 from InverseProblem import InverseProblem
+from State import State
+
+# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
+
+
 
 
 # FOM converts parameters to states
@@ -106,7 +109,7 @@ class InverseProblemBayesDirichlet(InverseProblem):
         n_steps = self.mass_matrix.shape[0]
 
         if self.mass_matrix_Chol is None:
-            print("WARNING: computing dense matrix square root!")
+            warnings.warn("InverseProblemBayesDirichlet.sample_noise: Computing dense square root")
             self.mass_matrix_Chol = la.sqrtm(self.mass_matrix.toarray())
             # todo: replace with sparse cholesky decomposition
 
