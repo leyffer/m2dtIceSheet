@@ -44,7 +44,7 @@ class myState_stationary(myState):
                 return out
             except RuntimeError:
                 # TODO - find a way to get the dimension without using protected members
-                return self.state.function_space()._ufl_domain._geometric_dimension * [0.0]
+                return self.fom.n_spatial * [0.0]
 
         return self.Du
 

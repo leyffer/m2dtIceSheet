@@ -39,6 +39,7 @@ class DetectorPointwise(Detector):
             data = state.get_state(t=t, x=pos)
         except RuntimeError:
             warnings.warn(f"DetectorPointwise.measure: flightpath goes outside of computational domain")
+            data = 0  # Need to return a value to not crash optimization (value does not matter, but zero is best)
             pass
 
         return data

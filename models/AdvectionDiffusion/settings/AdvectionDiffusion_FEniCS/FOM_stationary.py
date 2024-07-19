@@ -15,8 +15,9 @@ import numpy as np
 
 
 class FOM_stationary(FOM):
-    """! Full-order-model (FOM) for the advection-diffusion equation at steady state
-    Subclass of FOM_advectiondiffusion
+    """!
+    Full-order-model (FOM) for the advection-diffusion equation at steady state
+    Subclass of FOM
     """
 
     # Initialize the default forcing and parameters
@@ -70,9 +71,8 @@ class FOM_stationary(FOM):
             bcs = [bc_left, bc_right, bc_top_bottom, bc_houses]
         else:
             bcs = [bc_left, bc_right, bc_top_bottom]
-        # TODO: catch the case without houses
 
-        # solve the steadystate equation
+        # solve the steady state equation
         dl.solve(a == f, sol, bcs=bcs)
 
         other_identifiers = {"kappa": kappa}

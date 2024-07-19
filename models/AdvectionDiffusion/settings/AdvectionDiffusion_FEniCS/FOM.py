@@ -9,7 +9,7 @@ Creates:
     solved State
 """
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional
 import fenics as dl
 
 dl.set_log_level(30)
@@ -320,14 +320,15 @@ class FOM(FullOrderModel):
 
             return c
     def find_next(
-        self, u_old: dl.Function, dt: float, kappa: float = None
+        self, u_old: dl.Function, dt: float, kappa: Optional[float] = None
     ) -> dl.Function:
-        """! Apply implicit Euler to the initial condition u_old with step size
+        """!
+        Apply implicit Euler to the initial condition u_old with step size
         dt and diffusion parameter self.kappa to get an updated u
             @param u_old  Initial condition
             @param dt  Time step size
             @param kappa  Diffusion parameter (not used, self.kappa is used instead)
-            @return  The updated u function
+            @return  The updated u dl.Function representing the next state dt in the future
         """
         if kappa is None:
             kappa = self.kappa
@@ -352,9 +353,9 @@ class FOM(FullOrderModel):
         self,
         m_init: dl.Function,
         dt: Optional[float] = None,
-        final_time: float = None,
-        kappa: float = None,
-        grid_t: np.ndarray = None,
+        final_time: Optional[float] = None,
+        kappa: Optional[float] = None,
+        grid_t: Optional[np.ndarray] = None,
     ) -> tuple[np.ndarray[dl.Function], np.ndarray, dict]:
         """! Perform implicit Euler repeatedly to integrate the transient problem over time
         @param m_init  Initial condition
@@ -362,7 +363,9 @@ class FOM(FullOrderModel):
         @param final_time  Final time to integrate to
         @param kappa  Diffusion coefficient
         @param grid_t  Array containing time values for integration
-        @return  Tuple containing (numpy array with solutions to time integration; time grid)
+        @return sol  np.ndarray of dl.Function objects representing the solution over time
+        @return grid_t  np.ndarray of floats representing the times for the solutions over time
+        @ return other_identifiers  Dict with some other descriptive information about the solve
         """
         # TODO: add valid type hint
 
