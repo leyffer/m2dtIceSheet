@@ -92,6 +92,7 @@ class Objective(cyipopt.Problem):
         self.rys = kwargs.get("rys", [(0.4 - 0.15) / 2, (0.85 - 0.6) / 2])
         # Shape
         self.obstacle_shape = kwargs.get("obstacle_shape", "square")
+        self.obstacle_buffer = kwargs.get("obstacle_buffer", 0.0)
 
         # Bound constraints
         # x
@@ -476,7 +477,7 @@ class Objective(cyipopt.Problem):
         :param ry: float. Circle (ellipse) radius y
         :return: jnp.ndarray. Distance outside of circle (should be non-negative)
         """
-        return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 - 1
+        return ((x - cx) / (rx + self.obstacle_buffer)) ** 2 + ((y - cy) / (ry + self.obstacle_buffer)) ** 2 - 1
 
     def diamond_obstacle(
         self, x: jnp.ndarray, y: jnp.ndarray, cx: float, cy: float, rx: float, ry: float
@@ -494,7 +495,7 @@ class Objective(cyipopt.Problem):
         :return: jnp.ndarray. Distance outside of diamond (should be
             non-negative)
         """
-        return jnp.abs((x - cx) / rx) + jnp.abs((y - cy) / ry) - 1
+        return jnp.abs((x - cx) / (rx + self.obstacle_buffer)) + jnp.abs((y - cy) / (ry + self.obstacle_buffer)) - 1
 
     def square_obstacle(
         self, x: jnp.ndarray, y: jnp.ndarray, cx: float, cy: float, rx: float, ry: float
@@ -516,8 +517,8 @@ class Objective(cyipopt.Problem):
         :return: jnp.ndarray. Distance outside of square (should be non-negative)
         """
         return (
-            jnp.abs(((x - cx) / rx + (y - cy) / ry) / 2)
-            + jnp.abs(((x - cx) / rx - (y - cy) / ry) / 2)
+            jnp.abs(((x - cx) / rx + (y - cy) / (ry + self.obstacle_buffer)) / 2)
+            + jnp.abs(((x - cx) / rx - (y - cy) / (ry + self.obstacle_buffer)) / 2)
             - 1
         )
 
