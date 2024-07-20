@@ -67,6 +67,8 @@ class Objective(cyipopt.Problem):
         # Final heading
         self.theta_final = kwargs.get("theta_final", jnp.pi)
 
+        self.periodic = kwargs.get("periodic", False)
+
         # Use the exact DAE (otherwise just use finite differences)
         self.use_exact_DAE = kwargs.get("use_exact_DAE", False)
         self.linear_tolerance = kwargs.get("linear_tolerance", 1e-3)
@@ -477,7 +479,11 @@ class Objective(cyipopt.Problem):
         :param ry: float. Circle (ellipse) radius y
         :return: jnp.ndarray. Distance outside of circle (should be non-negative)
         """
-        return ((x - cx) / (rx + self.obstacle_buffer)) ** 2 + ((y - cy) / (ry + self.obstacle_buffer)) ** 2 - 1
+        return (
+            ((x - cx) / (rx + self.obstacle_buffer)) ** 2
+            + ((y - cy) / (ry + self.obstacle_buffer)) ** 2
+            - 1
+        )
 
     def diamond_obstacle(
         self, x: jnp.ndarray, y: jnp.ndarray, cx: float, cy: float, rx: float, ry: float
@@ -495,7 +501,11 @@ class Objective(cyipopt.Problem):
         :return: jnp.ndarray. Distance outside of diamond (should be
             non-negative)
         """
-        return jnp.abs((x - cx) / (rx + self.obstacle_buffer)) + jnp.abs((y - cy) / (ry + self.obstacle_buffer)) - 1
+        return (
+            jnp.abs((x - cx) / (rx + self.obstacle_buffer))
+            + jnp.abs((y - cy) / (ry + self.obstacle_buffer))
+            - 1
+        )
 
     def square_obstacle(
         self, x: jnp.ndarray, y: jnp.ndarray, cx: float, cy: float, rx: float, ry: float
@@ -575,6 +585,26 @@ class Objective(cyipopt.Problem):
         if self.enforce_initial_heading:
             initial_heading = theta[0] - self.theta0  # ==0
             cons = jnp.concatenate((cons, jnp.array((initial_heading,))), axis=0)
+
+        if self.periodic:
+            heading_cos = jnp.cos(theta[0]) - jnp.cos(theta[-1])  # ==0
+            heading_sin = jnp.sin(theta[0]) - jnp.sin(theta[-1])  # ==0
+            x_periodic = x[0] - x[-1]  # ==0
+            y_periodic = y[0] - y[-1]  # ==0
+            cons = jnp.concatenate(
+                (
+                    cons,
+                    jnp.array(
+                        (
+                            heading_cos,
+                            heading_sin,
+                            x_periodic,
+                            y_periodic,
+                        )
+                    ),
+                ),
+                axis=0,
+            )
 
         if self.circle_mode:
             initial_x_circle = x[0] - (
@@ -760,6 +790,35 @@ class Objective(cyipopt.Problem):
             # values += [1]
             row += 1
 
+        if self.periodic:
+            # heading_cos = jnp.cos(theta[0]) - jnp.cos(theta[-1])  # ==0
+            # heading_sin = jnp.sin(theta[0]) - jnp.sin(theta[-1])  # ==0
+            # x_periodic = x[0] - x[-1]  # ==0
+            # y_periodic = y[0] - y[-1]  # ==0
+            # heading_cos
+            columns += [0 + self.theta_shift, self.NK - 1 + self.theta_shift]
+            rows += [row] * 2
+            # values += [-jnp.sin(theta[0]), jnp.sin(theta[-1])]
+            row += 1
+
+            # heading_sin
+            columns += [0 + self.theta_shift, self.NK - 1 + self.theta_shift]
+            rows += [row] * 2
+            # values += [jnp.cos(theta[0]), -jnp.cos(theta[-1])]
+            row += 1
+
+            # x_periodic
+            columns += [0 + self.x_shift, self.NK - 1 + self.x_shift]
+            rows += [row] * 2
+            # values += [1, -1]
+            row += 1
+
+            # y_periodic
+            columns += [0 + self.y_shift, self.NK - 1 + self.y_shift]
+            rows += [row] * 2
+            # values += [1, -1]
+            row += 1
+
         if self.circle_mode:
             # Initial x
             columns += [0 + self.x_shift, 1 + self.v_shift, 1 + self.omega_shift]
@@ -910,6 +969,23 @@ class Objective(cyipopt.Problem):
             # Initial theta
             values[index] = 1
             index += 1
+
+        if self.periodic:
+            # heading_cos
+            values[index : index + 2] = [-jnp.sin(theta[0]), jnp.sin(theta[-1])]
+            index += 2
+
+            # heading_sin
+            values[index : index + 2] = [jnp.cos(theta[0]), -jnp.cos(theta[-1])]
+            index += 2
+
+            # x_periodic
+            values[index : index + 2] = [1, -1]
+            index += 2
+
+            # y_periodic
+            values[index : index + 2] = [1, -1]
+            index += 2
 
         if self.circle_mode:
             # Initial x
