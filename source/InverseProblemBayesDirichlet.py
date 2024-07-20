@@ -10,11 +10,6 @@ from FullOrderModel import FullOrderModel as FOM
 from InverseProblem import InverseProblem
 from State import State
 
-# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
-
-
-
-
 # FOM converts parameters to states
 # Inverse Problem has a basis and keeps the states for that basis
 
@@ -66,8 +61,14 @@ class InverseProblemBayesDirichlet(InverseProblem):
     # TODO: write other functions required for this class
     # TODO: set up connection to hIppylib
 
-    def set_noise_model(self, c_scaling, c_diffusion, c_boundary=1, *args):
-        """! Noise model initialization (only needed if varying from defaults)
+    def set_noise_model(
+        self,
+        c_scaling: float = 1.0,
+        c_diffusion: float = 1.0,
+        c_boundary: float = 1.0,
+        **kwargs
+    ):
+        """! Noise model initialization (only needed if varying from defaults) # Thomas: What are the defaults?
 
         @param c_scaling  Noise scaling parameter
         @param c_diffusion  Noise diffusion parameter
@@ -91,8 +92,8 @@ class InverseProblemBayesDirichlet(InverseProblem):
         M[:, 0] = 0
         M[:, -1] = 0
         M[-1, :] = 0
-        M[0, 0] += c_boundary ** 2
-        M[-1, -1] += c_boundary ** 2
+        M[0, 0] += c_boundary**2
+        M[-1, -1] += c_boundary**2
 
         self.laplacian_matrix = K
         self.mass_matrix = sparse.csc_matrix(M)
@@ -103,13 +104,26 @@ class InverseProblemBayesDirichlet(InverseProblem):
         *note:* code for Cholesky decomposition is adapted from
         https://gist.github.com/omitakahiro/c49e5168d04438c5b20c921b928f1f5d
 
+        # Thomas: I don't see why the noise model and sampling cannot exist
+        separately from the InverseProblem class. The FOM and drone are only
+        used to get delta_t and the number of timesteps. Consider moving noise
+        functions to a separate class or function that handles this exclusively.
+
         @param n_samples  number of samples to draw
         @return  The samples
         """
+        if self.mass_matrix is None:
+            warnings.warn(
+                "InverseProblemBayesDirichlet.sample_noise: Mass matrix was not found."
+                + " Initializing the noise model with default parameters"
+            )
+            self.set_noise_model()
         n_steps = self.mass_matrix.shape[0]
 
         if self.mass_matrix_Chol is None:
-            warnings.warn("InverseProblemBayesDirichlet.sample_noise: Computing dense square root")
+            warnings.warn(
+                "InverseProblemBayesDirichlet.sample_noise: Computing dense square root"
+            )
             self.mass_matrix_Chol = la.sqrtm(self.mass_matrix.toarray())
             # todo: replace with sparse cholesky decomposition
 

@@ -1,15 +1,11 @@
-from typing import Optional, List, Any
-
-# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
-
-import scipy.sparse as sparse
-import numpy as np
-
-from FullOrderModel import FullOrderModel as FOM
-from Drone import Drone
-from State import State
 import warnings
+from typing import Any, List, Optional
 
+import numpy as np
+import scipy.sparse as sparse
+from Drone import Drone
+from FullOrderModel import FullOrderModel as FOM
+from State import State
 
 # FOM converts parameters to states
 # Inverse Problem has a basis and keeps the states for that basis
@@ -82,7 +78,7 @@ class InverseProblem:
 
         @param c_scaling  Noise scaling parameter
         @param c_diffusion  Noise diffusion parameter
-        @param c_boundary  boundary scaling (ignored in determistic setting)
+        @param c_boundary  boundary scaling (ignored in deterministic setting)
         """
         # parameterization for the noise covariance operator
         self.c_scaling = c_scaling
@@ -115,7 +111,6 @@ class InverseProblem:
 
         @return  mass matrix (piecewise linear finite elements)
         """
-        # assert_type(self.grid_t, np.ndarray)  # compatibility issues with Nicole's laptop (April 1, 2024)
         delta_t = self.grid_t[1] - self.grid_t[0]
         # TODO: don't assume uniform timestepping
 
@@ -285,6 +280,8 @@ class InverseProblem:
         Computes the forward solutions for a given parameters (or reduced parameters for a given basis).
         Only returns the states, does not save anything.
 
+        # Thomas: Not clear why `precompute_states` and `compute_states` are separate.
+
         @param parameters: np.ndarray such that the columns (or Basis applied to
             the columns) form the parameters at which to evaluate
         @param Basis: np.ndarray, parameter basis after parameter space reduction
@@ -312,7 +309,9 @@ class InverseProblem:
         """
 
         if self.states is None:
-            warnings.warn("InverseProblem.get_states: No saved states. Computing with elementary basis.")
+            warnings.warn(
+                "InverseProblem.get_states: No saved states. Computing with elementary basis."
+            )
 
             # precompute states assuming unit basis
             self.compute_states(parameters=np.eye(self.n_parameters))

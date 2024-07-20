@@ -10,11 +10,6 @@ from FullOrderModel import FullOrderModel as FOM
 from InverseProblem import InverseProblem
 from State import State
 
-# from typing import assert_type  # compatibility issues with Nicole's laptop (April 1, 2024)
-
-
-
-
 # FOM converts parameters to states
 # Inverse Problem has a basis and keeps the states for that basis
 
@@ -67,8 +62,14 @@ class InverseProblemBayesNeumann(InverseProblem):
     # TODO: write other functions required for this class
     # TODO: set up connection to hIppylib
 
-    def set_noise_model(self, c_scaling, c_diffusion, c_boundary=1, *args):
-        """! Noise model initialization (only needed if varying from defaults)
+    def set_noise_model(
+        self,
+        c_scaling: float = 1.0,
+        c_diffusion: float = 1.0,
+        c_boundary: float = 1.0,
+        **kwargs
+    ):
+        """! Noise model initialization (only needed if varying from defaults) # Thomas: What are the defaults?
 
         @param grid_t  Time grid on which the measurements are taken
         @param c_scaling  Noise scaling parameter
@@ -92,8 +93,8 @@ class InverseProblemBayesNeumann(InverseProblem):
 
         M = sparse.lil_matrix((n_steps + 2, n_steps + 2))
         M[1:-1, 1:-1] = mass_matrix
-        M[0, 0] = c_boundary ** 2
-        M[-1, -1] = c_boundary ** 2
+        M[0, 0] = c_boundary**2
+        M[-1, -1] = c_boundary**2
 
         # dt_target = 1e-3
         # k_target = np.argmin(np.abs(self.grid_t-dt_target))
@@ -121,16 +122,26 @@ class InverseProblemBayesNeumann(InverseProblem):
         @param n_samples  number of samples to draw
         @return  The samples
         """
+        if self.mass_matrix is None:
+            warnings.warn(
+                "InverseProblemBayesNeumann.sample_noise: Mass matrix was not found."
+                + " Initializing the noise model with default parameters"
+            )
+            self.set_noise_model()
         n_steps = self.mass_matrix.shape[0]
 
         if self.mass_matrix_Chol is None:
-            warnings.warn("InverseProblemBayesNeumann.sample_noise: Computing dense square root")
+            warnings.warn(
+                "InverseProblemBayesNeumann.sample_noise: Computing dense square root"
+            )
             self.mass_matrix_Chol = la.sqrtm(self.mass_matrix.toarray())
             # todo: replace with sparse cholesky decomposition
 
         samples = np.random.normal(size=(n_steps, n_samples))
         rhs = self.mass_matrix_Chol @ samples
         samples_with_bc = sla.spsolve(self.laplacian_matrix, rhs)
+        if n_samples == 1:
+            return samples_with_bc[1:-1]
         return samples_with_bc[1:-1, :]
 
     def apply_noise_covar_inv(self, measurement_data):
