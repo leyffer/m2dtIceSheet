@@ -93,7 +93,7 @@ class Objective(cyipopt.Problem):
             omega is the angular velocity
             acc is the acceleration
             omega_acc is the angular acceleration (jerk)
-        
+
 
         Many additional options are rolled into the keyword arguments `kwargs` listed below.
 
@@ -113,7 +113,6 @@ class Objective(cyipopt.Problem):
                 - enforce_final_position:bool  If True, add the final position as a constraint; default is False
                 - x_final:float  Final x if enforced
                 - y_final:float  Final y if enforced
-                - enforce_final_heading:bool  If True, add the final heading (theta) as a constraint; default is False
                 - theta_final:float  Final theta if enforced
                 - periodic:bool  Require that the initial and final position and heading to be equal; default is False
                 - use_exact_DAE:bool  Use the exact integration of the DAE; If False, will use a finite difference; default is False
@@ -324,42 +323,48 @@ class Objective(cyipopt.Problem):
 
     def OED_objective(self, combined_vars: np.ndarray) -> float:
         """OED objective function
-        
+
         Given variables, split them into (x,y) discrete observations to create
         the data observation locations. Compute the posterior using those
         positions and estimated measurements using the `InverseProblem` instance
         `self.inversion`. Using the posterior, compute the specified OED utility
         function using the `OEDUtility` instance `self.utility`.
-        
+
         Arguments:
             @param combined_vars  Combined variable vector
         """
         # Split the combined variable vector into the component variables
         (x, y, _theta, _v, _acc, _omega, _omega_acc) = self.var_splitter(combined_vars)
+
+        # Compute A-OED
         if self.OED_utility_mode.lower() == "a":
             return self.utility.eval_utility_A(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+        # Compute D-OED
         if self.OED_utility_mode.lower() == "d":
             return self.utility.eval_utility_D(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+        # Compute Dinv-OED
         if self.OED_utility_mode.lower() == "dinv":
             return self.utility.eval_utility_Dinv(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+        # Compute E-OED
         if self.OED_utility_mode.lower() == "e":
             return self.utility.eval_utility_E(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+        # Compute a mix of OED objective values
         if self.OED_utility_mode.lower() == "mix":
             out = 0.0
             if self.OED_mix.get("A", False):
@@ -389,32 +394,51 @@ class Objective(cyipopt.Problem):
             return out
 
     def OED_gradient(self, combined_vars: np.ndarray) -> np.ndarray:
-        """Gradient of OED objective function"""
+        """Gradient of OED objective function
+
+        Takes a combined variable vector and returns the gradient of the OED
+        objective function. The gradient is computed as a derivative with
+        respect to position such that d obj/dx and d obj/dy are returned.
+
+        Arguments:
+            @param combined_vars  Combined variable vector
+        """
+        # Split combined variables
         (x, y, _theta, _v, _acc, _omega, _omega_acc) = self.var_splitter(combined_vars)
+
+        # A-OED
         if self.OED_utility_mode.lower() == "a":
             out = self.utility.d_utilA_d_position(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+
+        # D-OED
         elif self.OED_utility_mode.lower() == "d":
             out = self.utility.d_utilD_d_position(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+
+        # Dinv-OED
         elif self.OED_utility_mode.lower() == "dinv":
             out = self.utility.d_utilDinv_d_position(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+
+        # E-OED
         elif self.OED_utility_mode.lower() == "e":
             out = self.utility.d_utilE_d_position(
                 self.inversion.compute_posterior(
                     alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                 )
             )
+
+        # Mix of OED objectives
         elif self.OED_utility_mode.lower() == "mix":
             out = np.zeros((self.N_x + self.N_y,))
             if self.OED_mix.get("A", False):
@@ -441,6 +465,9 @@ class Objective(cyipopt.Problem):
                         alpha=np.concatenate((x, y), axis=0), grid_t=self.grid_t
                     )
                 )
+
+        # Since only derivatives w.r.t. x and y were computed, we need to fill
+        # out the rest of gradient for the other variables as zeros
         out = np.concatenate(
             (out, np.zeros((self.number_of_variables - self.N_x - self.N_y,)))
         )
@@ -449,23 +476,23 @@ class Objective(cyipopt.Problem):
     def regularization_objective(self, combined_vars: np.ndarray) -> float:
         """Regularization objective function
 
-        :param vars: np.ndarray. Combined variables
-        :return: np.ndarray. Regularization objective value
+        This can take a variety of forms. Here we regularize on the sum-squared
+        values of acc and omega_acc (if normalized by self.h, this would be the
+        integral of acc**2 and omega_acc**2)
+
+        @param vars  np.ndarray. Combined variables
+        @return np.ndarray  Regularization objective value
         """
         (_x, _y, _theta, _v, acc, _omega, omega_acc) = self.var_splitter(combined_vars)
-        # return (np.sum(v**2) + np.sum(omega**2))
         return np.sum(acc**2) + np.sum(omega_acc**2)
-        # return np.sum(acc**2) + np.sum(2 - np.cos(omega * self.h))
-        # return np.sum(acc**2) + np.sum(2 - np.cos(omega * self.h)) + np.sum(omega_acc ** 2)
-        # return np.sum(acc**2) + np.sum(np.sin(omega * self.h)**2)
-        # return np.sum(acc**2) + np.sum(np.sin(omega * self.h)**2) + np.sum(omega_acc ** 2)
-        # return np.sum(acc**2) + np.sum(np.sin(omega_acc * self.h)**2) + np.sqrt(self.reg_strength) * np.sum(omega_acc**2)
 
     def regularization_gradient(self, combined_vars: np.ndarray):
         """Regularization objective function gradient
 
-        :param vars: np.ndarray. Combined variables
-        :return: np.ndarray. Gradient w.r.t. the regularization objective
+        This is the gradient of the above regularization objective
+
+        @param vars np.ndarray  Combined variables
+        @return np.ndarray  Gradient w.r.t. the regularization objective
         """
         (x, y, theta, v, acc, omega, omega_acc) = self.var_splitter(combined_vars)
 
@@ -473,16 +500,9 @@ class Objective(cyipopt.Problem):
         y = np.zeros(y.shape)
         theta = np.zeros(theta.shape)
         v = np.zeros(v.shape)
-        # v = 2*v
-        # acc = np.zeros(acc.shape)
         acc = 2 * acc
         omega = np.zeros(omega.shape)
-        # omega = self.h * np.sin(omega*self.h)
-        # omega = 2 * self.h * np.sin(omega * self.h) * np.cos(omega * self.h)
-        # omega = 2*omega
-        # omega_acc = np.zeros(omega_acc.shape)
         omega_acc = 2 * omega_acc
-        # omega_acc = 2 * self.h * np.sin(omega_acc * self.h) * np.cos(omega_acc * self.h) + 2 * np.sqrt(self.reg_strength) * omega_acc
 
         return self.var_joiner(x, y, theta, v, acc, omega, omega_acc)
 
@@ -491,8 +511,8 @@ class Objective(cyipopt.Problem):
 
         Combination of OED objective and regularization objective
 
-        :param vars: np.ndarray. Combined variables
-        :return: np.ndarray. Objective value
+        @param vars: np.ndarray. Combined variables
+        @return np.ndarray. Objective value
         """
         self.objective_value = self.OED_objective(
             combined_vars
@@ -504,8 +524,8 @@ class Objective(cyipopt.Problem):
 
         Combination of OED objective and regularization gradient
 
-        :param vars: np.ndarray. Combined variables
-        :return: np.ndarray. Gradient of objective w.r.t. variables
+        @param vars: np.ndarray. Combined variables
+        @return np.ndarray. Gradient of objective w.r.t. variables
         """
 
         return self.OED_gradient(
@@ -516,7 +536,10 @@ class Objective(cyipopt.Problem):
     def number_of_constraints(self) -> int:
         """Number of constraints
 
-        :return: int. Number of constraints
+        The number of constraints are computed in the self.constraints call
+        (determined by the options in the class initialization)
+
+        @return int. Number of constraints
         """
         return self.num_equality_constraints + self.num_inequality_constraints
 
@@ -526,21 +549,33 @@ class Objective(cyipopt.Problem):
     ) -> np.ndarray:
         """Join variables into a single vector
 
-        :param args: tuple[np.ndarray]. Variables to join
-        :return: np.ndarray. Concatenated vector containing all of the DAE
+        Take separate variables and join them into a single vector
+
+        @param args: tuple[np.ndarray]. Variables to join
+        @return np.ndarray. Concatenated vector containing all of the DAE
             variables
         """
         return np.concatenate(args, axis=0)
 
     def var_splitter(self, combined_vars: np.ndarray) -> tuple[np.ndarray]:
-        """Split variables from a single vector"""
+        """Split variables from a single vector
+
+        Split the combined variable vector into individual variables
+
+        @param combined_vars  Combined variable vector
+        @return  A namedtuple object as defined at the top of this file
+        """
         return DAE_vars(*tuple(np.split(combined_vars, self.cum_var_lengths[:-1])))
 
     @property
     def lower_bounds(self) -> np.ndarray:
         """Lower bounds on variables
 
-        :return: np.ndarray. Vector of lower bounds on all discretized variables
+        Takes lower bounds on variables from provided options, creates vectors
+        with those values, and combines them into a single vector (may need to
+        be more complex for different treatment of the discretization)
+
+        @return np.ndarray. Vector of lower bounds on all discretized variables
         """
         x_lb = np.ones((self.N_x,)) * self.x_lower
         y_lb = np.ones((self.N_y,)) * self.y_lower
@@ -567,7 +602,11 @@ class Objective(cyipopt.Problem):
     def upper_bounds(self) -> np.ndarray:
         """Upper bound on variables
 
-        :return: np.ndarray. Vector of upper bounds on all discretized variables
+        Takes upper bounds on variables from provided options, creates vectors
+        with those values, and combines them into a single vector (may need to
+        be more complex for different treatment of the discretization)
+
+        @return np.ndarray. Vector of upper bounds on all discretized variables
         """
         x_ub = self.x_upper * np.ones((self.N_x,))
         y_ub = self.y_upper * np.ones((self.N_y,))
@@ -595,15 +634,16 @@ class Objective(cyipopt.Problem):
     ) -> np.ndarray:
         """Circular (ellipse) obstacle
 
+        L2 norm:
         ((x - xc)/rx)**2 + ((y - yc)/ry)**2 >= 1
 
-        :param x: np.ndarray. Trajectory x-positions
-        :param y: np.ndarray. Trajectory y-positions
-        :param cx: float. Circle center x
-        :param cy: float. Circle center y
-        :param rx: float. Circle (ellipse) radius x
-        :param ry: float. Circle (ellipse) radius y
-        :return: np.ndarray. Distance outside of circle (should be non-negative)
+        @param x: np.ndarray. Trajectory x-positions
+        @param y: np.ndarray. Trajectory y-positions
+        @param cx: float. Circle center x
+        @param cy: float. Circle center y
+        @param rx: float. Circle (ellipse) radius x
+        @param ry: float. Circle (ellipse) radius y
+        @return np.ndarray. Distance outside of circle (should be non-negative)
         """
         return (
             ((x - cx) / (rx + self.obstacle_buffer)) ** 2
@@ -616,15 +656,16 @@ class Objective(cyipopt.Problem):
     ) -> np.ndarray:
         """Diamond obstacle
 
+        L1 norm:
         |(x - xc)/rx| + |(y - yc)/ry| >= 1
 
-        :param x: np.ndarray. Trajectory x-positions
-        :param y: np.ndarray. Trajectory y-positions
-        :param cx: float. Diamond center x
-        :param cy: float. Diamond center y
-        :param rx: float. Diamond radius x
-        :param ry: float. Diamond radius y
-        :return: np.ndarray. Distance outside of diamond (should be
+        @param x: np.ndarray. Trajectory x-positions
+        @param y: np.ndarray. Trajectory y-positions
+        @param cx: float. Diamond center x
+        @param cy: float. Diamond center y
+        @param rx: float. Diamond radius x
+        @param ry: float. Diamond radius y
+        @return np.ndarray. Distance outside of diamond (should be
             non-negative)
         """
         return (
@@ -644,13 +685,13 @@ class Objective(cyipopt.Problem):
         Infinity norm
         max(|x - xc|/rx, |y - yc|/ry) >= 1
 
-        :param x: np.ndarray. Trajectory x-positions
-        :param y: np.ndarray. Trajectory y-positions
-        :param cx: float. Square center x
-        :param cy: float. Square center y
-        :param rx: float. Square (rectangle) radius x
-        :param ry: float. Square (rectangle) radius y
-        :return: np.ndarray. Distance outside of square (should be non-negative)
+        @param x: np.ndarray. Trajectory x-positions
+        @param y: np.ndarray. Trajectory y-positions
+        @param cx: float. Square center x
+        @param cy: float. Square center y
+        @param rx: float. Square (rectangle) radius x
+        @param ry: float. Square (rectangle) radius y
+        @return np.ndarray. Distance outside of square (should be non-negative)
         """
         return (
             np.abs(((x - cx) / rx + (y - cy) / (ry + self.obstacle_buffer)) / 2)
@@ -658,9 +699,20 @@ class Objective(cyipopt.Problem):
             - 1
         )
 
-    # @jax.jit
     def constraints(self, combined_vars):
-        """Values to constrain between cl and cu"""
+        """Values to constrain between cl and cu
+
+        Takes the combined variables, splits them, and then evaluates the
+        constraint functions. The constraints are written to be equal to zero
+        for all equality constraints and >= 0 for all inequality constraints.
+
+        All of the constraints and Jacobian information is done manually, so
+        take care updating these (update constraint, Jacobian value, and
+        Jacobian structure)
+
+        @param combined_vars  Combined variable vector
+        @return  Constraint functions
+        """
         # Equality constraints
         (x, y, theta, v, acc, omega, omega_acc) = self.var_splitter(combined_vars)
 
@@ -668,6 +720,7 @@ class Objective(cyipopt.Problem):
         dae_x = (x[1:] - x[:-1]) - self.h * np.cos(theta[:-1]) * v[:-1]  # == 0
         dae_y = (y[1:] - y[:-1]) - self.h * np.sin(theta[:-1]) * v[:-1]  # == 0
 
+        # If we are using the exact DAE with piecewise constant controls
         if self.use_exact_DAE:
             # Piecewise constant undefined when omega -> 0)
             dae_x_exact = (x[1:] - x[:-1]) - (v[:-1] / omega[:-1]) * (
@@ -677,19 +730,24 @@ class Objective(cyipopt.Problem):
                 -np.cos(theta[:-1] + omega[:-1] * self.h) + np.cos(theta[:-1])
             )  # == 0
 
+            # In the case where omega is above some tolerance, use the exact
+            # value, otherwise fall back to finite difference
             indicator = np.abs(omega[:-1]) >= self.linear_tolerance
             for i, ind in enumerate(indicator):
                 if ind:
                     dae_x[i] = dae_x_exact[i]
                     dae_y[i] = dae_y_exact[i]
-                    # dae_x.at[i].set(dae_x_exact[i])
+                    # dae_x.at[i].set(dae_x_exact[i])  # jax.numpy method to adjust values
                     # dae_y.at[i].set(dae_y_exact[i])
 
+        # Heading
         dae_theta = (theta[1:] - theta[:-1]) - self.h * omega[:-1]  # == 0
+
         # Average acceleration
         dae_acc = (v[1:] - v[:-1]) - self.h * acc[:-1]  # == 0
         dae_omega_acc = (omega[1:] - omega[:-1]) - self.h * omega_acc[:-1]  # == 0
 
+        # Combine the constraint function evaluations so far
         cons = np.concatenate(
             (
                 dae_x,
@@ -700,23 +758,41 @@ class Objective(cyipopt.Problem):
             ),
             axis=0,
         )
+
+        # Initial position
         if self.enforce_initial_position:
             initial_x = x[0] - self.x0  # == 0
             initial_y = y[0] - self.y0  # == 0
+
+            # Add to constraints
             cons = np.concatenate((cons, np.array((initial_x, initial_y))), axis=0)
+
+        # Final position
         if self.enforce_final_position:
             final_x = x[-1] - self.x_final  # == 0
             final_y = y[-1] - self.y_final  # == 0
+
+            # Add to constraints
             cons = np.concatenate((cons, np.array((final_x, final_y))), axis=0)
+
+        # Initial heading
         if self.enforce_initial_heading:
             initial_heading = theta[0] - self.theta0  # ==0
+
+            # Add to constraints
             cons = np.concatenate((cons, np.array((initial_heading,))), axis=0)
 
+        # Enforce matching between initial/final heading and the initial/final position
         if self.periodic:
+            # Avoid argument problems by enforcing equality between sin and cos of heading
             heading_cos = np.cos(theta[0]) - np.cos(theta[-1])  # ==0
             heading_sin = np.sin(theta[0]) - np.sin(theta[-1])  # ==0
+
+            # Initial/final position
             x_periodic = x[0] - x[-1]  # ==0
             y_periodic = y[0] - y[-1]  # ==0
+
+            # Add to constraints
             cons = np.concatenate(
                 (
                     cons,
@@ -732,6 +808,7 @@ class Objective(cyipopt.Problem):
                 axis=0,
             )
 
+        # Simplified `circle_mode` where there is a fixed center and initial heading
         if self.circle_mode:
             initial_x_circle = x[0] - (
                 self.circle_center_x + v[0] / omega[0] * np.cos(self.theta0 - np.pi / 2)
@@ -743,9 +820,11 @@ class Objective(cyipopt.Problem):
                 (cons, np.array((initial_x_circle, initial_y_circle))), axis=0
             )
 
+        # All equality constraints added; get the number of equality constraints
         self.num_equality_constraints = len(cons)
 
-        # Inequality constraints (Obstacles)
+        # Inequality constraints
+        # Obstacles defined with centers (cx,cy) and half-widths (rx,ry)
         for cx, cy, rx, ry in zip(self.cxs, self.cys, self.rxs, self.rys):
             if self.obstacle_shape == "circle":
                 cons = np.concatenate(
@@ -760,7 +839,8 @@ class Objective(cyipopt.Problem):
                     (cons, self.diamond_obstacle(x, y, cx, cy, rx, ry)), axis=0
                 )  # >= 0
 
-        # Maximum length
+        # Maximum length; for finite difference and exact DAE, both have
+        # piecewise constant controls making this exact
         max_length = self.L / self.h - np.sum(v)  # >= 0
         cons = np.concatenate((cons, np.array(max_length).reshape((1,))), axis=0)
 
@@ -773,7 +853,7 @@ class Objective(cyipopt.Problem):
 
         Constraints are written to all have zero lower bounds
 
-        :return: np.ndarray. Constraint lower bounds.
+        @return np.ndarray. Constraint lower bounds.
         """
         return np.zeros((self.number_of_constraints,))
 
@@ -784,7 +864,7 @@ class Objective(cyipopt.Problem):
         Equality constraints have an upper bound of zero. Inequality constraints
         have upper bound of infinity
 
-        :return: np.ndarray. Constraint upper bounds.
+        @return np.ndarray. Constraint upper bounds.
         """
         upper_bound = np.concatenate(
             (
@@ -796,9 +876,13 @@ class Objective(cyipopt.Problem):
         return upper_bound
 
     def jacobianstructure(self) -> tuple[np.ndarray, np.ndarray]:
-        """Structure of the constraint jacobian
+        """Structure of the constraint Jacobian
 
-        :return: tuple[np.ndarray,np.ndarray]. Rows (constraint number) and
+        The Jacobian is fixed so we can cache the structure and call it back up.
+        cyIPOPT is expecting this to be a function instead of a cached_property,
+        so we just redirect this to a cached_property
+
+        @return tuple[np.ndarray,np.ndarray]. Rows (constraint number) and
             columns (variable number) of the corresponding Jacobian value
         """
         return self.memoized_jac_structure
@@ -807,16 +891,28 @@ class Objective(cyipopt.Problem):
     def memoized_jac_structure(self) -> tuple[np.ndarray, np.ndarray]:
         """Cached jacobian structure
 
-        Because the Jacobian structure does not change, we simply save the
-        structure
+        This is the (row = constraint, column = variable) indices of the
+        non-zero entries of the constraint Jacobian.
 
-        :return: tuple[np.ndarray,np.ndarray]. Rows (constraint number) and
+        Because the Jacobian structure does not change, we simply save the
+        structure.
+
+        Here, we go through all of the constraints in self.constraints and add
+        one row for each constraint and indicate the (row, column) for each
+        possibly non-zero entry (cyIPOPT may be expecting only non-zero entries;
+        here some entries may still be zero depending on the variables)
+
+        @return tuple[np.ndarray,np.ndarray]. Rows (constraint number) and
             columns (variable number) of the corresponding Jacobian value
         """
+        # Initialize lists for rows and columns
         rows = []
         columns = []
         # values = []
         row = 0
+
+        # DAE constraints
+        # x position
         for i in range(self.N_x - 1):
             if self.use_exact_DAE:
                 columns += [
@@ -836,7 +932,9 @@ class Objective(cyipopt.Problem):
                 ]
                 rows += [row] * 4
             # values += [1, -1, self.h * np.sin(theta[i]) * v[i], -self.h * np.cos(theta[i])]
-            row += 1
+            row += 1  # Increment row value by one
+
+        # y position
         for i in range(self.N_y - 1):
             if self.use_exact_DAE:
                 columns += [
@@ -857,6 +955,8 @@ class Objective(cyipopt.Problem):
                 rows += [row] * 4
             # values += [1, -1, -self.h * np.cos(theta[i]) * v[i], -self.h * np.sin(theta[i])]
             row += 1
+
+        # theta heading
         for i in range(self.N_theta - 1):
             columns += [
                 i + 1 + self.theta_shift,
@@ -866,11 +966,15 @@ class Objective(cyipopt.Problem):
             rows += [row] * 3
             # values += [1, -1, -self.h]
             row += 1
+
+        # Velocity finite difference
         for i in range(self.N_v - 1):
             columns += [i + 1 + self.v_shift, i + self.v_shift, i + self.acc_shift]
             rows += [row] * 3
             # values += [1, -1, -self.h]
             row += 1
+
+        # Angular velocity finite difference
         for i in range(self.N_omega - 1):
             columns += [
                 i + 1 + self.omega_shift,
@@ -881,6 +985,7 @@ class Objective(cyipopt.Problem):
             # values += [1, -1, -self.h]
             row += 1
 
+        # Initial position
         if self.enforce_initial_position:
             # Initial x
             columns += [0 + self.x_shift]
@@ -894,6 +999,7 @@ class Objective(cyipopt.Problem):
             # values += [1]
             row += 1
 
+        # Final position
         if self.enforce_final_position:
             # Final x
             columns += [self.NK - 1 + self.x_shift]
@@ -907,6 +1013,7 @@ class Objective(cyipopt.Problem):
             # values += [1]
             row += 1
 
+        # Initial heading
         if self.enforce_initial_heading:
             # Initial theta
             columns += [0 + self.theta_shift]
@@ -914,11 +1021,8 @@ class Objective(cyipopt.Problem):
             # values += [1]
             row += 1
 
+        # Periodic path
         if self.periodic:
-            # heading_cos = np.cos(theta[0]) - np.cos(theta[-1])  # ==0
-            # heading_sin = np.sin(theta[0]) - np.sin(theta[-1])  # ==0
-            # x_periodic = x[0] - x[-1]  # ==0
-            # y_periodic = y[0] - y[-1]  # ==0
             # heading_cos
             columns += [0 + self.theta_shift, self.NK - 1 + self.theta_shift]
             rows += [row] * 2
@@ -943,6 +1047,7 @@ class Objective(cyipopt.Problem):
             # values += [1, -1]
             row += 1
 
+        # Simplified circle path
         if self.circle_mode:
             # Initial x
             columns += [0 + self.x_shift, 1 + self.v_shift, 1 + self.omega_shift]
@@ -956,6 +1061,7 @@ class Objective(cyipopt.Problem):
             # values += [1, 1/omega[1], -v[1]/omega[1]**2]
             row += 1
 
+        # Obstacles
         for _cx, _cy, _rx, _ry in zip(self.cxs, self.cys, self.rxs, self.rys):
             for i in range(self.NK):
                 columns += [i + self.x_shift, i + self.y_shift]
@@ -968,18 +1074,29 @@ class Objective(cyipopt.Problem):
         rows += [row] * self.N_v
         # values += [-1] * self.N_v
 
+        # Convert to numpy arrays of integer indices (row = constraint indices;
+        # column = variable indices)
         return (np.array(rows, dtype=int), np.array(columns, dtype=int))
 
     def jacobian(self, combined_vars: np.ndarray) -> np.ndarray:
         """Jacobian values of constraints
 
-        :param vars: np.ndarray. Combined discretized variables
-        :return: np.ndarray. Non-zero values of the Jacobian corresponding to
+        Non-zero values of the constraint Jacobian. The (row, column) indices to
+        these values are returned by the self.jacobianstructure function
+
+        @param vars: np.ndarray. Combined discretized variables
+        @return np.ndarray. Non-zero values of the Jacobian corresponding to
             the row and column of the jacobian structure
         """
+        # Split the combined variables
         (x, y, theta, v, _acc, omega, _omega_acc) = self.var_splitter(combined_vars)
+
+        # Get the number of rows from the structure to predefine the output array
         rows, _columns = self.jacobianstructure()
         values = np.zeros(rows.shape)
+
+        # Set the index reference for the output array (we will increment as
+        # values are added)
         index = 0
 
         # DAE x integration (forward Euler)
@@ -1000,7 +1117,7 @@ class Objective(cyipopt.Problem):
                         * (self.h * np.cos(theta[i] + omega[i] * self.h)),
                     ]
                     index += 5
-                else:
+                else:  # Define as a linear solution if not above the linear tolerance
                     values[index : index + 5] = [
                         1,  # x[i + 1]
                         -1,  # x[i]
@@ -1154,24 +1271,6 @@ class Objective(cyipopt.Problem):
 
         return values
 
-    def video(self, combined_vars, constraints=None, objective=None):
-        """
-        Video hook
-
-        Records variables, constraint violations, and objective over the course of an optimization.
-        """
-        if self.build_video:
-            self.video_combined_vars.append(combined_vars)
-            if constraints is None:
-                constraints = self.constraints(combined_vars)
-            self.video_constraint_violation.append(
-                np.maximum(self.constraint_lower_bounds - constraints, 0.0)
-                + np.maximum(constraints - self.constraint_upper_bounds, 0.0)
-            )
-            if objective is None:
-                objective = self.objective(combined_vars)
-            self.video_objective.append(objective)
-
     def intermediate(
         self,
         alg_mod,
@@ -1208,17 +1307,17 @@ class Objective(cyipopt.Problem):
             "compl_g" is complementarity of constraints
 
         Args:
-            :param alg_mod: Algorithm phase: 0 is for regular, 1 is restoration.
-            :param iter_count: The current iteration count.
-            :param obj_value: The unscaled objective value at the current point
-            :param inf_pr: The scaled primal infeasibility at the current point.
-            :param inf_du: The scaled dual infeasibility at the current point.
-            :param mu: The value of the barrier parameter.
-            :param d_norm: The infinity norm (max) of the primal step.
-            :param regularization_size: The value of the regularization term for the Hessian of the Lagrangian in the augmented system.
-            :param alpha_du: The stepsize for the dual variables.
-            :param alpha_pr: The stepsize for the primal variables.
-            :param ls_trials: The number of backtracking line search steps.
+            @param alg_mod: Algorithm phase: 0 is for regular, 1 is restoration.
+            @param iter_count: The current iteration count.
+            @param obj_value: The unscaled objective value at the current point
+            @param inf_pr: The scaled primal infeasibility at the current point.
+            @param inf_du: The scaled dual infeasibility at the current point.
+            @param mu: The value of the barrier parameter.
+            @param d_norm: The infinity norm (max) of the primal step.
+            @param regularization_size: The value of the regularization term for the Hessian of the Lagrangian in the augmented system.
+            @param alpha_du: The stepsize for the dual variables.
+            @param alpha_pr: The stepsize for the primal variables.
+            @param ls_trials: The number of backtracking line search steps.
         """
         if self.build_video:
             iterate = self.get_current_iterate()
@@ -1462,31 +1561,50 @@ def arc_length_interpolation(vertices, n_points):
 
 
 def make_initial_condition(
-    points, grid_t, correct_theta: bool = True, compute_controls: bool = True
-):
-    """Makes initial condition for optimization"""
+    points: np.ndarray,
+    grid_t: np.ndarray,
+    correct_theta: bool = True,
+    compute_controls: bool = True,
+) -> np.ndarray:
+    """Makes initial condition for optimization
+
+    Given some points along a proposed path and a time grid, get the combined
+    vector to feed to the IPOPT problem. If we set `compute_controls`, compute
+    the controls that would produce that path (finite difference). If we
+    `correct_theta`, we will remove jumps in theta that are larger than 2 pi.
+
+    @param points  [[|, |,
+                     x, y,
+                     |, |]] array
+    @param grid_t  Time grid array
+    @param correct_theta  Boolean indicating correction to theta
+    @param compute_controls  Boolean indicating computation of controls
+    """
     initial_x = points[:, 0]
     initial_y = points[:, 1]
 
+    # potential discontinuities from atan2 range
     initial_theta = np.arctan2(
         np.diff(initial_y, append=0.0), np.diff(initial_x, append=0.0)
-    )  # potential discontinuities from atan2 range
+    )
 
+    # Fix discontinuities from the atan2 range
     if correct_theta:
-        # fix discontinuities
         for i in range(len(initial_theta) - 1):
             while np.abs(initial_theta[i] - initial_theta[i + 1]) > np.pi:
                 if initial_theta[i] - initial_theta[i + 1] > np.pi:
                     initial_theta[i + 1] += 2 * np.pi
                 if initial_theta[i] - initial_theta[i + 1] <= -np.pi:
                     initial_theta[i + 1] -= 2 * np.pi
+    
+    # Compute the control variables that would have been used (for finite differences)
     if compute_controls:
         initial_v = np.sqrt(
             np.diff(initial_y, append=0.0) ** 2 + np.diff(initial_x, append=0.0) ** 2
         ) / np.diff(grid_t, append=1.0)
-        initial_acc = np.diff(initial_v, append=0.0)
-        initial_omega = np.diff(initial_theta, append=0.0)
-        initial_omega_acc = np.diff(initial_omega, append=0.0)
+        initial_acc = np.diff(initial_v, append=0.0) / np.diff(grid_t, append=1.0)
+        initial_omega = np.diff(initial_theta, append=0.0) / np.diff(grid_t, append=1.0)
+        initial_omega_acc = np.diff(initial_omega, append=0.0) / np.diff(grid_t, append=1.0)
     else:
         initial_v = np.ones(initial_x.shape)
         initial_acc = np.zeros(initial_x.shape)
@@ -1523,15 +1641,15 @@ class polygon_obstacle:
 
     def __init__(self, vertices):
         """
-        :param vertices:  polygon vertices in clockwise order
+        @param vertices:  polygon vertices in clockwise order
         """
         self.vertices = np.array(vertices)
 
     def unit_vec(self, vector: np.ndarray):
         """Unit vector
 
-        :param vector: np.ndarray. vector to convert to unit vector
-        :return: np.ndarray. unit vector in the direction of vector
+        @param vector: np.ndarray. vector to convert to unit vector
+        @return np.ndarray. unit vector in the direction of vector
         """
         return vector / np.linalg.norm(vector)
 
