@@ -44,10 +44,46 @@ class Objective(cyipopt.Problem):
         OED function values and gradients from a posterior covariance matrix,
         and an InverseProblem object that computes posterior covariances
         matrices and gradients.
+        
+        This problem creates a discretized DAE system with controls v(t) and
+        omega(t):
+                (d/dt)x = v(t)cos(theta)
+                (d/dt)y = v(t)cos(theta)
+            (d/dt)theta = omega(t)
+                (d/dt)v = acc(t)
+            (d/dt)omega = omega_acc(t)
+        where:
+            - x is the x-coordinate along the path p(t)
+            - y is the y-coordinate along the path p(t)
+            - theta is the heading along the path p(t) (unconstrained, but
+              should not have jumps > 2 pi)
+            - v is the velocity
+            - omega is the angular velocity
+            - acc is the acceleration
+            - omega_acc is the angular acceleration (jerk)
+        
+        We can discretize this system using finite differences:
+                    (x_{i+1} - x_{i})/(t_{i+1} - t_{i}) = v_{i} * cos(theta_{i})
+                    (y_{i+1} - y_{i})/(t_{i+1} - t_{i}) = v_{i} * sin(theta_{i})
+            (theta_{i+1} - theta_{i})/(t_{i+1} - t_{i}) = omega_{i}
+                    (v_{i+1} - v_{i})/(t_{i+1} - t_{i}) = acc_{i}
+            (omega_{i+1} - omega_{i})/(t_{i+1} - t_{i}) = omega_acc_{i}
+
+        However, since this is a rather simple DAE, we can get the exact
+        solution for piecewise constant controls rather easily:
+            (x_{i+1} - x_{i}) = (v_{i} / omega_{i}) * ( sin(theta_{i} + omega_{i} * (t_{i+1} - t_{i})) - sin(theta_{i}))
+            (y_{i+1} - y_{i}) = (v_{i} / omega_{i}) * (-cos(theta_{i} + omega_{i} * (t_{i+1} - t_{i})) + cos(theta_{i}))
+            (theta_{i+1} - theta_{i})/(t_{i+1} - t_{i}) = omega_{i}
+        But since we have piecewise constant v and omega, their derivatives are
+        zero almost everywhere, so we use finite differences again
+                    (v_{i+1} - v_{i})/(t_{i+1} - t_{i}) = acc_{i}
+            (omega_{i+1} - omega_{i})/(t_{i+1} - t_{i}) = omega_acc_{i}
+        acc and omega_acc are not controls and are merely here to enforce
+        regularization on control jumps and potentially some bound constraints
+        (it is unexpected that these constraints will be active).
 
         The `cyipopt.Problem` class expects certain functions and values to be
         provided in order to solve:
-
             - `objective`: a function that takes the variables (as a vector) and
               returns the objective value
             - `constraints`: a function that takes the variables (as a vector)
@@ -79,21 +115,6 @@ class Objective(cyipopt.Problem):
             - `cu`: constraint upper bounds (lower = upper for equality
               constraints)
 
-        This problem creates a discretized DAE system:
-            (d/dt)x     = v(t)cos(theta)
-            (d/dt)y     = v(t)cos(theta)
-            (d/dt)theta = omega(t)
-            (d/dt)v     = acc(t)
-            (d/dt)omega = omega_acc(t)
-        where:
-            x is the x-coordinate along the path p(t)
-            y is the y-coordinate along the path p(t)
-            theta is the heading along the path p(t) (unconstrained, but should not have jumps > pi)
-            v is the velocity
-            omega is the angular velocity
-            acc is the acceleration
-            omega_acc is the angular acceleration (jerk)
-
 
         Many additional options are rolled into the keyword arguments `kwargs` listed below.
 
@@ -103,30 +124,52 @@ class Objective(cyipopt.Problem):
             @param inversion  InverseProblem object that computes posterior
                 covariances and means
             @param kwargs  Keyword defining problem specifics:
-                - OED_utility_mode:str  OED function type, e.g., "A", "D", "Dinv", "E", "mix"; see `OEDUtility` for more information
-                - OED_mix:dict[str,float]  Dictionary of weights for various OED types, e.g., {"A":1.0, "D":0.5} creates a linear combination of A-OED and D-OED
-                - enforce_initial_position:bool  If True, add the initial position as a constraint; default is False
+                - OED_utility_mode:str  OED function type, e.g., "A", "D",
+                  "Dinv", "E", "mix"; see `OEDUtility` for more information
+                - OED_mix:dict[str,float]  Dictionary of weights for various OED
+                  types, e.g., {"A":1.0, "D":0.5} creates a linear combination
+                  of A-OED and D-OED
+                - enforce_initial_position:bool  If True, add the initial
+                  position as a constraint; default is False
                 - x0:float  Initial x if enforced
                 - y0:float  Initial y if enforced
-                - enforce_initial_heading:bool  If True, add the initial heading (theta) as a constraint; default is False
+                - enforce_initial_heading:bool  If True, add the initial heading
+                  (theta) as a constraint; default is False
                 - theta0:float  Initial theta if enforced
-                - enforce_final_position:bool  If True, add the final position as a constraint; default is False
+                - enforce_final_position:bool  If True, add the final position
+                  as a constraint; default is False
                 - x_final:float  Final x if enforced
                 - y_final:float  Final y if enforced
                 - theta_final:float  Final theta if enforced
-                - periodic:bool  Require that the initial and final position and heading to be equal; default is False
-                - use_exact_DAE:bool  Use the exact integration of the DAE; If False, will use a finite difference; default is False
-                - linear_tolerance:float  For the exact DAE, small angular velocity omega causes numerical problems; values smaller than this tolerance are assumed zero
-                - build_video:bool  Save iteration information to make a video; If True, iteration/frame information is stored in self.video_frames
-                - NK:int  Number of controls; default is to take this from the time grid (one control per time step)
-                - T:float  Total flight time; default is to take this from the time grid (final minus initial time)
-                - L:float  Total flight length; default is 3.0; Flight length is computed by integrating velocity (this is exact for both the exact DAE and the finite difference approach; using distance between path points is only exact for the finite difference approach)
+                - periodic:bool  Require that the initial and final position and
+                  heading to be equal; default is False
+                - use_exact_DAE:bool  Use the exact integration of the DAE; If
+                  False, will use a finite difference; default is False
+                - linear_tolerance:float  For the exact DAE, small angular
+                  velocity omega causes numerical problems; values smaller than
+                  this tolerance are assumed zero
+                - build_video:bool  Save iteration information to make a video;
+                  If True, iteration/frame information is stored in
+                  self.video_frames
+                - NK:int  Number of controls; default is to take this from the
+                  time grid (one control per time step)
+                - T:float  Total flight time; default is to take this from the
+                  time grid (final minus initial time)
+                - L:float  Total flight length; default is 3.0; Flight length is
+                  computed by integrating velocity (this is exact for both the
+                  exact DAE and the finite difference approach; using distance
+                  between path points is only exact for the finite difference
+                  approach)
                 - cxs:List[float]  Center (x) position(s) of obstacle(s)
                 - cys:List[float]  Center (y) position(s) of obstacle(s)
                 - rxs:List[float]  Half-width (x-direction) of obstacle(s)
                 - rys:List[float]  Half-width (y-direction) of obstacle(s)
-                - obstacle_shape:str  Obstacle shape: "square" (rectangle), "circle" (ellipse), "diamond"
-                - obstacle_buffer:float  Additional half-width to give obstacles to try to avoid corner cutting; default is zero and allows the worst corner cutting (the path between path points crosses the obstacle)
+                - obstacle_shape:str  Obstacle shape: "square" (rectangle),
+                  "circle" (ellipse), "diamond"
+                - obstacle_buffer:float  Additional half-width to give obstacles
+                  to try to avoid corner cutting; default is zero and allows the
+                  worst corner cutting (the path between path points crosses the
+                  obstacle)
                 - x_lower:float  Lower bound for x
                 - x_upper:float  Upper bound for x
                 - y_lower:float  Lower bound for y
@@ -136,24 +179,42 @@ class Objective(cyipopt.Problem):
                 - v_lower:float  Lower bound for v
                 - v_upper:float  Upper bound for v
                 - acc_lower:float  Lower bound for acc
-                - acc_upper:float  Upper bound for acc; setting acc_upper = acc_lower = 0 will make the problem have constant velocity (approximately an arc-length parameterization)
+                - acc_upper:float  Upper bound for acc; setting acc_upper =
+                  acc_lower = 0 will make the problem have constant velocity
+                  (approximately an arc-length parameterization)
                 - omega_lower:float  Lower bound for omega
                 - omega_upper:float  Upper bound for omega
                 - omega_acc_lower:float  Lower bound for omega_acc
                 - omega_acc_upper:float  Upper bound for omega_acc
-                - piecewise_constant:int  Number of piecewise constant controls; default value is None meaning one piecewise constant control for each time step; setting to 1 makes controls constant in time
+                - piecewise_constant:int  Number of piecewise constant controls;
+                  default value is None meaning one piecewise constant control
+                  for each time step; setting to 1 makes controls constant in
+                  time
                 - N_x:int  Number of controls for x; default is to match NK
                 - N_y:int  Number of controls for y; default is to match NK
-                - N_theta:int  Number of controls for theta; default is to match NK
+                - N_theta:int  Number of controls for theta; default is to match
+                  NK
                 - N_v:int  Number of controls for v; default is to match NK
                 - N_acc:int  Number of controls for acc; default is to match NK
-                - N_omega:int  Number of controls for omega; default is to match NK
-                - N_omega_acc:int  Number of controls for omega_acc; default is to match NK
-                - reg_strength:float  Coefficient for the regularization objective
-                - initial_condition:np.ndarray[float]  Initial variable vector (flattened); if provided, will override x0, x_final, y0, y_final, theta0, theta_final
-                - circle_mode:bool  Add additional constraints to do a circle path with a fixed center and constant radius (constant velocity and angular velocity); overrides enforce_final_position, enforce_initial_position, enforce_initial_heading, acc_lower, acc_upper, omega_acc_lower, omega_acc_upper
-                - circle_center_x:float  Center (x) of the circle path if using the circle_mode
-                - circle_center_y:float  Center (y) of the circle path if using the circle_mode
+                - N_omega:int  Number of controls for omega; default is to match
+                  NK
+                - N_omega_acc:int  Number of controls for omega_acc; default is
+                  to match NK
+                - reg_strength:float  Coefficient for the regularization
+                  objective
+                - initial_condition:np.ndarray[float]  Initial variable vector
+                  (flattened); if provided, will override x0, x_final, y0,
+                  y_final, theta0, theta_final
+                - circle_mode:bool  Add additional constraints to do a circle
+                  path with a fixed center and constant radius (constant
+                  velocity and angular velocity); overrides
+                  enforce_final_position, enforce_initial_position,
+                  enforce_initial_heading, acc_lower, acc_upper,
+                  omega_acc_lower, omega_acc_upper
+                - circle_center_x:float  Center (x) of the circle path if using
+                  the circle_mode
+                - circle_center_y:float  Center (y) of the circle path if using
+                  the circle_mode
         """
         self.utility = oed_utility
         self.inversion = inversion
