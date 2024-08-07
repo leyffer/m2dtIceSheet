@@ -1,13 +1,20 @@
+"""Detector class
+
+Component of the `Drone` class that performs measurements of a provided `State`
+"""
 import numpy as np
 
-# from Drone import Drone
-# from Flight import Flight
-# from State import State
+# from .Drone import Drone
+from .Flight import Flight
+from .State import State
 
 
 class Detector:
     r"""
     Takes measurements of a `State` at specified positions and times
+
+    This is a component to a `Drone` class (which consists of a `Detector` for
+    measuring and a `Navigator` for determining where to measure).
 
     The detector describes how to take a measurement of a state $u$ for a given
     flight $p$. In general words, we model measurements to be of the form
