@@ -1,6 +1,10 @@
-source/__pycache__
 notebooks/.ipynb_checkpoints
-models/AdvectionDiffusion_FEniCS/__pycache__
 .vscode
+.idea
+.mypy_cache
 *.pyc
 **/__pycache__/
+**/.ipynb_checkpoints/
+*.png
+*.mp4
+*.pkl

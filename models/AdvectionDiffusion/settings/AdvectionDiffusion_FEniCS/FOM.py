@@ -8,23 +8,24 @@ Has access to:
 Creates:
     solved State
 """
+
 from __future__ import annotations
-from typing import Optional, Any
+
+import sys
+from typing import Optional
+
 import fenics as dl
-
-dl.set_log_level(30)
-import mshr
-
 import matplotlib.pyplot as plt  # For plotting
+import mshr
 import numpy as np  # For standard array manipulation
 import scipy.sparse as sparse  # For sparse matrices and linear algebra
 from mpi4py import MPI  # For parallelization
 
-import sys
-
 sys.path.insert(0, "../source/")
 from FullOrderModel import FullOrderModel
 from myState import myState as State
+
+dl.set_log_level(30)
 
 # Initialize MPI communications for mesh generation using mshr
 comm = MPI.COMM_SELF
@@ -46,7 +47,7 @@ class FOM(FullOrderModel):
         dt: float = 0.1,
         final_time: float = 4,
         mesh_shape: str = "houses",
-            centers: list = None,
+        centers: list = None,
         **kwargs,
     ):
         """! Initializer for the Full-order-model (FOM)
@@ -62,8 +63,8 @@ class FOM(FullOrderModel):
 
         # call initialization of parent class
         super().__init__()
-        # in this particular instance it doesn't matter when we call it since the FullOrderInitialization is currently
-        # empty
+        # in this particular instance it doesn't matter when we call it since
+        # the FullOrderInitialization is currently empty
 
         # MPI indicator
         self.bool_mpi = bool_mpi
@@ -78,10 +79,15 @@ class FOM(FullOrderModel):
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
 
-        # Trial and test space for advection-diffusion eq ('P' == Polynomial)
+        # Trial and test space for advection-diffusion eq ('P' == Polynomial,
+        # 'CG' = Continuous Gelerkin)
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
-        # see ufl.finiteelement.elementlist.show_elements() for finite element family options
+        self.gradient_space = dl.VectorFunctionSpace(
+            self.mesh, "DG", self.polyDim - 1
+        )  # Discontinuous Galerkin
+        # see ufl.finiteelement.elementlist.show_elements() for finite element
+        # family options
 
         # Finite-element dimension
         self.nFE = self.V.dim()
@@ -93,7 +99,9 @@ class FOM(FullOrderModel):
         )
 
         # Parameters
-        self.m_parameterized = self.set_parameter_functions(centers=centers)  # parameter basis functions
+        self.m_parameterized = self.set_parameter_functions(
+            centers=centers
+        )  # parameter basis functions
         self.n_para = self.m_parameterized.shape[0]  # number of parameters
 
         # Equation setup
@@ -107,18 +115,16 @@ class FOM(FullOrderModel):
 
         self.set_defaults(**kwargs)
 
-    def set_parameter_functions(self, centers=None):  # -> np.ndarray[dl.Function]:
+    def set_parameter_functions(self, centers=None):
         """! Initialize the parameterized functions used with the provided
         parameters to make the initial condition
             @return  Numpy array of separate initial condition elements that we
             scale and sum to get the initial condition
         """
-        # TODO: The type hint for this function gave me an error (Nicole, Oct 31, 2023)
 
         if centers is None:
             centers = [[0.35, 0.7], [0.8, 0.2], [0.7, 0.5], [0.1, 0.9], [0.1, 0.2]]
         m = np.zeros(len(centers), dtype=object)
-
 
         for i, _ in enumerate(m):
             m_str = (
@@ -200,6 +206,9 @@ class FOM(FullOrderModel):
         order of meshDim * meshDim
         @return  Mesh geometry
         """
+        if self.mesh_shape == "square":
+            return dl.UnitSquareMesh(meshDim, meshDim, diagonal="right")
+
         together = mshr.Rectangle(dl.Point(0.0, 0.0), dl.Point(1.0, 1.0))
 
         if self.mesh_shape == "houses":
@@ -227,6 +236,8 @@ class FOM(FullOrderModel):
                 boundary[f] = 2
             elif dl.near(mp[1], 0.0) or dl.near(mp[1], 1):  # walls
                 boundary[f] = 3
+            elif self.mesh_shape == "square":
+                continue
             elif dl.near(mp[0], 0.25) or dl.near(mp[0], 0.5):
                 if 0.15 <= mp[1] and mp[1] <= 0.4:
                     boundary[f] = 4
@@ -247,20 +258,19 @@ class FOM(FullOrderModel):
     def create_velocity_field(self, polyDim) -> dl.Function:
         """! Creation of velocity field for the advection term in the advection-diffusion equation
 
-        The velocity field is modeled as the solution to a steady state Navier
-        Stokes equations.
+        The velocity field is modeled as the solution to a steady state Navier-Stokes equations.
 
-            @return  Velocity field as a FEniCS/Firedrake Function.
+        @return  Velocity field as a FEniCS Function.
         """
 
         mesh = self.mesh
         boundary = self.boundary_marker
 
-        # initialize function spaces
-        V = dl.VectorElement(
-            "CG", mesh.ufl_cell(), 2
-        )  # H^1_0(Omega)^2, Velocity function space
-        Q = dl.FiniteElement("CG", mesh.ufl_cell(), 1)  # L^2(Omega)
+        # Initialize function spaces:
+        # H^1_0(Omega)^2, Velocity function space
+        V = dl.VectorElement("CG", mesh.ufl_cell(), 2)
+        # L^2(Omega)
+        Q = dl.FiniteElement("CG", mesh.ufl_cell(), 1)
         TH = dl.MixedElement([V, Q])
         W = dl.FunctionSpace(mesh, TH)
 
@@ -270,6 +280,9 @@ class FOM(FullOrderModel):
         bc_top_bottom = dl.DirichletBC(W.sub(0), (0, 0), boundary, 3)
         if self.mesh_shape == "houses":
             bc_houses = dl.DirichletBC(W.sub(0), (0, 0), boundary, 4)
+            # Boundary conditions are applied in order, i.e., first boundary
+            # conditions are able to be overwritten by later boundary
+            # conditions; here, the corners are overwritten by the top/bottom
             bcW = [bc_left, bc_right, bc_top_bottom, bc_houses]
         else:
             bcW = [bc_left, bc_right, bc_top_bottom]
@@ -313,15 +326,17 @@ class FOM(FullOrderModel):
             plt.sca(ax)
 
             return c
+
     def find_next(
-        self, u_old: dl.Function, dt: float, kappa: float = None
+        self, u_old: dl.Function, dt: float, kappa: Optional[float] = None
     ) -> dl.Function:
-        """! Apply implicit Euler to the initial condition u_old with step size
+        """!
+        Apply implicit Euler to the initial condition u_old with step size
         dt and diffusion parameter self.kappa to get an updated u
             @param u_old  Initial condition
             @param dt  Time step size
             @param kappa  Diffusion parameter (not used, self.kappa is used instead)
-            @return  The updated u function
+            @return  The updated u dl.Function representing the next state dt in the future
         """
         if kappa is None:
             kappa = self.kappa
@@ -346,9 +361,9 @@ class FOM(FullOrderModel):
         self,
         m_init: dl.Function,
         dt: Optional[float] = None,
-        final_time: float = None,
-        kappa: float = None,
-        grid_t: np.ndarray = None,
+        final_time: Optional[float] = None,
+        kappa: Optional[float] = None,
+        grid_t: Optional[np.ndarray] = None,
     ) -> tuple[np.ndarray[dl.Function], np.ndarray, dict]:
         """! Perform implicit Euler repeatedly to integrate the transient problem over time
         @param m_init  Initial condition
@@ -356,7 +371,9 @@ class FOM(FullOrderModel):
         @param final_time  Final time to integrate to
         @param kappa  Diffusion coefficient
         @param grid_t  Array containing time values for integration
-        @return  Tuple containing (numpy array with solutions to time integration; time grid)
+        @return sol  np.ndarray of dl.Function objects representing the solution over time
+        @return grid_t  np.ndarray of floats representing the times for the solutions over time
+        @ return other_identifiers  Dict with some other descriptive information about the solve
         """
         # TODO: add valid type hint
 
@@ -428,6 +445,6 @@ class FOM(FullOrderModel):
             parameter=parameter,
             memory_meshDim=self.memory_meshDim,
             other_identifiers=other_identifiers,
-            grid_t=grid_t
+            grid_t=grid_t,
         )
         return state

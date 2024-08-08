@@ -1,3 +1,4 @@
+"""Full order PDE model of the problem"""
 import numpy as np
 import scipy.linalg as la
 
@@ -6,8 +7,8 @@ from State import State
 
 class FullOrderModel:
     """! Full-order-model (FOM)
-    This is the general parent class for full-order models.
-    For any particular model the user should create a subclass and specify the functions below.
+    This is the general parent class for full-order models. For any particular
+    model the user should create a subclass and specify the functions below.
     """
 
     n_parameters = -1
@@ -17,10 +18,10 @@ class FullOrderModel:
     n_spatial = None  # spatial dimension (2D, 3D)
 
     def __init__(self):
-        """!
-        the main part of the initialization is entirely up to the user. They should overwrite the __init__ call with
-        what they need. In case this call will at some point include some reference setup, the user can still call it
-        with super().__init__()
+        """! the main part of the initialization is entirely up to the user.
+        They should overwrite the __init__ call with what they need. In case
+        this call will at some point include some reference setup, the user can
+        still call it with super().__init__()
         """
         # TODO: set the important variables
         pass
@@ -39,8 +40,10 @@ class FullOrderModel:
 
     def set_prior(self, prior_mean: np.ndarray, prior_covar: np.ndarray) -> None:
         """
-        sets the prior for the parameter of interest. The size of the prior mean communicates the parameter dimension.
-        The prior is assumed to be a Gaussian and thereby uniquely specified by its prior mean and covariance matrix.
+        sets the prior for the parameter of interest. The size of the prior mean
+        communicates the parameter dimension. The prior is assumed to be a
+        Gaussian and thereby uniquely specified by its prior mean and covariance
+        matrix.
 
         @param prior_mean: np.ndarray of shape (n_parameters,)
         @param prior_covar: np.ndarray of shape (n_parameters, n_parameters)
@@ -61,21 +64,25 @@ class FullOrderModel:
 
     def get_covar_sqrt(self):
         """
-        computes the square root of the prior covariance matrix. For larger parameter spaces, this procedure is
-        expensive and we don't need the square root anyway until we get to parameter reduction techniques, that's why we
-        are not computing it by default
+        computes the square root of the prior covariance matrix. For larger
+        parameter spaces, this procedure is expensive and we don't need the
+        square root anyway until we get to parameter reduction techniques,
+        that's why we are not computing it by default
         """
         if self.covar_sqrt is None:
             self.covar_sqrt = la.sqrtm(self.prior_covar)
-            # TODO: find a better (randomized?) way to compute this matrix for large-dimensional parameter spaces (or
-            #  find a way to sample without it and get rid of it altogether)
+            # TODO: find a better (randomized?) way to compute this matrix for
+            # large-dimensional parameter spaces (or find a way to sample
+            # without it and get rid of it altogether)
         return self.covar_sqrt
 
     def sample(self, n_samples: int = 1) -> np.ndarray:
         """
-        draws a sample from the prior of size (n_parameters,) if only one sample to be drawn, and (n_parameters,n_samples) otherwise
+        draws a sample from the prior of size (n_parameters,) if only one sample
+        to be drawn, and (n_parameters,n_samples) otherwise
 
-        @param n_samples: the number of samples that shall be drawn. Determines the shape of the return
+        @param n_samples: the number of samples that shall be drawn. Determines
+            the shape of the return
         @return: np.ndarray of size (n_parameters,) or (n_parameters,n_samples)
         """
         if self.n_parameters < 0:

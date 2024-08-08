@@ -47,7 +47,7 @@ def film_the_state(state, filename, flight=None, runtime=3, dt_disp=0.1):
     ani = animation.ArtistAnimation(fig, ims, repeat=False)
 
     extended_filename = filename + ".gif"
-    writervideo = animation.FFMpegWriter(fps=int(len(ims) / runtime))
+    writervideo = animation.PillowWriter(fps=int(len(ims) / runtime))
     ani.save(extended_filename, writer=writervideo)
 
 
@@ -77,5 +77,5 @@ def film_the_data(data, filename, grid_t, runtime=3, dt_disp=0.1):
     ani = animation.ArtistAnimation(fig, ims, repeat=False)
 
     extended_filename = filename + ".gif"
-    writervideo = animation.FFMpegWriter(fps=int(len(ims) / runtime))
+    writervideo = animation.PillowWriter(fps=int(len(ims) / runtime))
     ani.save(extended_filename, writer=writervideo)

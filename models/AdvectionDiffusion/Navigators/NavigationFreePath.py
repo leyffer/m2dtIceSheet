@@ -1,15 +1,19 @@
-from __future__ import annotations
-import sys
-import warnings
+"""This is a dummy navigator used to essentially bypass the Navigator paradigm
 
-sys.path.insert(0, "../../../source/")
+For this navigator, the control parameters are the path
+"""
+
+from __future__ import annotations
+
+import sys
+from typing import Optional
 
 import numpy as np
-from typing import Dict, Any, Optional, Literal
+
+sys.path.insert(0, "../../../source/")
+from Navigation import Navigation
 
 # from scipy.interpolate import make_interp_spline
-
-from Navigation import Navigation
 
 
 class NavigationFreePath(Navigation):
@@ -26,24 +30,20 @@ class NavigationFreePath(Navigation):
         num_spatial_dimensions: int = 2,
     ):
         """! Path defined by (x(t), y(t)) and t
-        
+
         Args:
-        @param alpha: 
+        @param alpha:
         """
         # Parameters, in this case, x y coordinates for some time grid
         self.alpha = alpha
         self.grid_t = grid_t
         self.num_spatial_dimensions = num_spatial_dimensions
 
-        # pos = self._convert_alpha_to_position(alpha)
-        # if pos.shape[0] != grid_t.shape[0]:
-        #     warnings.warn("NavigationFreePath: time grid and positions do not agree, changing time grid to match")
-        #     self.grid_t = np.linspace(grid_t[0], grid_t[-1], pos.shape[0])
-
     def get_trajectory(
         self, alpha: np.ndarray = None, grid_t: Optional[np.ndarray] = None
     ) -> tuple[np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
+
         @param alpha The specified flight parameters (this is the trajectory already)
         @param grid_t the time grid on which the drone position shall be computed
         @return  Tuple of (position over flight path, corresponding time for each position)
@@ -57,13 +57,19 @@ class NavigationFreePath(Navigation):
 
         if position.shape[0] != grid_t.shape[0]:
             raise ValueError(
-                f"Alpha converted to position ({position.shape}) and time grid ({grid_t.shape}) don't have the matching shapes"
+                f"Alpha converted to position ({position.shape}) and "
+                f"time grid ({grid_t.shape}) don't have the matching shapes"
             )
 
-        # use an interpolator? why?
+        # TODO We need to use an interpolator if we want to allow sampling
+        #  differently (e.g., arc-length sampling), but we need derivatives to
+        #  do this correctly
+
         # self.interpolator = make_interp_spline(grid_t, position, k=3, axis = 0)
 
         return position, grid_t
 
     def _convert_alpha_to_position(self, alpha: np.ndarray) -> np.ndarray:
-        return alpha.reshape((self.num_spatial_dimensions, alpha.shape[0] // self.num_spatial_dimensions)).T
+        return alpha.reshape(
+            (self.num_spatial_dimensions, alpha.shape[0] // self.num_spatial_dimensions)
+        ).T
