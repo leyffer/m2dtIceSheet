@@ -8,23 +8,24 @@ Has access to:
 Creates:
     solved State
 """
+
 from __future__ import annotations
+
+import sys
 from typing import Optional
+
 import fenics as dl
-
-dl.set_log_level(30)
-import mshr
-
 import matplotlib.pyplot as plt  # For plotting
+import mshr
 import numpy as np  # For standard array manipulation
 import scipy.sparse as sparse  # For sparse matrices and linear algebra
 from mpi4py import MPI  # For parallelization
 
-import sys
-
 sys.path.insert(0, "../source/")
 from FullOrderModel import FullOrderModel
 from myState import myState as State
+
+dl.set_log_level(30)
 
 # Initialize MPI communications for mesh generation using mshr
 comm = MPI.COMM_SELF
@@ -46,7 +47,7 @@ class FOM(FullOrderModel):
         dt: float = 0.1,
         final_time: float = 4,
         mesh_shape: str = "houses",
-            centers: list = None,
+        centers: list = None,
         **kwargs,
     ):
         """! Initializer for the Full-order-model (FOM)
@@ -62,8 +63,8 @@ class FOM(FullOrderModel):
 
         # call initialization of parent class
         super().__init__()
-        # in this particular instance it doesn't matter when we call it since the FullOrderInitialization is currently
-        # empty
+        # in this particular instance it doesn't matter when we call it since
+        # the FullOrderInitialization is currently empty
 
         # MPI indicator
         self.bool_mpi = bool_mpi
@@ -78,11 +79,15 @@ class FOM(FullOrderModel):
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
 
-        # Trial and test space for advection-diffusion eq ('P' == Polynomial, 'CG' = Continuous Gelerkin)
+        # Trial and test space for advection-diffusion eq ('P' == Polynomial,
+        # 'CG' = Continuous Gelerkin)
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
-        self.gradient_space = dl.VectorFunctionSpace(self.mesh, 'DG', self.polyDim - 1) # Discontinuous Galerkin
-        # see ufl.finiteelement.elementlist.show_elements() for finite element family options
+        self.gradient_space = dl.VectorFunctionSpace(
+            self.mesh, "DG", self.polyDim - 1
+        )  # Discontinuous Galerkin
+        # see ufl.finiteelement.elementlist.show_elements() for finite element
+        # family options
 
         # Finite-element dimension
         self.nFE = self.V.dim()
@@ -94,7 +99,9 @@ class FOM(FullOrderModel):
         )
 
         # Parameters
-        self.m_parameterized = self.set_parameter_functions(centers=centers)  # parameter basis functions
+        self.m_parameterized = self.set_parameter_functions(
+            centers=centers
+        )  # parameter basis functions
         self.n_para = self.m_parameterized.shape[0]  # number of parameters
 
         # Equation setup
@@ -108,18 +115,16 @@ class FOM(FullOrderModel):
 
         self.set_defaults(**kwargs)
 
-    def set_parameter_functions(self, centers=None):  # -> np.ndarray[dl.Function]:
+    def set_parameter_functions(self, centers=None):
         """! Initialize the parameterized functions used with the provided
         parameters to make the initial condition
             @return  Numpy array of separate initial condition elements that we
             scale and sum to get the initial condition
         """
-        # TODO: The type hint for this function gave me an error (Nicole, Oct 31, 2023)
 
         if centers is None:
             centers = [[0.35, 0.7], [0.8, 0.2], [0.7, 0.5], [0.1, 0.9], [0.1, 0.2]]
         m = np.zeros(len(centers), dtype=object)
-
 
         for i, _ in enumerate(m):
             m_str = (
@@ -253,20 +258,19 @@ class FOM(FullOrderModel):
     def create_velocity_field(self, polyDim) -> dl.Function:
         """! Creation of velocity field for the advection term in the advection-diffusion equation
 
-        The velocity field is modeled as the solution to a steady state Navier
-        Stokes equations.
+        The velocity field is modeled as the solution to a steady state Navier-Stokes equations.
 
-            @return  Velocity field as a FEniCS/Firedrake Function.
+        @return  Velocity field as a FEniCS Function.
         """
 
         mesh = self.mesh
         boundary = self.boundary_marker
 
-        # initialize function spaces
-        V = dl.VectorElement(
-            "CG", mesh.ufl_cell(), 2
-        )  # H^1_0(Omega)^2, Velocity function space
-        Q = dl.FiniteElement("CG", mesh.ufl_cell(), 1)  # L^2(Omega)
+        # Initialize function spaces:
+        # H^1_0(Omega)^2, Velocity function space
+        V = dl.VectorElement("CG", mesh.ufl_cell(), 2)
+        # L^2(Omega)
+        Q = dl.FiniteElement("CG", mesh.ufl_cell(), 1)
         TH = dl.MixedElement([V, Q])
         W = dl.FunctionSpace(mesh, TH)
 
@@ -276,6 +280,9 @@ class FOM(FullOrderModel):
         bc_top_bottom = dl.DirichletBC(W.sub(0), (0, 0), boundary, 3)
         if self.mesh_shape == "houses":
             bc_houses = dl.DirichletBC(W.sub(0), (0, 0), boundary, 4)
+            # Boundary conditions are applied in order, i.e., first boundary
+            # conditions are able to be overwritten by later boundary
+            # conditions; here, the corners are overwritten by the top/bottom
             bcW = [bc_left, bc_right, bc_top_bottom, bc_houses]
         else:
             bcW = [bc_left, bc_right, bc_top_bottom]
@@ -319,6 +326,7 @@ class FOM(FullOrderModel):
             plt.sca(ax)
 
             return c
+
     def find_next(
         self, u_old: dl.Function, dt: float, kappa: Optional[float] = None
     ) -> dl.Function:
@@ -437,6 +445,6 @@ class FOM(FullOrderModel):
             parameter=parameter,
             memory_meshDim=self.memory_meshDim,
             other_identifiers=other_identifiers,
-            grid_t=grid_t
+            grid_t=grid_t,
         )
         return state

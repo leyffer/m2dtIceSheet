@@ -1,23 +1,23 @@
+"""
+The Full Order Model of the steady-state Advection Diffusion equation in FEniCS
+"""
 from __future__ import annotations
-from FOM import FOM
 
 import sys
 
+import fenics as dl
+import numpy as np
 
 sys.path.insert(0, "../source/")
+from FOM import FOM
 from myState_stationary import myState_stationary as State
-
-import fenics as dl
 
 dl.set_log_level(30)
 
-import numpy as np
-
 
 class FOM_stationary(FOM):
-    """!
-    Full-order-model (FOM) for the advection-diffusion equation at steady state
-    Subclass of FOM
+    """! Full-order-model (FOM) for the advection-diffusion equation at steady
+    state Subclass of FOM
     """
 
     # Initialize the default forcing and parameters
@@ -82,7 +82,8 @@ class FOM_stationary(FOM):
     def assemble_forcing(self, parameter: np.ndarray) -> dl.Function:
         """! Assemble the forcing function given parameters para
 
-        The forcing function is composed of functions that are scaled by the provided parameters
+        The forcing function is composed of functions that are scaled by the
+        provided parameters
             @param parameter  Forcing function parameters
             @return  The scaled sum of forcing functions
         """

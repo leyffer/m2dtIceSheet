@@ -1,20 +1,21 @@
+"""Approximations to other detectors
+
+Instead of computing a local convolution for a single measurement, this attempts
+to compute the convolution of the entires state (numerically) and sample
+pointwise from that. This relies on an equivalent definition of the data
+measurement kernel operation for stationary kernels (convolutions):
+
+d(p(t)) = ((u * Phi) / (indicator(Omega) * Phi)) (p(t))
+"""
+
 import sys
-import warnings
 
-import fenics as dl
 import numpy as np
-
 import scipy.interpolate as scipy_interpolate
-from scipy.ndimage import convolve, gaussian_filter
-
-# from tqdm import tqdm
-
-# import scipy.sparse.linalg as sla
+from scipy.ndimage import convolve  # , gaussian_filter
 
 sys.path.insert(0, "../source/")
-
 from Detector import Detector
-from myState import myState
 
 
 def anti_alias(x: np.ndarray, scale: int) -> np.ndarray:
@@ -100,24 +101,23 @@ class Convolution:
         resolution: int = 100,
         debug: bool = False,
     ):
+        """Assemble the approximations to the state
+
+        @param fom  FullOrderModel probably not needed, but is currently used to
+            get bounds on the FEM mesh
+        @param state  State that we wish to approximate (not working for
+            transient states)
+        @param radius  radius of the stationary kernel
+        @param sigma  the standard deviation of the Gaussian type kernels
+        @param mode  the kernel type
+        @param resolution  the number of grid points used to construct the
+            interpolating spline approximation to the state
+        @param debug  Add print statements to help debug
+        """
         self.fom = fom
         self.state = state
         self.resolution = resolution
         self.coords = fom.mesh.coordinates()
-
-        # z = []
-        # for coord in self.coords:
-        #     z.append(state.state(coord))
-        # self.values = np.array(z)
-
-        # x = self.coords[:, 0]
-        # y = self.coords[:, 1]
-        # self.interp_Z = scipy_interpolate.CloughTocher2DInterpolator(
-        #     list(zip(x, y)), z, fill_value=0.0
-        # )
-        # self.interp_linear_Z = scipy_interpolate.LinearNDInterpolator(
-        #     list(zip(x, y)), z, fill_value=0.0
-        # )
 
         xx = np.linspace(
             np.min(self.coords[:, 0]), np.max(self.coords[:, 0]), self.resolution
@@ -149,10 +149,6 @@ class Convolution:
         # Sample the state
         X, Y = np.meshgrid(xx, yy, indexing="ij")
 
-        # Z = self.interp_Z(X, Y)
-        # indicator = (self.interp_linear_Z(X, Y) > 1e-16).astype("float")
-        # self.indicator = indicator
-
         Z = np.zeros(X.reshape((-1,)).shape)
         indicator = np.ones(X.reshape((-1,)).shape)
 
@@ -172,8 +168,6 @@ class Convolution:
         if debug:
             print("convolving the state")
         # Convolve and normalize for convolutions outside of the domain
-        # if mode.lower() == "apprx_gaussian":
-        #     self.weight = gaussian_filter(indicator, sigma=sigma, )
         self.weight = np.maximum(
             convolve(indicator, self.kernel, mode="constant"),
             1e-16 * np.ones(indicator.shape),
@@ -184,60 +178,33 @@ class Convolution:
 
         if debug:
             print("building interpolator")
-        # self.interp = scipy_interpolate.RegularGridInterpolator(
-        #     (xx, yy),
-        #     self.convolved_state,
-        #     method="cubic",
-        #     bounds_error=False,
-        #     fill_value=0.0,
-        # )
+
         self.interp = scipy_interpolate.RectBivariateSpline(
             xx, yy, self.convolved_state
         )
 
-        # self.interp_grad_x = scipy_interpolate.RegularGridInterpolator(
-        #     (0.5*(xx[0:-1] + xx[1:]), yy),
-        #     np.diff(self.convolved_state, axis=0)/dx,
-        #     method="cubic",
-        #     bounds_error=False,
-        #     fill_value=0.0,
-        # )
         self.interp_grad_x = self.interp.partial_derivative(1, 0)
 
-        # self.interp_grad_y = scipy_interpolate.RegularGridInterpolator(
-        #     (xx, 0.5*(yy[0:-1] + yy[1:])),
-        #     np.diff(self.convolved_state, axis=1)/dy,
-        #     method="cubic",
-        #     bounds_error=False,
-        #     fill_value=0.0,
-        # )
         self.interp_grad_y = self.interp.partial_derivative(0, 1)
 
-    def __call__(self, xi: np.ndarray, **kwargs):
-        # return self.interp(xi, **kwargs)
+    def __call__(self, xi: np.ndarray, **kwargs) -> np.ndarray:
+        """Get a value of the approximation at point(s) xi
+
+        @param xi  points to get approximated state values at
+        """
         return self.interp(xi[:, 0], xi[:, 1], grid=False, **kwargs)
 
-    def grad(self, xi: np.ndarray, **kwargs):
+    def grad(self, xi: np.ndarray, **kwargs) -> np.ndarray:
         """
         Return an estimate to the gradient using finite differences
         """
-        # grad_x = (
-        #     self.interp(np.concatenate((xi[:, 0:1] + dx, xi[:, 1:]), axis=1))
-        #     - self.interp(np.concatenate((xi[:, 0:1] - dx, xi[:, 1:]), axis=1))
-        # ) / (2 * dx)
-        # grad_y = (
-        #     self.interp(np.concatenate((xi[:, 0:1], xi[:, 1:] + dx), axis=1))
-        #     - self.interp(np.concatenate((xi[:, 0:1], xi[:, 1:] - dx), axis=1))
-        # ) / (2 * dx)
-        # grad_x = self.interp_grad_x(xi)
-        # grad_y = self.interp_grad_y(xi)
         grad_x = self.interp_grad_x(xi[:, 0], xi[:, 1], grid=False)
         grad_y = self.interp_grad_y(xi[:, 0], xi[:, 1], grid=False)
         return np.hstack((grad_x.reshape((-1, 1)), grad_y.reshape((-1, 1))))
 
 
 class DetectorApprox(Detector):
-    """
+    r"""
     This class uses an interpolated approximation to the state to speed up
     computation. A convolution is computed with a kernel depending on the
     provided mode. The Convolution object contains interpolated values using
@@ -263,18 +230,19 @@ class DetectorApprox(Detector):
 
     def __init__(
         self,
-        fom,
+        fom: "FOM",
         radius: float = 0.2,
-        sigma=0.1,
+        sigma: float = 0.1,
         resolution: int = 100,
         eval_mode: str = "apprx_gaussian",
         **kwargs
     ):
         """! Initializer for the drone class with point-wise measurements
+
         @param fom  Full-order-model (FOM) object. The drone takes
-        measurements from this
+            measurements from states produced by this
         @param **kwargs  Keyword arguments including `sigma_gaussian`
-        (Gaussian radius) and `radius_uniform`
+            (Gaussian radius) and `radius_uniform`
         """
         super().__init__(**kwargs)
         self.radius = radius
@@ -330,7 +298,8 @@ class DetectorApprox(Detector):
 
     def d_measurement_d_position(self, flight, state):
         r"""
-        derivative of the measurement function for a given flight in direction of the flight's positions flightpath.
+        derivative of the measurement function for a given flight in direction
+        of the flight's positions flightpath.
         For measurements of the form
         $$
         d(t; p) = \int_{\Omega} \Phi(x, p(t)) u(x,t) dx
