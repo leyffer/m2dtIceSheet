@@ -8,10 +8,10 @@ from typing import Optional
 
 import numpy as np
 
-from .Detector import Detector
-from .Flight import Flight
-from .Navigation import Navigation
-from .State import State
+from Detector import Detector
+from Flight import Flight
+from Navigation import Navigation
+from State import State
 
 
 class Drone:

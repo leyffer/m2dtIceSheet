@@ -14,7 +14,8 @@ class OEDUtility:
     A-, D-, and E-optimal experimental design). In particular, we provide:
 
     - evaluate the utility of a given flight path design (A-, D-, and E)
-    - compute the eigenvalues of the posterior covariance matrix for a given flight path design
+    - compute the eigenvalues of the posterior covariance matrix for a given
+      flight path design
     - evaluate the gradient of the utility function
 
     We have decided not to outsource each OED criterion into its own subclass,
@@ -24,22 +25,25 @@ class OEDUtility:
     """
 
     def __init__(self, default_mode: Optional[str] = "D") -> None:
-        """! initialization for OEDUtility class
+        """! Initialization for OEDUtility class
 
-        @param default_mode: OED utility criterion (A, D, or E), E is only partially supported, also D-inverse and D-log
+        @param default_mode: OED utility criterion (A, D, or E), E is only
+            partially supported, also D-inverse and D-log
         """
         # remember which mode we are in per default
         self.default_mode = default_mode
 
     def eval_utility(self, posterior: Posterior, mode: Optional[str] = None):
         """
-        computes the OED-utility of the posterior covariance matrix for a
+        Compute the OED-utility of the posterior covariance matrix for a
         provided posterior (assuming a linear model). Available OED-utility
         functions are: A, D, E, and "D-inverse" to compute the determinant of
         the inverse posterior covariance matrix.
 
-        @param posterior: posterior distribution for which the utility shall be computed
-        @param mode: string: "A", "D", "D-inverse", "E", defaults to self.default_mode if not provided
+        @param posterior: posterior distribution for which the utility shall be
+            computed
+        @param mode: string: "A", "D", "D-inverse", "E", defaults to
+            self.default_mode if not provided
         @return: utility function evaluation of the posterior, float
         """
         # use default if no mode was provided
@@ -54,7 +58,7 @@ class OEDUtility:
             return self.eval_utility_D(posterior)
 
         if mode == "D-log":
-            return np.log(self.eval_utility_D(posterior))  # natural logarithm
+            return np.log(self.eval_utility_D(posterior))
 
         if mode == "D-inverse":
             return self.eval_utility_Dinv(posterior)
@@ -62,9 +66,9 @@ class OEDUtility:
         if mode == "E":
             return self.eval_utility_E(posterior)
 
-        raise RuntimeError("Invalid oed_mode encountered: {}".format(mode))
+        raise RuntimeError(f"Invalid oed_mode encountered: {mode}")
 
-    def eval_utility_A(self, posterior: Posterior):
+    def eval_utility_A(self, posterior: Posterior) -> float:
         """
         A-OED utility criterion: trace of the posterior covariance matrix.
         Computed as the sum of the posterior's eigenvalues
@@ -74,7 +78,7 @@ class OEDUtility:
         """
         return sum(posterior.eigvals)
 
-    def eval_utility_D(self, posterior: Posterior):
+    def eval_utility_D(self, posterior: Posterior) -> float:
         """
         D-OED utility criterion: determinant of the posterior covariance matrix.
 
@@ -83,7 +87,7 @@ class OEDUtility:
         """
         return np.prod(posterior.eigvals)
 
-    def eval_utility_Dinv(self, posterior: Posterior):
+    def eval_utility_Dinv(self, posterior: Posterior) -> float:
         """
         determinant of the inverse posterior covariance matrix.
 
@@ -93,7 +97,7 @@ class OEDUtility:
         # TODO: I think we have 1/ twice now in all the computations, optimize it out
         return np.prod(1 / posterior.eigvals)
 
-    def eval_utility_E(self, posterior: Posterior):
+    def eval_utility_E(self, posterior: Posterior) -> float:
         """
         E-OED criterion: maximum eigenvalue of posterior covariance matrix
         @param posterior:
@@ -101,16 +105,14 @@ class OEDUtility:
         """
         return posterior.eigvals[0]
 
-    def d_utility_d_control(self, posterior: Posterior, mode=None):
+    def d_utility_d_control(self, posterior: Posterior, mode=None) -> np.ndarray:
         """
         computes the derivative of the OED-utility function for the given
         posterior w.r.t. the control parameters.
 
         @param posterior: Posterior
         @param mode: string: "A", "D", "D-inverse", "E"
-        @return:
-
-        # TODO: we also need to support d_utility_d_position
+        @return: the derivative vector
         """
 
         # use default mode if none is provided
@@ -142,19 +144,20 @@ class OEDUtility:
 
         raise RuntimeError(f"Invalid oed_mode encountered: {mode}")
 
-    def d_utilA_d_control(self, posterior: Posterior):
+    def d_utilA_d_control(self, posterior: Posterior) -> np.ndarray:
         """
         computes the derivative of the A-OED utility function
         Psi(X) = trace(X) where X is the posterior covariance matrix
-        with respect to the control parameters of the flight path by applying the chain rule.
+        with respect to the control parameters of the flight path by applying
+        the chain rule.
 
         The trace is a linear operator, so its derivative is itself:
         d Psi(X) / d alpha = Psi( d X / d alpha )
 
         see also: https://en.wikipedia.org/wiki/Matrix_calculus
 
-        @param posterior:
-        @return:
+        @param posterior: posterior object
+        @return: derivative vector
         """
 
         # get derivative information of the posterior covariance matrix
@@ -165,7 +168,7 @@ class OEDUtility:
 
         return gradient
 
-    def d_utilD_d_control(self, posterior: Posterior):
+    def d_utilD_d_control(self, posterior: Posterior) -> np.ndarray:
         """
         computes the derivative of the D-OED utility function
         Psi(X) = det(X) where X is the posterior covariance matrix
@@ -183,8 +186,8 @@ class OEDUtility:
         see also: https://en.wikipedia.org/wiki/Matrix_calculus
         https://en.wikipedia.org/wiki/Minor_(linear_algebra)
 
-        @param posterior:
-        @return:
+        @param posterior: posterior object
+        @return:  derivative vector
         """
 
         # get derivative information of the posterior covariance function
@@ -203,7 +206,7 @@ class OEDUtility:
                 )
 
             # apply transposed cofactor matrix
-            yolo = det * la.solve(posterior.covar.T, der[i])
+            intermediate = det * la.solve(posterior.covar.T, der[i])
             # TODO: just apply inverse posterior covariance matrix (or its action)
             # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
             #  I don't think the posterior covariance matrix can become singular
@@ -211,19 +214,19 @@ class OEDUtility:
             #  We might want to catch that case though.
 
             # finish computing the gradient
-            gradient[i] = np.trace(yolo)
+            gradient[i] = np.trace(intermediate)
 
         return gradient
 
-    def d_utilDinv_d_control(self, posterior: Posterior):
+    def d_utilDinv_d_control(self, posterior: Posterior) -> np.ndarray:
         """
         computes the derivative of the inverse D-OED utility function
         Psi(X) = det(X^{-1}) where X is the posterior covariance matrix
         with respect to the control parameters of the flight path by applying
         the chain rule.
 
-        @param posterior:
-        @return:
+        @param posterior: posterior object
+        @return: derivative vector
         """
 
         # get derivative information of the posterior covariance function
@@ -243,7 +246,7 @@ class OEDUtility:
                 )
 
             # apply transposed cofactor matrix
-            yolo = det * la.solve(covar_inv.T, der[i])
+            intermediate = det * la.solve(covar_inv.T, der[i])
             # TODO: just apply inverse posterior covariance matrix (or its action)
             # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
             # I don't think the posterior covariance matrix can become singular
@@ -251,17 +254,20 @@ class OEDUtility:
             # We might want to catch that case though.
 
             # finish computing the gradient
-            gradient[i] = np.trace(yolo)
+            gradient[i] = np.trace(intermediate)
 
         return gradient
 
-    def d_utilE_d_control(self, posterior: Posterior):
+    def d_utilE_d_control(self, posterior: Posterior) -> np.ndarray:
         """
         For PSD matrix, can use derivative of elements w.r.t. eigenvalues is the
         outer product of the corresponding eigenvector (as long as eigenvalues
         are not repeated). We can recover top eigenvalue and eigenvector through
         power iteration and get the derivative using an outer product (I think
         this translates well to infinite dimension)
+        
+        @param posterior: posterior object
+        @return: derivative vector
         """
         max_eigvector = posterior.eigvectors[0]
         der = posterior.d_PostCov_d_control()
@@ -275,13 +281,16 @@ class OEDUtility:
         )
         return gradient
 
-    def d_utility_d_position(self, posterior: Posterior, mode=None):
+    def d_utility_d_position(self, posterior: Posterior, mode:str=None) -> np.ndarray:
         """
-        computes the derivative of the OED-utility function for the given
+        Compute the derivative of the OED-utility function for the given
         posterior w.r.t. the control parameters.
+        
+        
+        
         @param posterior: Posterior
         @param mode: string: "A", "D", "D-inverse", "E", "D-log"
-        @return:
+        @return: derivative vector
         """
 
         # use default mode if none is provided
@@ -313,7 +322,7 @@ class OEDUtility:
 
         raise RuntimeError(f"Invalid oed_mode encountered: {mode}")
 
-    def d_utilA_d_position(self, posterior: Posterior):
+    def d_utilA_d_position(self, posterior: Posterior) -> np.ndarray:
         """
         computes the derivative of the A-OED utility function
         Psi(X) = trace(X) where X is the posterior covariance matrix
@@ -325,8 +334,8 @@ class OEDUtility:
 
         see also: https://en.wikipedia.org/wiki/Matrix_calculus
 
-        @param posterior:
-        @return:
+        @param posterior: posterior object
+        @return: derivative vector
         """
 
         # get derivative information of the posterior covariance matrix
@@ -337,7 +346,7 @@ class OEDUtility:
 
         return gradient
 
-    def d_utilD_d_position(self, posterior: Posterior):
+    def d_utilD_d_position(self, posterior: Posterior) -> np.ndarray:
         """
         computes the derivative of the D-OED utility function
         Psi(X) = det(X) where X is the posterior covariance matrix
@@ -356,8 +365,8 @@ class OEDUtility:
         see also: https://en.wikipedia.org/wiki/Matrix_calculus
         https://en.wikipedia.org/wiki/Minor_(linear_algebra)
 
-        @param posterior:
-        @return:
+        @param posterior: posterior object
+        @return: derivative vector
         """
 
         # get derivative information of the posterior covariance function
@@ -376,26 +385,29 @@ class OEDUtility:
                 )
 
             # apply transposed cofactor matrix
-            yolo = det * la.solve(posterior.covar.T, der[i])
-            # TODO: just apply inverse posterior covariance matrix (or its action)
-            # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
-            #  I don't think the posterior covariance matrix can become singular unless the prior or the noise covariance
-            #  matrices are degenerate. We might want to catch that case though.
+            intermediate = det * la.solve(posterior.covar.T, der[i])
+            # TODO: just apply inverse posterior covariance matrix (or its
+            #  action)
+            # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for
+            #  invertible matrices M I don't think the posterior covariance
+            #  matrix can become singular unless the prior or the noise
+            #  covariance matrices are degenerate. We might want to catch that
+            #  case though.
 
             # finish computing the gradient
-            gradient[i] = np.trace(yolo)
+            gradient[i] = np.trace(intermediate)
 
         return gradient
 
-    def d_utilDinv_d_position(self, posterior: Posterior):
+    def d_utilDinv_d_position(self, posterior: Posterior) -> np.ndarray:
         """
         computes the derivative of the inverse D-OED utility function
         Psi(X) = det(X^{-1}) where X is the posterior covariance matrix
         with respect to the control parameters of the flight path by applying
         the chain rule.
 
-        @param posterior:
-        @return:
+        @param posterior: posterior object
+        @return: derivative vector
         """
 
         # get derivative information of the posterior covariance function
@@ -415,19 +427,20 @@ class OEDUtility:
                 )
 
             # apply transposed cofactor matrix
-            yolo = det * la.solve(covar_inv.T, der[i])
+            intermediate = det * la.solve(covar_inv.T, der[i])
             # TODO: just apply inverse posterior covariance matrix (or its action)
-            # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for invertible matrices M
-            # I don't think the posterior covariance matrix can become singular
-            # unless the prior or the noise covariance matrices are degenerate.
-            # We might want to catch that case though.
+            # TODO: the decomposition cofactor(M) = det(M)*inv(M) only holds for
+            # invertible matrices M I don't think the posterior covariance
+            # matrix can become singular unless the prior or the noise
+            # covariance matrices are degenerate. We might want to catch that
+            # case though.
 
             # finish computing the gradient
-            gradient[i] = np.trace(yolo)
+            gradient[i] = np.trace(intermediate)
 
         return gradient
 
-    def d_utilE_d_position(self, posterior: Posterior):
+    def d_utilE_d_position(self, posterior: Posterior) -> np.ndarray:
         """
         For PSD matrix, can use derivative of elements w.r.t. eigenvalues is the
         outer product of the corresponding eigenvector (as long as eigenvalues
@@ -439,6 +452,9 @@ class OEDUtility:
 
         d max_eig/d covariance = max_eig_vector max_eig_vector^*
         if a single eigen value, otherwise does not hold. Safer to use finite differences...
+        
+        @param posterior: posterior object
+        @return: derivative vector
         """
         max_eigvector = posterior.eigvectors[0]
         der = posterior.d_PostCov_d_position()

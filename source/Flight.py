@@ -2,12 +2,14 @@
 
 Holds information about an individual flight
 """
+
 from functools import cached_property
+from typing import Optional
 
 import numpy as np
 
 
-class Flight():
+class Flight:
     """
     A flight is the realization of given control parameters alpha. It is
     specific to it - any alpha should have its own associated flight. And no
@@ -17,8 +19,10 @@ class Flight():
     - the control parameterization alpha
     - the time grid
     - the navigation system
-    - the flightpath it takes on this time grid (produced by the navigation system)
-    - the derivative of its path with respect to its position (not computed at initialization)
+    - the flightpath it takes on this time grid (produced by the navigation
+      system)
+    - the derivative of its path with respect to its position (not computed at
+      initialization)
 
     Since the flight outsources the computations of these quantities to the
     Navigation system, the user probably doesn't need to change this class
@@ -26,14 +30,18 @@ class Flight():
     compatibility.
     """
 
-    def __init__(self, navigation : "Navigation", alpha, grid_t: np.ndarray = None):
+    def __init__(
+        self, navigation: "Navigation", alpha, grid_t: Optional[np.ndarray] = None
+    ):
         """! Initialization of Flight class
 
         Creates the flight associated to the control parameters alpha. The
         navigation system describes how to get the flightpath from it.
 
-        @param navigation: Navigation system, for interpreting control parameter alpha
-        @param alpha: control parameter, likely np.ndarray but could also be user-specific
+        @param navigation: Navigation system, for interpreting control parameter
+            alpha
+        @param alpha: control parameter, likely np.ndarray but could also be
+            user-specific
         @param grid_t: time grid for the flight
         """
         # Default time grid if not provided
@@ -44,14 +52,18 @@ class Flight():
         self.alpha = alpha
 
         self.flightpath, self.grid_t = navigation.get_trajectory(alpha, grid_t=grid_t)
-        
+
     def get_position(self, t: float | np.ndarray):
         """! Get the position of the drone at a requested time(s)
 
-        The reasons to call this function instead of evaluating flightpath at some index k are that
-        - evaluating flight.flightpath[k, :] requires to know for which k we have k delta_t = t
+        The reasons to call this function instead of evaluating flightpath at
+        some index k are that
+        
+        - evaluating flight.flightpath[k, :] requires to know for which k we
+          have k delta_t = t
         - the provided t might be between time steps
-        - if the position shall be evaluated for a finer or coarser time discretization
+        - if the position shall be evaluated for a finer or coarser time
+          discretization
 
         @param t  The time(s) at which to evaluate the position of the drone
         @return  spatial position of the drone at time(s) t
@@ -77,9 +89,11 @@ class Flight():
         should be called, and **not**
         flight.navigation.d_position_d_control(flight)
         The latter is more expensive when called frequently and generally more error prone.
+        TODO - more error prone in what way?
 
         @return derivative of self.flightpath w.r.t. self.alpha, np.ndarray of shape
         <self.grid_t.shape[0]> times <number of control parameters>
         """
-        # if it was not yet computed, we get it from the navigation system, and store in self.d_pos_d_con for future use
+        # if it was not yet computed, we get it from the navigation system, and
+        # store in self.d_pos_d_con for future use
         return self.navigation.d_position_d_control(flight=self)

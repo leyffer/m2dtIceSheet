@@ -1,5 +1,8 @@
+"""
+Bayesian inverse problem with Neumann boundary conditions on the noise model
+"""
 import warnings
-from typing import Any, List, Optional
+from typing import Any, List
 
 import numpy as np
 import scipy.linalg as la
@@ -8,7 +11,6 @@ import scipy.sparse.linalg as sla
 from Drone import Drone
 from FullOrderModel import FullOrderModel as FOM
 from InverseProblem import InverseProblem
-from State import State
 
 # FOM converts parameters to states
 # Inverse Problem has a basis and keeps the states for that basis
@@ -16,17 +18,21 @@ from State import State
 
 class InverseProblemBayesNeumann(InverseProblem):
     """! InverseProblem class
-    In this class we provide all functions needed for handling the inverse problem, starting from its setup to its
-    solution. In particular, for the OED problem, we provide:
+    In this class we provide all functions needed for handling the inverse
+    problem, starting from its setup to its solution. In particular, for the OED
+    problem, we provide:
 
-    - a call that applies the inverse posterior covariance matrix for given flight path parameters
+    - a call that applies the inverse posterior covariance matrix for given
+      flight path parameters
     - a call to compute the posterior mean
-    - the option to apply a reduction in parameter space (e.g., with active subspaces)
+    - the option to apply a reduction in parameter space (e.g., with active
+      subspaces)
 
     Note: the details on the last part are not clear yet
 
-    In this notebook we specifically consider a noise model that is consistent with time-continuous measurements. The
-    inverse problem is then consistent with the Bayesian setting even in the time-continuous limit.
+    In this notebook we specifically consider a noise model that is consistent
+    with time-continuous measurements. The inverse problem is then consistent
+    with the Bayesian setting even in the time-continuous limit.
     """
 
     c_scaling = 1e3
@@ -145,7 +151,8 @@ class InverseProblemBayesNeumann(InverseProblem):
         return samples_with_bc[1:-1, :]
 
     def apply_noise_covar_inv(self, measurement_data):
-        """! Apply the inverse noise covariance matrix to the observations ` measurement_data`, i.e., compute
+        r"""! Apply the inverse noise covariance matrix to the observations `
+        measurement_data`, i.e., compute
         $$
         \Sigma_{noise}^{-1} measurement_data
         $$

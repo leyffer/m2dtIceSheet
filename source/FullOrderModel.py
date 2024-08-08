@@ -1,3 +1,4 @@
+"""Full order PDE model of the problem"""
 import numpy as np
 import scipy.linalg as la
 
@@ -6,8 +7,8 @@ from State import State
 
 class FullOrderModel:
     """! Full-order-model (FOM)
-    This is the general parent class for full-order models.
-    For any particular model the user should create a subclass and specify the functions below.
+    This is the general parent class for full-order models. For any particular
+    model the user should create a subclass and specify the functions below.
     """
 
     n_parameters = -1
@@ -17,11 +18,10 @@ class FullOrderModel:
     n_spatial = None  # spatial dimension (2D, 3D)
 
     def __init__(self):
-        """!
-        the main part of the initialization is entirely up to the user. They
-        should overwrite the __init__ call with what they need. In case this
-        call will at some point include some reference setup, the user can still
-        call it with super().__init__()
+        """! the main part of the initialization is entirely up to the user.
+        They should overwrite the __init__ call with what they need. In case
+        this call will at some point include some reference setup, the user can
+        still call it with super().__init__()
         """
         # TODO: set the important variables
         pass

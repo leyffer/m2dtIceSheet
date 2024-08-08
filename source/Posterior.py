@@ -1,9 +1,12 @@
-import numpy as np
-import scipy.linalg as la
+"""
+Class for computing posterior information
+"""
+
 from functools import cached_property
 from typing import Optional
-from functools import lru_cache
 
+import numpy as np
+import scipy.linalg as la
 from InverseProblem import InverseProblem
 
 
@@ -21,13 +24,17 @@ class Posterior:
     matrix and a way to compute the action of its inverse.
 
     see Stuart 2010 (2.16, 2.17)
+
+    TODO: I don't think it makes sense to use the posterior for saving the
+    state solutions for the basis vectors. I think that should go into the
+    inverse problem class
     """
 
-    # TODO: I don't think it makes sense to use the posterior for saving the state solutions for the basis vectors.
-    #  I think that should go into the inverse problem class
+    # posterior covariance matrix
+    covar: Optional[np.ndarray] = None
 
-    covar: Optional[np.ndarray] = None  # posterior covariance matrix
-    covar_inv: Optional[np.ndarray] = None  # inverse posterior covariance matrix
+    # inverse posterior covariance matrix
+    covar_inv: Optional[np.ndarray] = None
 
     # inverse noise covariance matrix applied to parameter-to-observable map G=para2obs
     invNoiseCovG: Optional[np.ndarray] = None
@@ -44,7 +51,7 @@ class Posterior:
         self, inversion: InverseProblem, flight: "Flight", data: np.ndarray, **kwargs
     ):
         """
-        initialization of the posterior distribution.
+        Initialization of the posterior distribution.
 
         @param inversion: the inverse problem setup
         @param alpha: flight path parameters
@@ -59,10 +66,17 @@ class Posterior:
         """
 
         # general information about the modelling setup
-        self.inversion = inversion  # inverse problem
-        self.drone = inversion.drone  # how the measurements are taken
+        # Inverse problem
+        self.inversion = inversion
+        # The Drone object managing measurements
+        self.drone = inversion.drone
+        # The FullOrderModel
         self.prior = inversion.fom
+
+        # Number of parameters used for the PDE solution
         self.n_parameters = self.prior.n_parameters
+
+        # Number of spatial dimensions
         self.n_spatial = self.inversion.fom.n_spatial
 
         # information about the flight:
@@ -81,8 +95,10 @@ class Posterior:
 
     def compute_mean(self, data):
         """
-        computes the mean of the posterior distribution for given measurement
-        data. self.mean and self.data do not get overwritten.
+        Computes the mean of the posterior distribution for given measurement
+        data.
+
+        self.mean and self.data do not get overwritten.
 
         Formulas for mean: Stuart 2010 (2.16, 2.17)
 
@@ -100,7 +116,8 @@ class Posterior:
 
             covar_inv = self.compute_inverse_covariance()
             mean = la.solve(covar_inv, mean)
-            # TODO: replace with solve that uses the action of the inverse posterior covariance instead
+            # TODO: replace with solve that uses the action of the inverse
+            # posterior covariance instead
 
         else:
             # can't compute the posterior mean without data
@@ -108,23 +125,26 @@ class Posterior:
 
         return mean
 
-    @cached_property
+    @cached_property  # save for later; clear with del
     def para2obs(self):
         """
         Computes the parameter-to-observable map, assuming a unit basis for the
         parameters. The parameter-to-observable map gets saved for future use,
-        and won't be computed again if this function is called twice.
+        and won't be computed again if this property is accessed twice.
 
         G is M_L without noise covariance
+        TODO - Eliminate circular code (calls the InverseProblem)
+        TODO - generalize to non-unit-vector basis for compatibility with parameter
+            reduction setting
 
-        @return:
+        @return: an array G containing the observations of each PDE solution
+            basis (each from one of the parameters)
         """
-        # TODO: generalize to non-unit-vector basis for compatibility with parameter reduction setting
 
         # initialization
         parameter = np.eye(self.prior.n_parameters)  # basis for parameters
 
-        # initialization for parameters to observable map
+        # Initialize the data from the parameter-to-observable map
         # ith column stores measurements for ith basis function
         G = np.empty((self.n_timesteps, self.prior.n_parameters))
 
@@ -146,7 +166,6 @@ class Posterior:
 
             # TODO: sanity check for flightpath
 
-        # save for later use
         return G
 
     def compute_inverse_covariance(self, inv_prior_factor: float = 1.0):
@@ -158,12 +177,14 @@ class Posterior:
 
         $(G^\\top \\Sigma_{\\mathrm{noise}}^{-1} G)$
 
+        @param inv_prior_factor  weighting for the prior regularization
         @return: inverse posterior covariance matrix
         """
-        # TODO: I'm not entirely sure, but I think we don't actually ever have to compute the inverse posterior
-        #  covariance matrix, its action should be sufficient. Right now it should be fine (make sure everything is
-        #  correct) but in the long run we want to replace this call with the action of the inverse posterior
-        #  covariance matrix.
+        # TODO: I'm not entirely sure, but I think we don't actually ever have
+        # to compute the inverse posterior covariance matrix, its action should
+        # be sufficient. Right now it should be fine (make sure everything is
+        # correct) but in the long run we want to replace this call with the
+        # action of the inverse posterior covariance matrix.
 
         if self.covar_inv is None:
             # only compute once
@@ -184,19 +205,20 @@ class Posterior:
 
         return self.covar_inv
 
-    def compute_covariance(self, prior_factor: float = 1.0):
+    def compute_covariance(self, prior_factor: float = 1.0) -> np.ndarray:
         """
-        computes the posterior covariance matrix by inverting the inverse
+        Compute the posterior covariance matrix by inverting the inverse
         posterior covariance matrix from self.compute_inverse_covariance. This
         function is for testing purposes only, we should never compute
         explicitly compute these matrix inverses
 
-        @return:
-        """
-        # TODO: optimize the code so that we can get rid of this function (if necessary, replace with action of the
-        #  posterior covariance
+        TODO: optimize the code so that we can get rid of this function (if
+            necessary, replace with action of the posterior covariance)
+        TODO: the name is misleading, it should probably be a get command
 
-        # TODO: the name is misleading, it should probably be a get command
+        @param prior_factor  1/the inverse prior factor
+        @return: covariance matrix
+        """
 
         if self.covar is None:
             # only compute once
@@ -206,9 +228,9 @@ class Posterior:
 
         return self.covar
 
-    def apply_inverse_covariance(self, parameter):
-        """
-        applies the action of the inverse posterior covariance matrix to a
+    def apply_inverse_covariance(self, parameter: np.ndarray) -> np.ndarray:
+        r"""
+        Applies the action of the inverse posterior covariance matrix to a
         parameter without explicitly computing the posterior covariance matrix
         or its inverse. This function should be preferred over any call to
         compute_inverse_covariance.
@@ -216,10 +238,10 @@ class Posterior:
         See: Stuart 2010 (2.16, 2.17)
 
         G is the same as M_L
-        \\Sigma_{post}^{-1} = G + \\Sigma_{pr}^{-1}
-        Given b, find \\Sigma_{post}^{-1} b = x, i.e. solve \\Sigma_{post} x = b for x
+        \Sigma_{post}^{-1} = G + \Sigma_{pr}^{-1}
+        Given b, find \Sigma_{post}^{-1} b = x, i.e. solve \Sigma_{post} x = b for x
         This is the same as solving for x:
-        \\Sigma_{pr} x = (\\Sigma_{pr} G + I) b
+        \Sigma_{pr} x = (\Sigma_{pr} G + I) b
 
         @param parameter:
         @return:
@@ -233,37 +255,39 @@ class Posterior:
         )
 
     @cached_property
-    def _eigh(self):
+    def _eigh(self) -> Tuple[np.ndarray, np.ndarray]:
         """
-        computes and returns the eigenvalues of the posterior covariance matrix
-        Currently the inverse posterior covariance matrix gets computed
-        explicitly. We need to change this to use its action only
+        Computes and returns the eigenvalues and eigenvectors of the posterior
+        covariance matrix Currently the inverse posterior covariance matrix gets
+        computed explicitly. We need to change this to use its action only
+
+        TODO: switch to the action of the inverse covariance matrix instead
 
         @return: eigenvalues (ascending order), eigenvectors
         """
-        # only compute once
 
         # get the inverse posterior covariance matrix
         covar_inv = self.compute_inverse_covariance()
 
-        # solve eigenvalue problem
-        # TODO: switch to the action of the inverse covariance matrix instead
+        # solve eigenvalue problem; can use methods for Hermitian matrix
         return la.eigh(covar_inv)
 
     @property
     def eigvals(self):
         """
-        computes and returns the eigenvalues of the posterior covariance matrix
+        Computes and returns the eigenvalues of the posterior covariance matrix
         Currently the inverse posterior covariance matrix gets computed
         explicitly. We need to change this to use its action only
+
+        TODO: switch to the action of the inverse covariance matrix instead
 
         @return: eigenvalues (descending order)
         """
         # solve eigenvalue problem
         eigvals, _ = self._eigh
-        # TODO: switch to the action of the inverse covariance matrix instead
 
-        # convert to eigenvalues of the posterior covariance matrix (instead of its inverse)
+        # convert to eigenvalues of the posterior covariance matrix (instead of
+        # its inverse)
         eigvals = 1 / eigvals
 
         return eigvals
@@ -271,11 +295,12 @@ class Posterior:
     @property
     def eigvectors(self):
         """
-        computes and returns the eigenvectors of the posterior covariance matrix
+        Computes and returns the eigenvectors of the posterior covariance matrix
         Currently the inverse posterior covariance matrix gets computed
         explicitly. We need to change this to use its action only
 
-        @return: eigenvectors (descending order for covariance; ascending for inverse covariance)
+        @return: eigenvectors (descending order for covariance; ascending for
+            inverse covariance)
         """
         # solve eigenvalue problem
         _, eigvectors = self._eigh
@@ -292,7 +317,8 @@ class Posterior:
         for testing purposes only, especially in case of high-dimensional
         parameter spaces.
 
-        @return: list containing the matrix derivative of self.covar_inv w.r.t. each control parameter
+        @return: list containing the matrix derivative of self.covar_inv w.r.t.
+            each control parameter
         """
         # TODO: check overlap with d_invPostdoc_d_position
 
@@ -306,7 +332,8 @@ class Posterior:
         )  # initialization
 
         for i in range(self.n_parameters):
-            # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
+            # TODO: if we only need the action of the matrix derivative, we
+            # should be able to optimize out this for-loop
             dG[:, i, :] = self.drone.d_measurement_d_control(
                 flight=self.flight,
                 state=self.inversion.states[i],
@@ -347,7 +374,8 @@ class Posterior:
         for testing purposes only, especially in case of high-dimensional
         parameter spaces.
 
-        @return: list containing the matrix derivative of self.covar_inv w.r.t. each control parameter
+        @return: list containing the matrix derivative of self.covar_inv w.r.t.
+            each control parameter
         """
         # TODO: the dimensions don't work out here yet!
 
@@ -363,7 +391,8 @@ class Posterior:
             )  # initialization
 
             for i in range(self.n_parameters):
-                # TODO: if we only need the action of the matrix derivative, we should be able to optimize out this for-loop
+                # TODO: if we only need the action of the matrix derivative, we
+                # should be able to optimize out this for-loop
                 dG[:, i, :] = self.drone.d_measurement_d_position(
                     flight=self.flight,
                     state=self.inversion.states[i],
@@ -379,18 +408,19 @@ class Posterior:
             ]
         )
 
-        # TODO: this list is very inefficient. There's probably a smarter way using tensor multiplications
+        # TODO: this list is very inefficient. There's probably a smarter way
+        # using tensor multiplications
 
         # sanity check:
         if len(self.d_invCov_d_position[0].shape) == 0:
             # d_invPostCov_d_speed = np.array(np.array([d_invPostCov_d_speed]))
 
-            # instead of casting into the correct format we raise an error, because at this point I expect the code
-            # to be optimized enough that everything gets the correct shape just from being initialized correctly
+            # instead of casting into the correct format we raise an error,
+            # because at this point I expect the code to be optimized enough
+            # that everything gets the correct shape just from being initialized
+            # correctly
             raise RuntimeError(
-                "invalid shape = {} for d_invPostCov_d_position".format(
-                    self.d_invCov_d_position[0].shape
-                )
+                f"invalid shape = {self.d_invCov_d_position[0].shape} for d_invPostCov_d_position"
             )
 
         return self.d_invCov_d_position
@@ -419,15 +449,15 @@ class Posterior:
     def d_PostCov_d_position(self):
         """
         computes the matrix derivative of the posterior covariance matrix with
-        respect to the position at each time step (returned as a list). The matrix
-        derivative is computed explicitly, which is likely inefficient and can
-        be optimized out. In the long term, this function is therefore for
-        testing purposes only, especially in case of high-dimensional parameter
-        spaces.
+        respect to the position at each time step (returned as a list). The
+        matrix derivative is computed explicitly, which is likely inefficient
+        and can be optimized out. In the long term, this function is therefore
+        for testing purposes only, especially in case of high-dimensional
+        parameter spaces.
 
-        Note: Since the list has <number of time steps> many entries, computing all
-        of these derivatives can be expensive. In the future we should look at
-        optimizing these calls, or maybe some sort of approximation.
+        Note: Since the list has <number of time steps> many entries, computing
+        all of these derivatives can be expensive. In the future we should look
+        at optimizing these calls, or maybe some sort of approximation.
 
         @return: list containing the matrix derivative of self.covar w.r.t. each
             control parameter

@@ -4,9 +4,9 @@ Component of the `Drone` class that performs measurements of a provided `State`
 """
 import numpy as np
 
-# from .Drone import Drone
-from .Flight import Flight
-from .State import State
+# from Drone import Drone
+from Flight import Flight
+from State import State
 
 
 class Detector:
@@ -25,7 +25,8 @@ class Detector:
         - $u$ is the state (may be time dependent, but does not have to be)
         - $p : [0, T] \rightarrow \Omega$ is the flight path
         - $\Phi : \Omega \times \Omega \rightarrow \mathbb{R}$ is the
-          measurement integration kernel function.
+          measurement integration kernel function. If u(x,t) is not smooth or
+          not continuous (consider an edge), the kernel may smooth the data.
 
     The detector class describes $\Phi$:
         - what it is (e.g., dirac delta function, Gaussian distribution, etc.)
