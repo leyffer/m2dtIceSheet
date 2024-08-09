@@ -24,6 +24,8 @@ git clone https://github.com/leyffer/m2dtIceSheet.git
 
 ### Create virtual environment and install python packages
 
+[Fenics installation information](https://fenics.readthedocs.io/en/latest/installation.html#containers-docker-linux-macos-and-windows-64-bit)
+
 To create a virtual environment with the name `fenics-env` and install the package dependencies in `requirements.txt` (in the git repo):
 ```bash
 conda create -n fenics-env --file requirements.txt
@@ -33,7 +35,7 @@ This might not work exactly as each computer has different hardware (versions ma
 
 Creating the environment without installing all of the packages:
 ```bash
-conda create -n fenics-env fenics-dolfin
+conda create -n fenics-env fenics-dolfin mpich pyvista
 ```
 
 > Instead of `requirements.txt`, we can also try using `environments/mtdt_oed_FEniCS.yml`
@@ -47,12 +49,7 @@ Environment files (e.g., `requirements.txt`) are a nice convenience that indicat
 
 If you run into problems with those versions and packages, the software dependencies for this project are:
 ```
-numpy
-scipy
-fenics-dolfin
-mpich
-pyvista
-cyipopt
+conda install scipy cyipopt matplotlib mshr
 ```
 
 Most of the code is set up to run in Jupyter notebooks.
