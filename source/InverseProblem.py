@@ -319,7 +319,7 @@ class InverseProblem:
 
     def precompute_states(
         self, parameters: np.ndarray, Basis: Optional[np.ndarray] = None
-    ) -> np.ndarray[State]:
+    ) -> np.ndarray:
         """
         Computes the forward solutions for a given parameters (or reduced
         parameters for a given basis). Only returns the states, does not save
@@ -346,7 +346,7 @@ class InverseProblem:
 
         return states
 
-    def get_states(self) -> np.ndarray[State]:
+    def get_states(self) -> np.ndarray:
         """
         returns self.states
         If self.states has not yet been set, they get computed assuming the standard basis
