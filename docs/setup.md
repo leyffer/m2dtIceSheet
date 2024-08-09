@@ -24,32 +24,12 @@ git clone https://github.com/leyffer/m2dtIceSheet.git
 
 ### Create virtual environment and install python packages
 
+Installing FEniCS
 [Fenics installation information](https://fenics.readthedocs.io/en/latest/installation.html#containers-docker-linux-macos-and-windows-64-bit)
 
-To create a virtual environment with the name `fenics-env` and install the package dependencies in `requirements.txt` (in the git repo):
+Creating the environment with necessary packages:
 ```bash
-conda create -n fenics-env --file requirements.txt
-```
-
-This might not work exactly as each computer has different hardware (versions may not be compatible across machines).
-
-Creating the environment without installing all of the packages:
-```bash
-conda create -n fenics-env fenics-dolfin mpich pyvista
-```
-
-> Instead of `requirements.txt`, we can also try using `environments/mtdt_oed_FEniCS.yml`
-> ```bash
-> conda create -n fenics-env --file environments/mtdt_oed_FEniCS.yml
-> ```
-
-#### Dependencies
-
-Environment files (e.g., `requirements.txt`) are a nice convenience that indicates a working set of dependencies and versions.
-
-If you run into problems with those versions and packages, the software dependencies for this project are:
-```
-conda install scipy cyipopt matplotlib mshr
+conda create -n fenics-env fenics-dolfin mpich pyvista scipy cyipopt matplotlib mshr
 ```
 
 Most of the code is set up to run in Jupyter notebooks.
@@ -69,8 +49,6 @@ sudo add-apt-repository ppa:fenics-packages/fenics
 sudo apt update
 sudo apt install fenics
 ```
-
-> NOTE: installing FEniCS takes a while. It will build PETSc and some other tools which will take a long time. Installing Firedrake is even worse although I was able to get Firedrake working on my Mac and FEniCS refused to work.
 
 ### Adding packages
 
