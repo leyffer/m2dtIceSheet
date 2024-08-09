@@ -33,7 +33,7 @@ This might not work exactly as each computer has different hardware (versions ma
 
 Creating the environment without installing all of the packages:
 ```bash
-conda create -n fenics-env
+conda create -n fenics-env fenics-dolfin
 ```
 
 > Instead of `requirements.txt`, we can also try using `environments/mtdt_oed_FEniCS.yml`
