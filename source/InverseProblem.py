@@ -45,7 +45,7 @@ class InverseProblem:
     c_scaling: float = 1e3
     c_diffusion: float = 0.01
 
-    states: Optional[np.ndarray[State, Any]] = None
+    states = None
     Basis = None
     parameters = None
 
