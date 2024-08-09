@@ -3,7 +3,7 @@ Class for computing posterior information
 """
 
 from functools import cached_property
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import scipy.linalg as la
