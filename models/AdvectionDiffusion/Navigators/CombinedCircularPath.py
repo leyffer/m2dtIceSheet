@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Dict, Any, Optional, Literal
 
+from CircularPath import CircularPath
+
 # TODO: find my parents!
 
 class CombinedCircularPath:
