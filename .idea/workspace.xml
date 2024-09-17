@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="convergence plot for memory terms">
-      <change beforePath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" afterDir="false" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="cleaned up some commented out code">
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Drone.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Drone.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,7 +60,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "optimization",
     "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
   }
 }]]></component>
@@ -350,7 +351,31 @@
       <option name="project" value="LOCAL" />
       <updated>1721166286826</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="looked at new notebooks">
+      <option name="closed" value="true" />
+      <created>1726588806750</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1726588806750</updated>
+    </task>
+    <task id="LOCAL-00036" summary="moved code marked &quot;old&quot; into graveyard">
+      <option name="closed" value="true" />
+      <created>1726589071184</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1726589071184</updated>
+    </task>
+    <task id="LOCAL-00037" summary="cleaned up some commented out code">
+      <option name="closed" value="true" />
+      <created>1726589085700</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1726589085700</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -376,9 +401,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="copied over derivative functions, but not correct yet" />
-    <MESSAGE value="minimally working example (FEniCS) from model to utility fct gradients" />
-    <MESSAGE value="renamed folder" />
     <MESSAGE value="added more comments to the explanation notebook" />
     <MESSAGE value="outsourced point-wise measurements into their own MyDrone-subclass" />
     <MESSAGE value="improved integration-type measurements" />
@@ -401,7 +423,10 @@
     <MESSAGE value="simplified code for derivative computations" />
     <MESSAGE value="gradient computed from memory terms" />
     <MESSAGE value="convergence plot for memory terms" />
-    <option name="LAST_COMMIT_MESSAGE" value="convergence plot for memory terms" />
+    <MESSAGE value="looked at new notebooks" />
+    <MESSAGE value="moved code marked &quot;old&quot; into graveyard" />
+    <MESSAGE value="cleaned up some commented out code" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleaned up some commented out code" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
