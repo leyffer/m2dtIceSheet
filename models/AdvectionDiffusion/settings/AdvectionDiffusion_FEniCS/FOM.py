@@ -79,8 +79,9 @@ class FOM(FullOrderModel):
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
 
-        # Trial and test space for advection-diffusion eq ('P' == Polynomial,
-        # 'CG' = Continuous Gelerkin)
+        # Trial and test space for advection-diffusion eq
+        # ('P' == Polynomial, 'CG' = Continuous Galerkin, 'DG' = Discontinuous Galerkin)
+        # P = CG according to https://fenicsproject.discourse.group/t/difference-between-finite-elements/5975
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
         self.gradient_space = dl.VectorFunctionSpace(

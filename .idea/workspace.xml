@@ -4,9 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="cleaned up some commented out code">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="left todos about redundant code">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/MyDrone.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Drone.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Drone.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState_stationary.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/myState_stationary.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_from-model-to-gradients-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_from-model-to-gradients-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_derivatives-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/1_from-model-to-gradients.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/1_from-model-to-gradients.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_derivatives.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/3_thomas_derivative_checks.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_thomas_derivative_checks.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -375,7 +383,15 @@
       <option name="project" value="LOCAL" />
       <updated>1726589085700</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="left todos about redundant code">
+      <option name="closed" value="true" />
+      <created>1726590117546</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1726590117546</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -401,7 +417,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="added more comments to the explanation notebook" />
     <MESSAGE value="outsourced point-wise measurements into their own MyDrone-subclass" />
     <MESSAGE value="improved integration-type measurements" />
     <MESSAGE value="before starting on derivatives for truncated domain type measurements" />
@@ -426,7 +441,8 @@
     <MESSAGE value="looked at new notebooks" />
     <MESSAGE value="moved code marked &quot;old&quot; into graveyard" />
     <MESSAGE value="cleaned up some commented out code" />
-    <option name="LAST_COMMIT_MESSAGE" value="cleaned up some commented out code" />
+    <MESSAGE value="left todos about redundant code" />
+    <option name="LAST_COMMIT_MESSAGE" value="left todos about redundant code" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

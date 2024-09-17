@@ -12,7 +12,6 @@ from CirclePath import CirclePath
 
 FlightPath = np.dtype([("position", "<f8", 2), ("time", "<f8")])
 
-
 # todo: It seems to me like this class is completely redundant at this point. The only reason I see for why it's there
 #  is the path function, which, if necessary for the optimization, should be part of the parent class Drone.
 
