@@ -4,11 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="moved outdated notebooks">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="tested out environment">
+      <change afterPath="$PROJECT_DIR$/source/Noise.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/source/Noise/NoiseBayesDirichlet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/source/Noise/NoiseBayesNeumann.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_from-model-to-gradients-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_from-model-to-gradients-checkpoint.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/1-2_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/1-2_DAE_optimization.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/outdated/1_from-model-to-gradients.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/1_from-model-to-gradients.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/1_from-model-to-gradients.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/4_noise.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_noise.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/InverseProblem.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblem.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/InverseProblemBayesDirichlet.py" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/InverseProblemBayesDirichlet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -402,7 +408,15 @@
       <option name="project" value="LOCAL" />
       <updated>1726595842965</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="tested out environment">
+      <option name="closed" value="true" />
+      <created>1726602431614</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1726602431614</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -428,7 +442,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="before starting on derivatives for truncated domain type measurements" />
     <MESSAGE value="- truncated domain derivatives,&#10;- optimized solve for heat equation (Gaussian measurements),&#10;- added documentation strings for all drone measurement classes&#10;- approximated boundary conditions for Weierstrass-trick" />
     <MESSAGE value="fixed notebook 1 merge error" />
     <MESSAGE value="provide custom forcing centers to FOM" />
@@ -453,7 +466,8 @@
     <MESSAGE value="left todos about redundant code" />
     <MESSAGE value="tried to use interpolation for the derivatives but doesn't work with legacy fenics" />
     <MESSAGE value="moved outdated notebooks" />
-    <option name="LAST_COMMIT_MESSAGE" value="moved outdated notebooks" />
+    <MESSAGE value="tested out environment" />
+    <option name="LAST_COMMIT_MESSAGE" value="tested out environment" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
