@@ -390,9 +390,6 @@ class FOM(FullOrderModel):
         # TODO: instead of writing the time stepping method here, we should make
         #  one file with functions we can call on
         sol = np.empty(grid_t.shape, dtype=object)
-
-        # sol[0] = dl.Function(self.V)
-        # sol[0].interpolate(m_init)
         sol[0] = dl.project(m_init, self.V)
 
         # Integrate in time over the time grid
