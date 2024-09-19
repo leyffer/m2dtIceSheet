@@ -4,17 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="tested out environment">
-      <change afterPath="$PROJECT_DIR$/source/Noise.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/source/Noise/NoiseBayesDirichlet.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/source/Noise/NoiseBayesNeumann.py" afterDir="false" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="removed outdated class">
+      <change afterPath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_from-model-to-gradients-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_from-model-to-gradients-checkpoint.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/1-2_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/1-2_DAE_optimization.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/1_from-model-to-gradients.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/1_from-model-to-gradients.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/4_noise.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_noise.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/InverseProblem.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/InverseProblem.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/InverseProblemBayesDirichlet.py" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/InverseProblemBayesDirichlet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,13 +58,13 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "git-widget-placeholder": "optimization",
-    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;git-widget-placeholder&quot;: &quot;optimization&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />
@@ -416,7 +408,23 @@
       <option name="project" value="LOCAL" />
       <updated>1726602431614</updated>
     </task>
-    <option name="localTasksCounter" value="42" />
+    <task id="LOCAL-00042" summary="outsourced noise to its own class">
+      <option name="closed" value="true" />
+      <created>1726606726349</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1726606726349</updated>
+    </task>
+    <task id="LOCAL-00043" summary="removed outdated class">
+      <option name="closed" value="true" />
+      <created>1726606756488</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1726606756488</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -442,8 +450,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="- truncated domain derivatives,&#10;- optimized solve for heat equation (Gaussian measurements),&#10;- added documentation strings for all drone measurement classes&#10;- approximated boundary conditions for Weierstrass-trick" />
-    <MESSAGE value="fixed notebook 1 merge error" />
     <MESSAGE value="provide custom forcing centers to FOM" />
     <MESSAGE value="adjusted notebook 2 for custom forcing centers" />
     <MESSAGE value="tested positional derivatives (notebook 3)" />
@@ -467,7 +473,9 @@
     <MESSAGE value="tried to use interpolation for the derivatives but doesn't work with legacy fenics" />
     <MESSAGE value="moved outdated notebooks" />
     <MESSAGE value="tested out environment" />
-    <option name="LAST_COMMIT_MESSAGE" value="tested out environment" />
+    <MESSAGE value="outsourced noise to its own class" />
+    <MESSAGE value="removed outdated class" />
+    <option name="LAST_COMMIT_MESSAGE" value="removed outdated class" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
