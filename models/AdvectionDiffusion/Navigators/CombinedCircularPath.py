@@ -8,7 +8,7 @@ from CircularPath import CircularPath
 class CombinedCircularPath:
     """
     TODO - inheritance from the Path class would be helpful, but that class
-    currently has unnecessarily specific parameters
+      currently has unnecessarily specific parameters
     """
 
     def __init__(
