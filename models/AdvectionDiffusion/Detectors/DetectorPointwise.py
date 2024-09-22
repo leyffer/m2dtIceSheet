@@ -49,7 +49,8 @@ class DetectorPointwise(Detector):
             warnings.warn(
                 f"DetectorPointwise.measure: flightpath goes outside of computational domain"
             )
-            data = 0  # Need to return a value to not crash optimization (value does not matter, but zero is best)
+            data = np.nan
+            # Need to return a value to not crash optimization
 
         return data
 

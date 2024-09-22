@@ -166,9 +166,30 @@ class NavigationSegment(Navigation):
         parameters in alpha. This class is problem specific and needs to be
         written by the user.
 
+        0: starting position x value
+        1: starting position y value
+        2: starting heading
+        3: velocity
+        4: angular velocity
+
         @param flight: Flight object
-        @return: gradient vector
+        @return: gradient matrix,  Shape $<n_spatial * n_timesteps> \times <n_controls>$
         """
-        raise NotImplementedError(
-            "Navigation.d_position_d_control: Needs to be implemented in subclass"
-        )
+
+        # initialization
+        deriv = np.zeros(5, dtype=object)
+
+        # compute derivatives with respect to the five controls
+        deriv[0] = self.d_position_d_initial_x(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
+        deriv[1] = self.d_position_d_initial_y(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
+        deriv[2] = self.d_position_d_heading(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
+        deriv[3] = self.d_position_d_velocity(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
+        deriv[4] = self.d_position_d_angular_velocity(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
+        # note: the returns of d_position_d_<control-parameter> has shape (<number of time steps>x<spatial dim>)
+        #  we flatten the returns such that they get stacked up, one position at a time
+
+        # stack up the individual control derivatives to get matrix of shape
+        # $<n_spatial * n_timesteps> \times <n_controls>$
+        deriv = np.vstack(deriv).T
+
+        return deriv

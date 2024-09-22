@@ -96,6 +96,8 @@ class DetectorTruncGaussian(Detector):
         @param grid_t  the time discretization on which the flightpath lives
         @param state  The state which the drone shall measure, State object
         """
+        # todo: if outside the domain, set measurement data to nan
+
         if self.bool_remember_measurements and bool_from_memory:
             return state.remember_measurement(pos=pos, t=t, detector=self)
 

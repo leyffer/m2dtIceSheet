@@ -116,10 +116,12 @@ class Noise():
         @param measurement_data  measured values
         @return  noise norm squared, i.e., $\| <measurement_data> \|_{\Sigma_{noise}^{-1}}^2
         """
+        # todo: catch missing data (nan)
         yolo = self.apply_noise_covar_inv(measurement_data)
         return measurement_data.T @ yolo
 
     def compute_L2norm2(self, measurement_data):
+        # todo: catch missing data (nan)
         return measurement_data.T @ (self.mass_matrix @ measurement_data)
 
     def apply_noise_covar_inv(self, measurement_data):
@@ -131,6 +133,7 @@ class Noise():
         @param measurement_data  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
+        # todo: catch missing data (nan)
         LHS = self.c_scaling * (
                 self.c_diffusion * self.diffusion_matrix + self.mass_matrix
         )

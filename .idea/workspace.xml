@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="updated implementation of Bayesian setting">
-      <change afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/CombinedCircularPath.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/CombinedCircularPath.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization.ipynb" afterDir="false" />
-    </list>
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="left welcome-back note for next time" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -434,7 +429,23 @@
       <option name="project" value="LOCAL" />
       <updated>1726776542373</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="implemented NavigationSegment based on the CircularPath class">
+      <option name="closed" value="true" />
+      <created>1726793225870</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1726793225870</updated>
+    </task>
+    <task id="LOCAL-00046" summary="left welcome-back note for next time">
+      <option name="closed" value="true" />
+      <created>1726793558670</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1726793558670</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -460,8 +471,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="adjusted notebook 2 for custom forcing centers" />
-    <MESSAGE value="tested positional derivatives (notebook 3)" />
     <MESSAGE value="included finite difference comparison in notebook 3" />
     <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
     <MESSAGE value="started on convergence studies" />
@@ -485,7 +494,9 @@
     <MESSAGE value="outsourced noise to its own class" />
     <MESSAGE value="removed outdated class" />
     <MESSAGE value="updated implementation of Bayesian setting" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated implementation of Bayesian setting" />
+    <MESSAGE value="implemented NavigationSegment based on the CircularPath class" />
+    <MESSAGE value="left welcome-back note for next time" />
+    <option name="LAST_COMMIT_MESSAGE" value="left welcome-back note for next time" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">

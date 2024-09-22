@@ -83,4 +83,5 @@ class NoiseBayes(Noise):
         @param measurement_data  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
+        # todo: catch missing data (nan)
         return self.laplacian_matrix @ measurement_data

@@ -333,7 +333,7 @@ class Posterior:
 
         for i in range(self.n_parameters):
             # TODO: if we only need the action of the matrix derivative, we
-            # should be able to optimize out this for-loop
+            #   should be able to optimize out this for-loop
             dG[:, i, :] = self.drone.d_measurement_d_control(
                 flight=self.flight,
                 state=self.inversion.states[i],
