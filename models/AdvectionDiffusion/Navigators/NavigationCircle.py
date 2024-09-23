@@ -44,7 +44,10 @@ class NavigationCircle(Navigation):
             grid_t = self.grid_t
         circle = CirclePath(alpha=alpha, center=self.center, grid_t=grid_t)
 
-        return circle.position(grid_t), grid_t
+        positions = circle.position(grid_t)
+        valid_positions = self.drone.fom.identify_valid_positions(positions)
+
+        return positions, grid_t, valid_positions
 
     def d_position_d_control(self, flight: "Flight"):
         """

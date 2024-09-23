@@ -97,3 +97,18 @@ class FullOrderModel:
         samples = covar_sqrt @ np.random.normal(size=size)  # centered around 0
 
         return (samples.T + self.prior_mean).T
+
+    def identify_valid_positions(self, positions: np.ndarray) -> np.ndarray:
+        """!
+        Identify which positions lie within the domain
+
+        @param positions: np.ndarray() of size (<arbitrary>, <spatial dimension>),
+        each row containing a position for which needs to be checked if it lies within the modelled domain
+
+
+        @return: np.ndarray of dimension (position.shape[0],) containing True at index i if position[i,:]
+        is inside the modelled domain
+        """
+        raise NotImplementedError(
+            "FullOrderModel.identify_valid_positions: Needs to be implemented in subclass"
+        )

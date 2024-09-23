@@ -83,5 +83,18 @@ class NoiseBayes(Noise):
         @param measurement_data  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
-        # todo: catch missing data (nan)
-        return self.laplacian_matrix @ measurement_data
+        if len(measurement_data.shape) == 1:
+            valid_positions = ~np.isnan(measurement_data)
+        else:
+            valid_positions = ~np.isnan(measurement_data[:, 0])
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
+        if valid_positions.all():
+            return self.laplacian_matrix @ measurement_data
+
+        # remove entries
+        covar_inv = self.laplacian_matrix[:, valid_positions]
+        covar_inv = covar_inv[valid_positions, :]
+
+        return covar_inv @ measurement_data[valid_positions]

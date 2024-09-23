@@ -116,13 +116,34 @@ class Noise():
         @param measurement_data  measured values
         @return  noise norm squared, i.e., $\| <measurement_data> \|_{\Sigma_{noise}^{-1}}^2
         """
-        # todo: catch missing data (nan)
         yolo = self.apply_noise_covar_inv(measurement_data)
-        return measurement_data.T @ yolo
+
+        if len(measurement_data.shape) == 1:
+            valid_positions = ~np.isnan(measurement_data)
+            return measurement_data[valid_positions].T @ yolo
+
+        valid_positions = ~np.isnan(measurement_data[:, 0])
+        # note: since each column of the measurement data is taken for the same flight, the nan entries
+        #  are at the same position in each column
+
+        return measurement_data[valid_positions, :].T @ yolo
 
     def compute_L2norm2(self, measurement_data):
-        # todo: catch missing data (nan)
-        return measurement_data.T @ (self.mass_matrix @ measurement_data)
+
+        # identify which entries need to be removed
+        if len(measurement_data.shape) == 1:
+            valid_positions = ~np.isnan(measurement_data)
+        else:
+            valid_positions = ~np.isnan(measurement_data[:, 0])
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
+        if valid_positions.all():
+            return measurement_data.T @ (self.mass_matrix @ measurement_data)
+
+        valid_data = measurement_data[valid_positions]
+        Md = self.mass_matrix[:, valid_positions] @ valid_data
+        return Md.T[:, valid_positions] @ valid_data
 
     def apply_noise_covar_inv(self, measurement_data):
         """! Apply the inverse noise covariance matrix to the observations ` measurement_data`, i.e., compute
@@ -133,10 +154,23 @@ class Noise():
         @param measurement_data  measured values
         @return  the inverse noise covariance matrix applied to the observations d
         """
-        # todo: catch missing data (nan)
         LHS = self.c_scaling * (
                 self.c_diffusion * self.diffusion_matrix + self.mass_matrix
         )
-        Kd = LHS @ measurement_data
-        # TODO: still need to bring this parameterization together with the interpretation of the noise model
-        return Kd
+
+        if len(measurement_data.shape) == 1:
+            valid_positions = ~np.isnan(measurement_data)
+        else:
+            valid_positions = ~np.isnan(measurement_data[:, 0])
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
+        if valid_positions.all():
+            Kd = LHS @ measurement_data
+            return Kd
+
+        # remove entries
+        covar_inv = LHS[:, valid_positions]
+        covar_inv = covar_inv[valid_positions, :]
+
+        return covar_inv @ measurement_data[valid_positions]

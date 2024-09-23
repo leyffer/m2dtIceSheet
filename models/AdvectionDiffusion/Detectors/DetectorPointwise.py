@@ -65,5 +65,6 @@ class DetectorPointwise(Detector):
             warnings.warn(
                 f"DetectorPointwise.measure: flightpath goes outside of computational domain"
             )
+            data = np.nan
 
         return data

@@ -221,6 +221,34 @@ class FOM(FullOrderModel):
             return mshr.generate_mesh(comm, together, meshDim)
         return mshr.generate_mesh(together, meshDim)
 
+    def identify_valid_positions(self, positions: np.ndarray) -> np.ndarray:
+        """!
+        Identify which positions lie within the domain
+
+        @param positions: np.ndarray() of size (<arbitrary>, <spatial dimension>),
+        each row containing a position for which needs to be checked if it lies within the modelled domain
+
+
+        @return: np.ndarray of dimension (position.shape[0],) containing True at index i if position[i,:]
+        is inside the modelled domain
+        """
+        a = (positions >= np.zeros((500, 2))).all(axis=1)
+        b = (positions <= np.ones((500, 2))).all(axis=1)
+        valid_positions = a * b
+
+        if self.mesh_shape == "square" or not self.mesh_shape == "houses":
+            return valid_positions
+
+        a = (positions > np.array([0.25, 0.15])).all(axis=1)
+        b = (positions < np.array([0.5, 0.4])).all(axis=1)
+        valid_positions[a * b] = False
+
+        a = (positions > np.array([0.6, 0.6])).all(axis=1)
+        b = (positions < np.array([0.75, 0.85])).all(axis=1)
+        valid_positions[a * b] = False
+
+        return valid_positions
+
     def create_boundary_marker(self):
         """! Create the markers for the boundary
         @return  Mesh indicators for the boundary elements
@@ -303,6 +331,7 @@ class FOM(FullOrderModel):
 
         # Solve the problem
         dl.solve(F == 0, w, bcs=bcW)
+
         return u
 
     def plot(self, u, mesh: dl.MeshGeometry = None, ax=None, time: float = 0, **kwargs):
@@ -446,3 +475,4 @@ class FOM(FullOrderModel):
             grid_t=grid_t,
         )
         return state
+

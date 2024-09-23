@@ -109,8 +109,14 @@ class Posterior:
         if data is not None:
             # follow [Stuart, 2010], 2.17a
             G = self.para2obs
+
+            # identify which entries need to be removed
+            valid_positions = ~np.isnan(G[:, 0])
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
             invNoiseCovarData = self.inversion.apply_noise_covar_inv(data)
-            mean = G.T @ invNoiseCovarData + la.solve(
+            mean = G[valid_positions, :].T @ invNoiseCovarData + la.solve(
                 self.prior.prior_covar, self.prior.prior_mean
             )
 
@@ -191,9 +197,15 @@ class Posterior:
 
             G = self.para2obs  # parameter-to-observable map
 
+            # identify which entries need to be removed
+            valid_positions = ~np.isnan(G[:, 0])
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
             # save for use in derivative computation
+
             self.invNoiseCovG = self.inversion.apply_noise_covar_inv(G)
-            noise_observations = G.T @ self.invNoiseCovG  # squared noise norm
+            noise_observations = G[valid_positions, :].T @ self.invNoiseCovG  # squared noise norm
             # G^T Sigma_noise^{-1} G
             self.covar_inv = noise_observations + inv_prior_factor * la.inv(
                 self.prior.prior_covar
@@ -340,11 +352,12 @@ class Posterior:
             )
 
         self.d_G_d_control = dG  # save for future use, e.g., testing
+        valid_positions = self.flight.valid_positions
 
         # apply chain rule
         self.d_invCov_d_control = np.array(
             [
-                dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
+                dG[valid_positions, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[valid_positions, :, i]
                 for i in range(self.n_controls)
             ]
         )

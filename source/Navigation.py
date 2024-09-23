@@ -97,7 +97,7 @@ class Navigation:
 
     def get_trajectory(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
 
         @param alpha The specified flight parameters

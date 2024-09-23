@@ -38,8 +38,9 @@ class NavigationSegment(Navigation):
 
         relative_position = self.relative_position(alpha=alpha, grid_t=grid_t)
         position = relative_position + np.array([alpha[0], alpha[1]])
+        valid_positions = self.drone.fom.identify_valid_positions(position)
 
-        return position, grid_t
+        return position, grid_t, valid_positions
 
     def d_position_d_initial_x(self, alpha, grid_t=None):
 

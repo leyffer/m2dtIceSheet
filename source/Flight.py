@@ -51,7 +51,7 @@ class Flight:
         self.navigation = navigation
         self.alpha = alpha
 
-        self.flightpath, self.grid_t = navigation.get_trajectory(alpha, grid_t=grid_t)
+        self.flightpath, self.grid_t, self.valid_positions = navigation.get_trajectory(alpha, grid_t=grid_t)
 
     def get_position(self, t: float | np.ndarray):
         """! Get the position of the drone at a requested time(s)
