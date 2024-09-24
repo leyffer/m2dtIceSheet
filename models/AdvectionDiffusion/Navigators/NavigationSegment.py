@@ -18,14 +18,14 @@ class NavigationSegment(Navigation):
     4: angular velocity
     """
 
-    def __init__(self, grid_t: np.ndarray, initialization_time=0, *args, **kwargs):
+    def __init__(self, grid_t: np.ndarray, *args, **kwargs):
 
         super().__init__(grid_t, *args, **kwargs)
-        self.initial_time = initialization_time
+        self.initial_time = self.grid_t[0]
 
     def get_trajectory(
-            self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None
-    ) -> tuple[np.ndarray, np.ndarray]:
+            self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None, bool_ignore_validity_check=False,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """! Get the trajectory of the drone given the flight parameters alpha
 
         @param alpha The specified flight parameters
@@ -38,8 +38,10 @@ class NavigationSegment(Navigation):
 
         relative_position = self.relative_position(alpha=alpha, grid_t=grid_t)
         position = relative_position + np.array([alpha[0], alpha[1]])
-        valid_positions = self.drone.fom.identify_valid_positions(position)
+        if bool_ignore_validity_check:
+            return position, grid_t
 
+        valid_positions = self.drone.fom.identify_valid_positions(position)
         return position, grid_t, valid_positions
 
     def d_position_d_initial_x(self, alpha, grid_t=None):
@@ -93,6 +95,15 @@ class NavigationSegment(Navigation):
         positions[:, 1] = velocity * (-np.cos(radial_progression) + np.cos(heading))
 
         return positions
+
+    def final_heading(self, alpha):
+
+        heading = alpha[2]
+        angular_velocity = alpha[4]
+
+        if np.abs(angular_velocity) < 1e-14:
+            return heading
+        return (self.grid_t[-1] - self.initial_time) * angular_velocity + heading
 
     def d_position_d_heading(self, alpha, grid_t=None):
 
@@ -186,6 +197,55 @@ class NavigationSegment(Navigation):
         deriv[2] = self.d_position_d_heading(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
         deriv[3] = self.d_position_d_velocity(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
         deriv[4] = self.d_position_d_angular_velocity(alpha=flight.alpha, grid_t=flight.grid_t).T.flatten()
+        # note: the returns of d_position_d_<control-parameter> has shape (<number of time steps>x<spatial dim>)
+        #  we flatten the returns such that they get stacked up, one position at a time
+
+        # stack up the individual control derivatives to get matrix of shape
+        # $<n_spatial * n_timesteps> \times <n_controls>$
+        deriv = np.vstack(deriv).T
+
+        return deriv
+
+    def d_position_d_subcontrol(self, alpha, grid_t, subcontrols) -> np.ndarray:
+        """
+        computes the derivative of the flightpath with respect to the control
+        parameters in alpha. This class is problem specific and needs to be
+        written by the user.
+
+        0: starting position x value
+        1: starting position y value
+        2: starting heading
+        3: velocity
+        4: angular velocity
+
+        @param flight: Flight object
+        @return: gradient matrix,  Shape $<n_spatial * n_timesteps> \times <n_controls>$
+        """
+
+        # initialization
+        deriv = np.zeros(len(subcontrols), dtype=object)
+
+        # compute derivatives with respect to the five controls
+        counter = 0
+        if 0 in subcontrols:
+            deriv[counter] = self.d_position_d_initial_x(alpha=alpha, grid_t=grid_t).T
+            counter += 1
+
+        if 1 in subcontrols:
+            deriv[counter] = self.d_position_d_initial_y(alpha=alpha, grid_t=grid_t).T
+            counter += 1
+
+        if 2 in subcontrols:
+            deriv[counter] = self.d_position_d_heading(alpha=alpha, grid_t=grid_t).T
+            counter += 1
+
+        if 3 in subcontrols:
+            deriv[counter] = self.d_position_d_velocity(alpha=alpha, grid_t=grid_t).T
+            counter += 1
+
+        if 4 in subcontrols:
+            deriv[counter] = self.d_position_d_angular_velocity(alpha=alpha, grid_t=grid_t).T
+            counter += 1
         # note: the returns of d_position_d_<control-parameter> has shape (<number of time steps>x<spatial dim>)
         #  we flatten the returns such that they get stacked up, one position at a time
 

@@ -4,21 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="finished NavigationSegment.d_position_d_control">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="finished handling of missing data and drone leaving modelled domain">
+      <change afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Detectors/DetectorPointwise.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationCircle.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationCircle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationFreePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationFreePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/1-2_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/1-2_DAE_optimization.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-v3.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-v3.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Drone.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Drone.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Flight.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Flight.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/FullOrderModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/FullOrderModel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Navigation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Noise.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Noise.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Posterior.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Posterior.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -468,7 +461,15 @@
       <option name="project" value="LOCAL" />
       <updated>1727030485552</updated>
     </task>
-    <option name="localTasksCounter" value="48" />
+    <task id="LOCAL-00048" summary="finished handling of missing data and drone leaving modelled domain">
+      <option name="closed" value="true" />
+      <created>1727110429440</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1727110429440</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -494,7 +495,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
     <MESSAGE value="started on convergence studies" />
     <MESSAGE value="corrected space for derivatives" />
     <MESSAGE value="stared on infinite-dimensional setting" />
@@ -519,7 +519,8 @@
     <MESSAGE value="implemented NavigationSegment based on the CircularPath class" />
     <MESSAGE value="left welcome-back note for next time" />
     <MESSAGE value="finished NavigationSegment.d_position_d_control" />
-    <option name="LAST_COMMIT_MESSAGE" value="finished NavigationSegment.d_position_d_control" />
+    <MESSAGE value="finished handling of missing data and drone leaving modelled domain" />
+    <option name="LAST_COMMIT_MESSAGE" value="finished handling of missing data and drone leaving modelled domain" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">

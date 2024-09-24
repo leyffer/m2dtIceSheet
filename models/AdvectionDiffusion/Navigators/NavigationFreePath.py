@@ -67,7 +67,7 @@ class NavigationFreePath(Navigation):
 
         # self.interpolator = make_interp_spline(grid_t, position, k=3, axis = 0)
 
-        return position, grid_t
+        return position, grid_t, self.drone.fom.identify_valid_positions(position)
 
     def _convert_alpha_to_position(self, alpha: np.ndarray) -> np.ndarray:
         return alpha.reshape(
