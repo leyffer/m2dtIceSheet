@@ -87,9 +87,6 @@ class Noise():
         M = sparse.csr_matrix(M)
         M[0, 0] /= 2
         M[-1, -1] /= 2
-        M.todense()
-        M[0, 0] /= 2
-        M[-1, -1] /= 2
         M *= delta_t
 
         return M
@@ -174,3 +171,5 @@ class Noise():
         covar_inv = covar_inv[valid_positions, :]
 
         return covar_inv @ measurement_data[valid_positions]
+
+    # def
