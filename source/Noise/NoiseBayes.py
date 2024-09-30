@@ -85,6 +85,9 @@ class NoiseBayes(Noise):
         """
         if len(measurement_data.shape) == 1:
             valid_positions = ~np.isnan(measurement_data)
+            measurement_data = np.array([measurement_data]).T
+            if measurement_data.shape[1] != 1:
+                print("wring direction!")
         else:
             valid_positions = ~np.isnan(measurement_data[:, 0])
             # note: since each column of the measurement data is taken for the same flight, the nan entries
@@ -94,7 +97,10 @@ class NoiseBayes(Noise):
             return self.laplacian_matrix @ measurement_data
 
         # remove entries
-        covar_inv = self.laplacian_matrix[:, valid_positions]
-        covar_inv = covar_inv[valid_positions, :]
+        covar_inv = self.restrict_matrix(large_matrix=self.laplacian_matrix.copy(), valid_positions=valid_positions)
 
-        return covar_inv @ measurement_data[valid_positions]
+        action = covar_inv @ measurement_data[valid_positions, :]
+        expanded = np.nan * np.ones(measurement_data.shape)
+        expanded[valid_positions, :] = action
+
+        return expanded

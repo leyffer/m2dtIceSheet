@@ -138,9 +138,10 @@ class Noise():
         if valid_positions.all():
             return measurement_data.T @ (self.mass_matrix @ measurement_data)
 
+        M = self.restrict_matrix(large_matrix=self.mass_matrix.copy(), valid_positions=valid_positions)
         valid_data = measurement_data[valid_positions]
-        Md = self.mass_matrix[:, valid_positions] @ valid_data
-        return Md.T[:, valid_positions] @ valid_data
+        Md = M @ valid_data
+        return Md.T @ valid_data
 
     def apply_noise_covar_inv(self, measurement_data):
         """! Apply the inverse noise covariance matrix to the observations ` measurement_data`, i.e., compute
@@ -167,9 +168,24 @@ class Noise():
             return Kd
 
         # remove entries
-        covar_inv = LHS[:, valid_positions]
-        covar_inv = covar_inv[valid_positions, :]
+        covar_inv = self.restrict_matrix(large_matrix=LHS, valid_positions=valid_positions)
 
         return covar_inv @ measurement_data[valid_positions]
 
-    # def
+    def restrict_matrix(self, large_matrix, valid_positions):
+
+        invalid_indices = np.where(~valid_positions)[0]
+        if invalid_indices[0] == 0:
+            invalid_indices = invalid_indices[1:]
+
+        large_matrix[invalid_indices - 1, invalid_indices - 1] = large_matrix[0, 0]
+        # todo: make compatible with non-uniform time stepping
+
+        if invalid_indices[-1] < self.n_time_steps - 1:
+            large_matrix[invalid_indices[-1] + 1, invalid_indices[-1] + 1] = large_matrix[0, 0]
+            # todo: make compatible with non-uniform time stepping
+
+        large_matrix = large_matrix[:, valid_positions]
+        large_matrix = large_matrix[valid_positions, :]
+
+        return large_matrix

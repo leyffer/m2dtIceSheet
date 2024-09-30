@@ -4,8 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="finished multi-part navigation">
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="fixed error in computation of mass matrix">
+      <change afterPath="$PROJECT_DIR$/graveyard/random_things.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/4_noise-v2.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_noise-v2.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-v3.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-v3.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Noise.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Noise.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/OEDUtility.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/OEDUtility.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Posterior.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Posterior.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -206,14 +215,6 @@
       <option name="presentableId" value="LOCAL-00016" />
       <option name="project" value="LOCAL" />
       <updated>1715099978137</updated>
-    </task>
-    <task id="LOCAL-00017" summary="provide custom forcing centers to FOM">
-      <option name="closed" value="true" />
-      <created>1715102412704</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1715102412704</updated>
     </task>
     <task id="LOCAL-00018" summary="adjusted notebook 2 for custom forcing centers">
       <option name="closed" value="true" />
@@ -471,7 +472,15 @@
       <option name="project" value="LOCAL" />
       <updated>1727190857929</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL-00050" summary="fixed error in computation of mass matrix">
+      <option name="closed" value="true" />
+      <created>1727192459034</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1727192459035</updated>
+    </task>
+    <option name="localTasksCounter" value="51" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -497,7 +506,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="corrected space for derivatives" />
     <MESSAGE value="stared on infinite-dimensional setting" />
     <MESSAGE value="transient setting working" />
     <MESSAGE value="cleaned up some of the detector code such that more overarching code is in the parent class" />
@@ -522,7 +530,8 @@
     <MESSAGE value="finished NavigationSegment.d_position_d_control" />
     <MESSAGE value="finished handling of missing data and drone leaving modelled domain" />
     <MESSAGE value="finished multi-part navigation" />
-    <option name="LAST_COMMIT_MESSAGE" value="finished multi-part navigation" />
+    <MESSAGE value="fixed error in computation of mass matrix" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed error in computation of mass matrix" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">

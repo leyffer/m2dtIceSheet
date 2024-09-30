@@ -232,20 +232,20 @@ class FOM(FullOrderModel):
         @return: np.ndarray of dimension (position.shape[0],) containing True at index i if position[i,:]
         is inside the modelled domain
         """
-        n_positions = positions.shape[0]
-        a = (positions >= np.array([0, 0])).all(axis=1)
-        b = (positions <= np.array([1, 1])).all(axis=1)
+        buffer = 0
+        a = (positions >= np.array([0, 0]) + buffer).all(axis=1)
+        b = (positions <= np.array([1, 1]) - buffer).all(axis=1)
         valid_positions = a * b
 
         if self.mesh_shape == "square" or not self.mesh_shape == "houses":
             return valid_positions
 
-        a = (positions > np.array([0.25, 0.15])).all(axis=1)
-        b = (positions < np.array([0.5, 0.4])).all(axis=1)
+        a = (positions > np.array([0.25, 0.15]) - buffer).all(axis=1)
+        b = (positions < np.array([0.5, 0.4]) + buffer).all(axis=1)
         valid_positions[a * b] = False
 
-        a = (positions > np.array([0.6, 0.6])).all(axis=1)
-        b = (positions < np.array([0.75, 0.85])).all(axis=1)
+        a = (positions > np.array([0.6, 0.6]) - buffer).all(axis=1)
+        b = (positions < np.array([0.75, 0.85]) + buffer).all(axis=1)
         valid_positions[a * b] = False
 
         return valid_positions

@@ -114,7 +114,7 @@ class Detector:
 
         # initialization
         n_steps = flightpath.shape[0]
-        data = np.NaN * np.ones((n_steps,))
+        data = np.nan * np.ones((n_steps,))
 
         # Loop over the flightpath and measure the state at the positions from
         # the flightpath
@@ -189,14 +189,14 @@ class Detector:
                     pos=flightpath[time_step, :], t=grid_t[time_step], state=state
                 )
 
-        # Stack derivatives next to each other horizontally
-        D_data_d_position = np.hstack(
-            [
-                np.diag(D_data_d_position[:, spatial_dimension])
-                for spatial_dimension in range(n_spatial)
-            ]
-        )
-        return D_data_d_position
+        stacked = np.zeros((grid_t.shape[0], 0))
+        for spatial_dimension in range(n_spatial):
+            block = np.diag(D_data_d_position[:, spatial_dimension])
+            block[~valid_positions, :] = np.nan
+            stacked = np.hstack([stacked, block])
+
+        # return D_data_d_position
+        return stacked
 
     def derivative_at_position(
         self, pos: np.ndarray, t: float, state: "State", **kwargs
