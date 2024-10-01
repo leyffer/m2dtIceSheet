@@ -4,16 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="fixed error in computation of mass matrix">
-      <change afterPath="$PROJECT_DIR$/graveyard/random_things.py" afterDir="false" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="renamed files">
+      <change afterPath="$PROJECT_DIR$/source/Constraints.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS/FOM.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/4_noise-v2.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_noise-v2.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-v3.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-v3.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Noise.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Noise.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Noise/NoiseBayes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/OEDUtility.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/OEDUtility.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Flight.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Flight.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Navigation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Optimization/Optimization.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Optimization/Optimization.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Posterior.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Posterior.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -215,30 +213,6 @@
       <option name="presentableId" value="LOCAL-00016" />
       <option name="project" value="LOCAL" />
       <updated>1715099978137</updated>
-    </task>
-    <task id="LOCAL-00018" summary="adjusted notebook 2 for custom forcing centers">
-      <option name="closed" value="true" />
-      <created>1715102733432</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1715102733432</updated>
-    </task>
-    <task id="LOCAL-00019" summary="tested positional derivatives (notebook 3)">
-      <option name="closed" value="true" />
-      <created>1715125110350</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1715125110350</updated>
-    </task>
-    <task id="LOCAL-00020" summary="included finite difference comparison in notebook 3">
-      <option name="closed" value="true" />
-      <created>1715128162743</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1715128162743</updated>
     </task>
     <task id="LOCAL-00021" summary="included finite difference comparison in notebook 3">
       <option name="closed" value="true" />
@@ -480,7 +454,31 @@
       <option name="project" value="LOCAL" />
       <updated>1727192459035</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="fixed bug in computation of measurement derivatives">
+      <option name="closed" value="true" />
+      <created>1727728458078</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1727728458079</updated>
+    </task>
+    <task id="LOCAL-00052" summary="moved files">
+      <option name="closed" value="true" />
+      <created>1727728561264</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1727728561264</updated>
+    </task>
+    <task id="LOCAL-00053" summary="renamed files">
+      <option name="closed" value="true" />
+      <created>1727728608768</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1727728608768</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -506,9 +504,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="stared on infinite-dimensional setting" />
-    <MESSAGE value="transient setting working" />
-    <MESSAGE value="cleaned up some of the detector code such that more overarching code is in the parent class" />
     <MESSAGE value="measurement memory now works" />
     <MESSAGE value="tested measurement memory, made plans for next steps" />
     <MESSAGE value="measurement memory for time-dependent states" />
@@ -531,7 +526,10 @@
     <MESSAGE value="finished handling of missing data and drone leaving modelled domain" />
     <MESSAGE value="finished multi-part navigation" />
     <MESSAGE value="fixed error in computation of mass matrix" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed error in computation of mass matrix" />
+    <MESSAGE value="fixed bug in computation of measurement derivatives" />
+    <MESSAGE value="moved files" />
+    <MESSAGE value="renamed files" />
+    <option name="LAST_COMMIT_MESSAGE" value="renamed files" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">

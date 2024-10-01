@@ -31,7 +31,7 @@ class Flight:
     """
 
     def __init__(
-        self, navigation: "Navigation", alpha, grid_t: Optional[np.ndarray] = None
+            self, navigation: "Navigation", alpha=None, grid_t: Optional[np.ndarray] = None, flightpath=None
     ):
         """! Initialization of Flight class
 
@@ -49,9 +49,21 @@ class Flight:
             grid_t = navigation.grid_t
 
         self.navigation = navigation
-        self.alpha = alpha
+        self.n_controls = navigation.n_controls
 
-        self.flightpath, self.grid_t, self.valid_positions = navigation.get_trajectory(alpha, grid_t=grid_t)
+        if flightpath is None:
+            self.alpha = alpha
+            self.flightpath, self.grid_t, self.valid_positions = navigation.get_trajectory(alpha, grid_t=grid_t)
+        else:
+            self.alpha = None
+            self.grid_t = navigation.grid_t
+
+            if len(flightpath.shape) == 1:
+                n_timesteps = self.grid_t.shape[0]
+                flightpath = np.vstack(
+                    [flightpath[i * n_timesteps:(i + 1) * n_timesteps] for i in range(navigation.n_spatial)]).T
+            self.flightpath = flightpath
+            self.valid_positions = navigation.drone.fom.identify_valid_positions(flightpath)
 
     def get_position(self, t: float | np.ndarray):
         """! Get the position of the drone at a requested time(s)

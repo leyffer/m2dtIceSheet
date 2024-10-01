@@ -15,6 +15,8 @@ class NavigationMultiSegment(Navigation):
     fixed_controls_values = []
     n_fixed_controls = 0
 
+    # todo: something is going wrong when fixing the initial position as fixed control
+
     def __init__(self, grid_t: np.ndarray, transition_times: np.ndarray, subcontrols: None, *args, **kwargs):
 
         super().__init__(grid_t, *args, **kwargs)
@@ -39,6 +41,7 @@ class NavigationMultiSegment(Navigation):
             subcontrols = [3, 4]
         self.subcontrols = subcontrols
         self.n_subcontrols = len(subcontrols)
+        self.n_controls = 2 + self.n_subcontrols * self.n_segments
 
     def fix_controls(self, fixed_control_indices, fixed_control_values):
         self.fixed_controls_indices = fixed_control_indices

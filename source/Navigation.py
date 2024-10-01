@@ -94,6 +94,7 @@ class Navigation:
                 "parameters)"
             )
         self.drone = drone
+        self.n_spatial = drone.fom.n_spatial
 
     def get_trajectory(
         self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None

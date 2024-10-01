@@ -81,8 +81,8 @@ class Posterior:
 
         # information about the flight:
         self.flight = flight
-        self.alpha = flight.alpha
-        self.n_controls = self.alpha.shape[0]
+        self.alpha = flight.alpha  # todo: remove? It doesn't get used
+        self.n_controls = flight.n_controls
         self.grid_t = flight.grid_t
         self.n_timesteps = self.grid_t.shape[0]  # number of time steps
 
@@ -370,7 +370,6 @@ class Posterior:
         # apply chain rule
         valid_positions = self.valid_positions
         test = np.nan * np.ones((self.n_spatial * self.n_timesteps, self.n_parameters, self.n_parameters))
-        print("we are in Posterior.d_invPostCov_d_position")
         for i in range(self.n_spatial * self.n_timesteps):
             test[i, :, :] = dG[valid_positions, :, i].T @ self.invNoiseCovG[valid_positions, :]
             test[i, :, :] = test[i, :, :] + self.invNoiseCovG[valid_positions, :].T @ dG[valid_positions, :, i]
