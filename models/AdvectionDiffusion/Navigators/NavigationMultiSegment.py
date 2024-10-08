@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, "../../../source/")
 
 import numpy as np
+import scipy.sparse as sparse
 from typing import Dict, Any, Optional, Literal
 from Navigation import Navigation
 from Flight import Flight
@@ -142,6 +143,57 @@ class NavigationMultiSegment(Navigation):
             deriv[1, rows, col:col + self.n_subcontrols] = deriv_sub[1:, 1::2]
             deriv[1, rows[-1] + 1:, col:col + self.n_subcontrols] = deriv_sub[-1, 1::2]
 
+            col += self.n_subcontrols
+
         deriv = np.vstack([deriv[0, :, :], deriv[1, :, :]])
 
         return deriv
+
+    def d_position_d_position_and_control(self, flight: Flight) -> np.ndarray:
+        """
+        computes the derivative of the flightpath with respect to the its positions
+        and the control parameters in alpha. If all positions are computed independently
+        from each other, this is just going to be the zero matrix stacked next to
+        the d_position_d_control output. However, in some cases the position at time $t_k$
+        may be computed as an adjustment to the position at time $t_{k-1}$ (for example),
+        in which case the derivative of position w.r.t. position is not the identity. These
+        special cases need to be implemented in the subclass.
+
+        @param flight: Flight object
+        @return: gradient vector
+        """
+        # initialization
+        deriv = np.zeros(
+            (2, self.grid_t.shape[0], 5 - self.n_fixed_controls + (self.n_segments - 1) * self.n_subcontrols))
+        pos = sparse.coo_matrix(([], ([], [])), shape=(self.n_timesteps, self.n_timesteps))
+        pos = sparse.csc_matrix(pos)
+
+        alpha_sub = self.split_controls(flight.alpha)
+        current_control = alpha_sub[0]
+
+        subcontrols = [i for i in range(5) if i not in self.fixed_controls_indices]
+        deriv_sub = self.segments[0].d_position_d_subcontrol(alpha=current_control,
+                                                             grid_t=self.grid_t_sub[0],
+                                                             subcontrols=subcontrols)
+        deriv[0, :self.substeps[1] + 1, :5 - self.n_fixed_controls] = deriv_sub[:, ::2]
+        deriv[1, :self.substeps[1] + 1, :5 - self.n_fixed_controls] = deriv_sub[:, 1::2]
+
+        col = 5 - self.n_fixed_controls
+        for n in range(1, self.n_segments):
+            current_control[self.subcontrols] = alpha_sub[n]
+            deriv_sub = self.segments[n].d_position_d_subcontrol(alpha=current_control,
+                                                                 grid_t=self.grid_t_sub[n],
+                                                                 subcontrols=self.subcontrols)
+            rows = [*range(self.substeps[n] + 1, self.substeps[n + 1] + 1)]
+            deriv[0, rows, col:col + self.n_subcontrols] = deriv_sub[1:, ::2]
+            deriv[1, rows, col:col + self.n_subcontrols] = deriv_sub[1:, 1::2]
+
+            pos[rows, self.substeps[n]] = 1
+            col += self.n_subcontrols
+
+        deriv = np.vstack([deriv[0, :, :], deriv[1, :, :]])
+        deriv = sparse.coo_matrix(deriv)
+        pos = sparse.block_diag([pos, pos])
+        deriv = sparse.hstack([pos, deriv])
+
+        return sparse.coo_matrix(deriv)

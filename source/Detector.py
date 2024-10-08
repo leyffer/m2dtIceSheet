@@ -108,9 +108,7 @@ class Detector:
         @param state  The state which the drone shall measure, State object
         @returns  a vector of measurements corresponding to the flightpath
         """
-        flightpath = flight.flightpath
-        grid_t = flight.grid_t
-        valid_positions = flight.valid_positions
+        flightpath, grid_t, valid_positions = flight.get_positions()
 
         # initialization
         n_steps = flightpath.shape[0]
@@ -174,7 +172,7 @@ class Detector:
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
         # Get the flightpath and time grid from the `Flight` object
-        flightpath, grid_t, valid_positions = flight.flightpath, flight.grid_t, flight.valid_positions
+        flightpath, grid_t, valid_positions = flight.get_positions()
 
         # The number of spatial points measured
         n_spatial = flightpath.shape[1]

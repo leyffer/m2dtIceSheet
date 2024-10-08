@@ -50,6 +50,7 @@ class Flight:
 
         self.navigation = navigation
         self.n_controls = navigation.n_controls
+        self.n_spatial = navigation.n_spatial
 
         if flightpath is None:
             self.alpha = alpha
@@ -87,6 +88,9 @@ class Flight:
             return pos[0, :]  # Return only a single location
         pos, __ = self.navigation.get_trajectory(alpha=self.alpha, grid_t=t)
         return pos
+
+    def get_positions(self):
+        return self.flightpath[:, :self.n_spatial], self.grid_t, self.valid_positions
 
     @cached_property
     def d_position_d_control(self):

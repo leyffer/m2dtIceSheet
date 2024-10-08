@@ -4,15 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="renamed files">
-      <change afterPath="$PROJECT_DIR$/source/Constraints.py" afterDir="false" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="basic version of optimizer is cleaned up">
+      <change afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationDAE.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graveyard/random_things.py" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/random_things.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/8_optimizataion_v2.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/8_optimizataion_v2.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Constraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Constraints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Flight.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Flight.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Navigation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Optimization/Optimization.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Optimization/Optimization.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Posterior.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Posterior.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -213,14 +216,6 @@
       <option name="presentableId" value="LOCAL-00016" />
       <option name="project" value="LOCAL" />
       <updated>1715099978137</updated>
-    </task>
-    <task id="LOCAL-00021" summary="included finite difference comparison in notebook 3">
-      <option name="closed" value="true" />
-      <created>1715266260697</created>
-      <option name="number" value="00021" />
-      <option name="presentableId" value="LOCAL-00021" />
-      <option name="project" value="LOCAL" />
-      <updated>1715266260697</updated>
     </task>
     <task id="LOCAL-00022" summary="consistent noise model (Dirichlet and Neumann BC)">
       <option name="closed" value="true" />
@@ -478,7 +473,15 @@
       <option name="project" value="LOCAL" />
       <updated>1727728608768</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="basic version of optimizer is cleaned up">
+      <option name="closed" value="true" />
+      <created>1727746009857</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1727746009858</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -504,7 +507,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="measurement memory now works" />
     <MESSAGE value="tested measurement memory, made plans for next steps" />
     <MESSAGE value="measurement memory for time-dependent states" />
     <MESSAGE value="simplified code for derivative computations" />
@@ -529,7 +531,8 @@
     <MESSAGE value="fixed bug in computation of measurement derivatives" />
     <MESSAGE value="moved files" />
     <MESSAGE value="renamed files" />
-    <option name="LAST_COMMIT_MESSAGE" value="renamed files" />
+    <MESSAGE value="basic version of optimizer is cleaned up" />
+    <option name="LAST_COMMIT_MESSAGE" value="basic version of optimizer is cleaned up" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">

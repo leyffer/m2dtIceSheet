@@ -57,3 +57,53 @@ def d_invPostCov_d_control_old(self):
         )
 
     return self.d_invCov_d_control
+
+    def d_position_d_position_and_control(self, flight: Flight) -> np.ndarray:
+        """
+        computes the derivative of the flightpath with respect to the its positions
+        and the control parameters in alpha. If all positions are computed independently
+        from each other, this is just going to be the zero matrix stacked next to
+        the d_position_d_control output. However, in some cases the position at time $t_k$
+        may be computed as an adjustment to the position at time $t_{k-1}$ (for example),
+        in which case the derivative of position w.r.t. position is not the identity. These
+        special cases need to be implemented in the subclass.
+
+        @param flight: Flight object
+        @return: gradient vector
+        """
+        alpha = flight.alpha
+        initial_position, velocity, angular_velocity = self.split_controls(alpha)
+        sol = flight.flightpath
+        dt = self.grid_t[1] - self.grid_t[0]
+        deriv = sparse.coo_matrix(([], ([], [])), shape=(3 * self.n_timesteps, 3 + 5 * self.n_timesteps))
+        deriv = sparse.lil_matrix(deriv)
+        splits_row = [0, self.n_timesteps, 2 * self.n_timesteps]
+        splits_col = [0, self.n_timesteps, 2 * self.n_timesteps, 3 * self.n_timesteps,
+                      3 + 3 * self.n_timesteps, 3 + 4 * self.n_timesteps]
+
+        # initial position
+        deriv[splits_row[0], splits_col[3]] = 1
+        deriv[splits_row[1], splits_col[3] + 1] = 1
+        deriv[splits_row[2], splits_col[3] + 2] = 1
+
+        for i in range(1, self.n_timesteps):
+            deriv[splits_row[0] + i, splits_row[0] + i - 1] = 1
+            deriv[splits_row[1] + i, splits_row[1] + i - 1] = 1
+            deriv[splits_row[2] + i, splits_row[2] + i - 1] = 1
+
+        for i in range(1, self.n_timesteps):
+            deriv[splits_row[2] + i, splits_col[5] + i - 1] = dt
+
+        for i in range(1, self.n_timesteps):
+            deriv[splits_row[0] + i, splits_col[4] + i - 1] = dt * np.cos(sol[i - 1, 2])
+
+        for i in range(1, self.n_timesteps):
+            deriv[splits_row[1] + i, splits_col[4] + i - 1] = dt * np.sin(sol[i - 1, 2])
+
+        for i in range(1, self.n_timesteps):
+            deriv[splits_row[0] + i, splits_col[2] + i - 1] = - dt * velocity[i - 1] * np.sin(sol[i - 1, 2])
+
+        for i in range(1, self.n_timesteps):
+            deriv[splits_row[1] + i, splits_col[2] + i - 1] = dt * velocity[i - 1] * np.cos(sol[i - 1, 2])
+
+        return deriv

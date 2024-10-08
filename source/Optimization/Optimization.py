@@ -31,8 +31,10 @@ class Optimization(cyipopt.Problem):
         self.my_constraints = constraints
 
         self.n_positions = self.navigation.n_timesteps * self.navigation.n_spatial
+        self.n_auxiliary = self.navigation.n_timesteps
+        # todo: formalize, this is for DAE right now
         self.n_controls = self.navigation.n_controls
-        self.n_dofs = self.n_positions + self.n_controls
+        self.n_dofs = self.n_positions + self.n_controls + self.n_auxiliary
 
         super().__init__(
             n=self.n_dofs,
@@ -94,7 +96,7 @@ class Optimization(cyipopt.Problem):
         # Since only derivatives w.r.t. x and y were computed, we need to fill
         # out the rest of gradient for the other variables as zeros
         out = np.concatenate(
-            (derivative, np.zeros((self.n_controls,)))
+            (derivative, np.zeros((self.n_auxiliary + self.n_controls,)))
         )
         return out
 
@@ -172,7 +174,7 @@ class Optimization(cyipopt.Problem):
         @param combined_vars  Combined variable vector
         @return  A namedtuple object as defined at the top of this file
         """
-        return combined_vars[:self.n_positions], combined_vars[self.n_positions:]
+        return combined_vars[:self.n_positions + self.n_auxiliary], combined_vars[self.n_positions + self.n_auxiliary:]
 
     @property
     def lower_bounds(self) -> np.ndarray:

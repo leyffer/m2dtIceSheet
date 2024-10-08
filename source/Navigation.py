@@ -1,7 +1,9 @@
 """Class for converting flight controls to positions"""
 from typing import Optional
+from functools import cached_property
 
 import numpy as np
+import scipy.sparse as sparse
 
 # from Drone import Drone
 from Flight import Flight
@@ -121,3 +123,45 @@ class Navigation:
         raise NotImplementedError(
             "Navigation.d_position_d_control: Needs to be implemented in subclass"
         )
+
+    def d_position_d_position_and_control(self, flight: Flight) -> np.ndarray:
+        """
+        computes the derivative of the flightpath with respect to the its positions
+        and the control parameters in alpha. If all positions are computed independently
+        from each other, this is just going to be the zero matrix stacked next to
+        the d_position_d_control output. However, in some cases the position at time $t_k$
+        may be computed as an adjustment to the position at time $t_{k-1}$ (for example),
+        in which case the derivative of position w.r.t. position is not the identity. These
+        special cases need to be implemented in the subclass.
+
+        @param flight: Flight object
+        @return: gradient vector
+        """
+        zero = sparse.coo_matrix(([], ([], [])), shape=(2 * self.n_timesteps, 2 * self.n_timesteps))
+        deriv = self.d_position_d_control(flight)
+        deriv = sparse.hstack([zero, sparse.coo_matrix(deriv)])
+
+        return deriv
+
+    def d_positional_constraint(self, flight: Flight):
+        identity = sparse.eye(self.n_positions)
+        extension = sparse.coo_matrix(([], ([], [])), shape=(self.n_positions, self.navigation.n_controls))
+        jacobian = sparse.hstack([identity, extension])
+
+        flight = Flight(navigation=self.navigation, alpha=flight.alpha)
+        deriv = self.navigation.d_position_d_position_and_control(flight=flight)
+        deriv = sparse.coo_matrix(deriv)
+
+        jacobian = jacobian - deriv
+
+        return jacobian
+
+    def evaluate_positional_constraints(self, flightpath_1d, alpha):
+        flightpath_alpha, __, __ = self.get_trajectory(alpha=alpha)
+        flightpath_alpha = np.hstack([flightpath_alpha[:, i] for i in range(self.n_spatial)])
+
+        return flightpath_1d - flightpath_alpha
+
+    @cached_property
+    def positional_constraint_sparsity_pattern(self):
+        raise NotImplementedError("Navigation.positional_constraint_sparsity_pattern: still needs to be implemented")
