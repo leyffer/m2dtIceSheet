@@ -37,6 +37,11 @@ class myState_stationary(myState):
         if self.Du is None:
             Du = dl.grad(self.state)
             self.Du = dl.project(Du, self.gradient_space)
+            # self.Du = dl.interpolate(Du, self.gradient_space)
+            # todo: since we know that Du is indeed an element of gradient_space by construction, we do not need to use
+            #  projection here (faster, dl.project solves the projection PDE). However, according to
+            #  https://fenicsproject.discourse.group/t/evaluate-ufl-product-what-do-the-variables-mean/9270
+            #  dl.interpolate is not supported for legacy FEniCS
 
         if x is not None:
             try:

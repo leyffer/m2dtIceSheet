@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="convergence plot for memory terms">
-      <change beforePath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/6_measurement-memory.ipynb" afterDir="false" />
-    </list>
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="added comments and markdowns to better explain what's happening" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -57,12 +55,13 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;git-widget-placeholder&quot;: &quot;optimization&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/nicole/git/m2dtIceSheet/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/models/AdvectionDiffusion/settings/AdvectionDiffusion_FEniCS" />
@@ -206,62 +205,6 @@
       <option name="project" value="LOCAL" />
       <updated>1715099978137</updated>
     </task>
-    <task id="LOCAL-00017" summary="provide custom forcing centers to FOM">
-      <option name="closed" value="true" />
-      <created>1715102412704</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1715102412704</updated>
-    </task>
-    <task id="LOCAL-00018" summary="adjusted notebook 2 for custom forcing centers">
-      <option name="closed" value="true" />
-      <created>1715102733432</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1715102733432</updated>
-    </task>
-    <task id="LOCAL-00019" summary="tested positional derivatives (notebook 3)">
-      <option name="closed" value="true" />
-      <created>1715125110350</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1715125110350</updated>
-    </task>
-    <task id="LOCAL-00020" summary="included finite difference comparison in notebook 3">
-      <option name="closed" value="true" />
-      <created>1715128162743</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1715128162743</updated>
-    </task>
-    <task id="LOCAL-00021" summary="included finite difference comparison in notebook 3">
-      <option name="closed" value="true" />
-      <created>1715266260697</created>
-      <option name="number" value="00021" />
-      <option name="presentableId" value="LOCAL-00021" />
-      <option name="project" value="LOCAL" />
-      <updated>1715266260697</updated>
-    </task>
-    <task id="LOCAL-00022" summary="consistent noise model (Dirichlet and Neumann BC)">
-      <option name="closed" value="true" />
-      <created>1715292613704</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1715292613704</updated>
-    </task>
-    <task id="LOCAL-00023" summary="started on convergence studies">
-      <option name="closed" value="true" />
-      <created>1715309106798</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1715309106798</updated>
-    </task>
     <task id="LOCAL-00024" summary="corrected space for derivatives">
       <option name="closed" value="true" />
       <created>1716910313759</created>
@@ -350,7 +293,183 @@
       <option name="project" value="LOCAL" />
       <updated>1721166286826</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="looked at new notebooks">
+      <option name="closed" value="true" />
+      <created>1726588806750</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1726588806750</updated>
+    </task>
+    <task id="LOCAL-00036" summary="moved code marked &quot;old&quot; into graveyard">
+      <option name="closed" value="true" />
+      <created>1726589071184</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1726589071184</updated>
+    </task>
+    <task id="LOCAL-00037" summary="cleaned up some commented out code">
+      <option name="closed" value="true" />
+      <created>1726589085700</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1726589085700</updated>
+    </task>
+    <task id="LOCAL-00038" summary="left todos about redundant code">
+      <option name="closed" value="true" />
+      <created>1726590117546</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1726590117546</updated>
+    </task>
+    <task id="LOCAL-00039" summary="tried to use interpolation for the derivatives but doesn't work with legacy fenics">
+      <option name="closed" value="true" />
+      <created>1726595586213</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1726595586213</updated>
+    </task>
+    <task id="LOCAL-00040" summary="moved outdated notebooks">
+      <option name="closed" value="true" />
+      <created>1726595842965</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1726595842965</updated>
+    </task>
+    <task id="LOCAL-00041" summary="tested out environment">
+      <option name="closed" value="true" />
+      <created>1726602431614</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1726602431614</updated>
+    </task>
+    <task id="LOCAL-00042" summary="outsourced noise to its own class">
+      <option name="closed" value="true" />
+      <created>1726606726349</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1726606726349</updated>
+    </task>
+    <task id="LOCAL-00043" summary="removed outdated class">
+      <option name="closed" value="true" />
+      <created>1726606756488</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1726606756488</updated>
+    </task>
+    <task id="LOCAL-00044" summary="updated implementation of Bayesian setting">
+      <option name="closed" value="true" />
+      <created>1726776542373</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1726776542373</updated>
+    </task>
+    <task id="LOCAL-00045" summary="implemented NavigationSegment based on the CircularPath class">
+      <option name="closed" value="true" />
+      <created>1726793225870</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1726793225870</updated>
+    </task>
+    <task id="LOCAL-00046" summary="left welcome-back note for next time">
+      <option name="closed" value="true" />
+      <created>1726793558670</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1726793558670</updated>
+    </task>
+    <task id="LOCAL-00047" summary="finished NavigationSegment.d_position_d_control">
+      <option name="closed" value="true" />
+      <created>1727030485552</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1727030485552</updated>
+    </task>
+    <task id="LOCAL-00048" summary="finished handling of missing data and drone leaving modelled domain">
+      <option name="closed" value="true" />
+      <created>1727110429440</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1727110429440</updated>
+    </task>
+    <task id="LOCAL-00049" summary="finished multi-part navigation">
+      <option name="closed" value="true" />
+      <created>1727190857929</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1727190857929</updated>
+    </task>
+    <task id="LOCAL-00050" summary="fixed error in computation of mass matrix">
+      <option name="closed" value="true" />
+      <created>1727192459034</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1727192459035</updated>
+    </task>
+    <task id="LOCAL-00051" summary="fixed bug in computation of measurement derivatives">
+      <option name="closed" value="true" />
+      <created>1727728458078</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1727728458079</updated>
+    </task>
+    <task id="LOCAL-00052" summary="moved files">
+      <option name="closed" value="true" />
+      <created>1727728561264</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1727728561264</updated>
+    </task>
+    <task id="LOCAL-00053" summary="renamed files">
+      <option name="closed" value="true" />
+      <created>1727728608768</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1727728608768</updated>
+    </task>
+    <task id="LOCAL-00054" summary="basic version of optimizer is cleaned up">
+      <option name="closed" value="true" />
+      <created>1727746009857</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1727746009858</updated>
+    </task>
+    <task id="LOCAL-00055" summary="integrated DAE into Navigation class structure">
+      <option name="closed" value="true" />
+      <created>1728403997708</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1728403997709</updated>
+    </task>
+    <task id="LOCAL-00056" summary="added comments and markdowns to better explain what's happening">
+      <option name="closed" value="true" />
+      <created>1728432848768</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1728432848768</updated>
+    </task>
+    <option name="localTasksCounter" value="57" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -376,32 +495,43 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="copied over derivative functions, but not correct yet" />
-    <MESSAGE value="minimally working example (FEniCS) from model to utility fct gradients" />
-    <MESSAGE value="renamed folder" />
-    <MESSAGE value="added more comments to the explanation notebook" />
-    <MESSAGE value="outsourced point-wise measurements into their own MyDrone-subclass" />
-    <MESSAGE value="improved integration-type measurements" />
-    <MESSAGE value="before starting on derivatives for truncated domain type measurements" />
-    <MESSAGE value="- truncated domain derivatives,&#10;- optimized solve for heat equation (Gaussian measurements),&#10;- added documentation strings for all drone measurement classes&#10;- approximated boundary conditions for Weierstrass-trick" />
-    <MESSAGE value="fixed notebook 1 merge error" />
-    <MESSAGE value="provide custom forcing centers to FOM" />
-    <MESSAGE value="adjusted notebook 2 for custom forcing centers" />
-    <MESSAGE value="tested positional derivatives (notebook 3)" />
-    <MESSAGE value="included finite difference comparison in notebook 3" />
-    <MESSAGE value="consistent noise model (Dirichlet and Neumann BC)" />
-    <MESSAGE value="started on convergence studies" />
-    <MESSAGE value="corrected space for derivatives" />
-    <MESSAGE value="stared on infinite-dimensional setting" />
-    <MESSAGE value="transient setting working" />
-    <MESSAGE value="cleaned up some of the detector code such that more overarching code is in the parent class" />
-    <MESSAGE value="measurement memory now works" />
-    <MESSAGE value="tested measurement memory, made plans for next steps" />
-    <MESSAGE value="measurement memory for time-dependent states" />
     <MESSAGE value="simplified code for derivative computations" />
     <MESSAGE value="gradient computed from memory terms" />
     <MESSAGE value="convergence plot for memory terms" />
-    <option name="LAST_COMMIT_MESSAGE" value="convergence plot for memory terms" />
+    <MESSAGE value="looked at new notebooks" />
+    <MESSAGE value="moved code marked &quot;old&quot; into graveyard" />
+    <MESSAGE value="cleaned up some commented out code" />
+    <MESSAGE value="left todos about redundant code" />
+    <MESSAGE value="tried to use interpolation for the derivatives but doesn't work with legacy fenics" />
+    <MESSAGE value="moved outdated notebooks" />
+    <MESSAGE value="tested out environment" />
+    <MESSAGE value="outsourced noise to its own class" />
+    <MESSAGE value="removed outdated class" />
+    <MESSAGE value="updated implementation of Bayesian setting" />
+    <MESSAGE value="implemented NavigationSegment based on the CircularPath class" />
+    <MESSAGE value="left welcome-back note for next time" />
+    <MESSAGE value="finished NavigationSegment.d_position_d_control" />
+    <MESSAGE value="finished handling of missing data and drone leaving modelled domain" />
+    <MESSAGE value="finished multi-part navigation" />
+    <MESSAGE value="fixed error in computation of mass matrix" />
+    <MESSAGE value="fixed bug in computation of measurement derivatives" />
+    <MESSAGE value="moved files" />
+    <MESSAGE value="renamed files" />
+    <MESSAGE value="basic version of optimizer is cleaned up" />
+    <MESSAGE value="integrated DAE into Navigation class structure" />
+    <MESSAGE value="added comments and markdowns to better explain what's happening" />
+    <option name="LAST_COMMIT_MESSAGE" value="added comments and markdowns to better explain what's happening" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/Path.py</url>
+          <line>12</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

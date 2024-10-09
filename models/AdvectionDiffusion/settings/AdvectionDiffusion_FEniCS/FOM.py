@@ -79,8 +79,9 @@ class FOM(FullOrderModel):
         # Create the velocity field for the advection term
         self.velocity = self.create_velocity_field(polyDim)
 
-        # Trial and test space for advection-diffusion eq ('P' == Polynomial,
-        # 'CG' = Continuous Gelerkin)
+        # Trial and test space for advection-diffusion eq
+        # ('P' == Polynomial, 'CG' = Continuous Galerkin, 'DG' = Discontinuous Galerkin)
+        # P = CG according to https://fenicsproject.discourse.group/t/difference-between-finite-elements/5975
         self.V = dl.FunctionSpace(self.mesh, "CG", polyDim)
         self.polyDim = polyDim
         self.gradient_space = dl.VectorFunctionSpace(
@@ -220,6 +221,35 @@ class FOM(FullOrderModel):
             return mshr.generate_mesh(comm, together, meshDim)
         return mshr.generate_mesh(together, meshDim)
 
+    def identify_valid_positions(self, positions: np.ndarray) -> np.ndarray:
+        """!
+        Identify which positions lie within the domain
+
+        @param positions: np.ndarray() of size (<arbitrary>, <spatial dimension>),
+        each row containing a position for which needs to be checked if it lies within the modelled domain
+
+
+        @return: np.ndarray of dimension (position.shape[0],) containing True at index i if position[i,:]
+        is inside the modelled domain
+        """
+        buffer = 0
+        a = (positions >= np.array([0, 0]) + buffer).all(axis=1)
+        b = (positions <= np.array([1, 1]) - buffer).all(axis=1)
+        valid_positions = a * b
+
+        if self.mesh_shape == "square" or not self.mesh_shape == "houses":
+            return valid_positions
+
+        a = (positions > np.array([0.25, 0.15]) - buffer).all(axis=1)
+        b = (positions < np.array([0.5, 0.4]) + buffer).all(axis=1)
+        valid_positions[a * b] = False
+
+        a = (positions > np.array([0.6, 0.6]) - buffer).all(axis=1)
+        b = (positions < np.array([0.75, 0.85]) + buffer).all(axis=1)
+        valid_positions[a * b] = False
+
+        return valid_positions
+
     def create_boundary_marker(self):
         """! Create the markers for the boundary
         @return  Mesh indicators for the boundary elements
@@ -302,6 +332,7 @@ class FOM(FullOrderModel):
 
         # Solve the problem
         dl.solve(F == 0, w, bcs=bcW)
+
         return u
 
     def plot(self, u, mesh: dl.MeshGeometry = None, ax=None, time: float = 0, **kwargs):
@@ -390,9 +421,6 @@ class FOM(FullOrderModel):
         # TODO: instead of writing the time stepping method here, we should make
         #  one file with functions we can call on
         sol = np.empty(grid_t.shape, dtype=object)
-
-        # sol[0] = dl.Function(self.V)
-        # sol[0].interpolate(m_init)
         sol[0] = dl.project(m_init, self.V)
 
         # Integrate in time over the time grid
@@ -448,3 +476,4 @@ class FOM(FullOrderModel):
             grid_t=grid_t,
         )
         return state
+

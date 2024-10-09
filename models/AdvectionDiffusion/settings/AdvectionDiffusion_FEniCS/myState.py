@@ -30,7 +30,9 @@ class myState(State):
         super().__init__(
             fom, state, bool_is_transient, parameter, other_identifiers, **kwargs
         )
-        self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim - 1)
+        # self.gradient_space = dl.VectorFunctionSpace(fom.mesh, 'DG', fom.polyDim - 1)
+        self.gradient_space = fom.gradient_space
+        # less error-prone to use the gradient_space initialized in the FOM class rather than hard-coding it here
 
         self.final_time = self.grid_t[-1]
         self.setup_measurement_memory(meshDim=kwargs.get("memory_meshDim", 20 * self.fom.meshDim))
@@ -48,6 +50,11 @@ class myState(State):
             for k in range(self.n_steps):
                 du = dl.grad(self.state[k])
                 self.Du[k] = dl.project(du, self.gradient_space)
+                # self.Du[k] = dl.interpolate(du, self.gradient_space)
+                # todo: originally we had dl.project here, but that solves the projection PDE. Since we set up the gradient
+                #  space specifically for the gradient, we can just interpolate it onto it. However, according to
+                #  https://fenicsproject.discourse.group/t/evaluate-ufl-product-what-do-the-variables-mean/9270
+                #  the interpolation does not work with legacy FEniCS
 
         if t is None:
             raise RuntimeError(
@@ -117,8 +124,11 @@ class myState(State):
         """
         # create mesh in which measurements will be stored
         mesh = self.fom.create_mesh(meshDim=meshDim)
-        V = dl.FunctionSpace(mesh, "P", 1)
+        V = dl.FunctionSpace(mesh, "CG", 1)  # piecewise linear
         self.memory_cell_coordinates = mesh.coordinates()
+
+        # the space in which we interpolate the derivatives of the momorized measurements
+        self.memory_derivative_space = dl.VectorFunctionSpace(mesh, "DG", 0)  # piecewise constants
 
         # build a tree for locating cells within the mesh
         self.memory_tree = dl.BoundingBoxTree()
@@ -147,9 +157,6 @@ class myState(State):
         # whenever the memory functions are modified
         self.bools_new_memories = [False] * self.n_steps
 
-        # the space into which we project the derivatives of the momorized measurements
-        self.memory_derivative_space = dl.VectorFunctionSpace(mesh, "DG", 0)  # piecewise constants
-
     def remember_measurement(self, pos, t, detector):
         """
         Check if a measurement has already been taken at position pos and time t (or at least in their vicinity).
@@ -157,7 +164,6 @@ class myState(State):
         """
         # test if we already know a value for this position and time
         stored_data = self.apply_interpolation_rule(states=self.measurement_memory, t=t, x=pos)
-        # stored_data = self.measurement_memory(pos)
         # todo: this part won't work with transient measurements yet
 
         # if so, return it
@@ -173,7 +179,7 @@ class myState(State):
         k_right = np.argmax(self.grid_t >= t)
 
         # we also need to compute measurements at the previous position
-        # (because we are intrpolating between measurements)
+        # (because we are interpolating between measurements)
         # only exception is if we are already at position 0 (this happens in the stationary case, or when t=0)
         time_step_numbers = [k_right]
         if k_right > 0:
@@ -197,7 +203,6 @@ class myState(State):
                         # compute data for this node
                         data = detector.measure_at_position(pos=node_coordinates[i, :], t=self.grid_t[k], state=self,
                                                             bool_from_memory=False)
-                        # note:
                         # setting bool_from_memory to False ensures that we are actually computing a measurement
                         # and that we don't run into an infinite loop
 
@@ -228,7 +233,12 @@ class myState(State):
             if self.bools_new_memories[k]:
                 d_memory_k = dl.grad(self.measurement_memory[k])
                 self.derivative_memory[k] = dl.project(d_memory_k, self.memory_derivative_space)
-                # todo: this is not the correct space into which we need to project, need piecewise constants
+                # self.derivative_memory[k] = dl.interpolate(d_memory_k, self.memory_derivative_space)
+                # dl.project solves the projection PDE. Interpolating is faster and should cause less error because
+                # we know which space d_memory_k lives in, and it's memory_derivative_space.
+                # However, using dl.interpolate is throwing an error. According to
+                # https://fenicsproject.discourse.group/t/evaluate-ufl-product-what-do-the-variables-mean/9270
+                # we need to use dl.project
 
                 # track changes for memory_k from this point forward agin
                 self.bools_new_memories[k] = False

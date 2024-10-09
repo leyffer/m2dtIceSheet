@@ -108,27 +108,27 @@ class Detector:
         @param state  The state which the drone shall measure, State object
         @returns  a vector of measurements corresponding to the flightpath
         """
-        flightpath = flight.flightpath
-        grid_t = flight.grid_t
+        flightpath, grid_t, valid_positions = flight.get_positions()
 
         # initialization
         n_steps = flightpath.shape[0]
-        data = np.NaN * np.ones((n_steps,))
+        data = np.nan * np.ones((n_steps,))
 
         # Loop over the flightpath and measure the state at the positions from
         # the flightpath
         for k in range(n_steps):
-            try:
-                data[k] = self.measure_at_position(
-                    pos=flightpath[k, :], t=grid_t[k], state=state
-                )
-            # We expect a RuntimeError if the position is outside of the
-            # computational domain
-            except RuntimeError:
-                # If we are outside of the computational domain, the data
-                # returned is zero. If another behavior is needed, please
-                # overwrite this function in the child class
-                data[k] = 0.0
+            if valid_positions[k]:
+                try:
+                    data[k] = self.measure_at_position(
+                        pos=flightpath[k, :], t=grid_t[k], state=state
+                    )
+                # We expect a RuntimeError if the position is outside of the
+                # computational domain
+                except RuntimeError:
+                    # If we are outside of the computational domain, the data
+                    # returned is zero. If another behavior is needed, please
+                    # overwrite this function in the child class
+                    data[k] = np.nan
 
         return data
 
@@ -172,28 +172,29 @@ class Detector:
         @return: np.ndarray of shape (grid_t.shape[0], <spatial dimension>)
         """
         # Get the flightpath and time grid from the `Flight` object
-        flightpath, grid_t = flight.flightpath, flight.grid_t
+        flightpath, grid_t, valid_positions = flight.get_positions()
 
         # The number of spatial points measured
         n_spatial = flightpath.shape[1]
 
         # Initialization of the derivative
-        D_data_d_position = np.zeros((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
+        D_data_d_position = np.nan * np.ones((grid_t.shape[0], n_spatial))  # (time, (dx,dy))
 
         for time_step in range(grid_t.shape[0]):
-            # Evaluate the derivative at the considered position, e.g., [d/dx, d/dy]
-            D_data_d_position[time_step, :] = self.derivative_at_position(
-                pos=flightpath[time_step, :], t=grid_t[time_step], state=state
-            )
+            if valid_positions[time_step]:
+                # Evaluate the derivative at the considered position, e.g., [d/dx, d/dy]
+                D_data_d_position[time_step, :] = self.derivative_at_position(
+                    pos=flightpath[time_step, :], t=grid_t[time_step], state=state
+                )
 
-        # Stack derivatives next to each other horizontally
-        D_data_d_position = np.hstack(
-            [
-                np.diag(D_data_d_position[:, spatial_dimension])
-                for spatial_dimension in range(n_spatial)
-            ]
-        )
-        return D_data_d_position
+        stacked = np.zeros((grid_t.shape[0], 0))
+        for spatial_dimension in range(n_spatial):
+            block = np.diag(D_data_d_position[:, spatial_dimension])
+            block[~valid_positions, :] = np.nan
+            stacked = np.hstack([stacked, block])
+
+        # return D_data_d_position
+        return stacked
 
     def derivative_at_position(
         self, pos: np.ndarray, t: float, state: "State", **kwargs

@@ -81,8 +81,8 @@ class Posterior:
 
         # information about the flight:
         self.flight = flight
-        self.alpha = flight.alpha
-        self.n_controls = self.alpha.shape[0]
+        self.alpha = flight.alpha  # todo: remove? It doesn't get used
+        self.n_controls = flight.n_controls
         self.grid_t = flight.grid_t
         self.n_timesteps = self.grid_t.shape[0]  # number of time steps
 
@@ -109,15 +109,28 @@ class Posterior:
         if data is not None:
             # follow [Stuart, 2010], 2.17a
             G = self.para2obs
-            invNoiseCovarData = self.inversion.apply_noise_covar_inv(data)
-            mean = G.T @ invNoiseCovarData + la.solve(
+
+            # identify which entries need to be removed
+            valid_positions = ~np.isnan(G[:, 0])
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
+            prior_info = la.solve(
                 self.prior.prior_covar, self.prior.prior_mean
             )
+            if len(prior_info.shape) == 1:
+                prior_info = np.array([prior_info]).T
+
+            invNoiseCovarData = self.inversion.apply_noise_covar_inv(data)
+            mean = G[valid_positions, :].T @ invNoiseCovarData + prior_info
 
             covar_inv = self.compute_inverse_covariance()
             mean = la.solve(covar_inv, mean)
             # TODO: replace with solve that uses the action of the inverse
             # posterior covariance instead
+
+            if len(data.shape) == 1:
+                mean = mean[:, 0]
 
         else:
             # can't compute the posterior mean without data
@@ -166,6 +179,8 @@ class Posterior:
 
             # TODO: sanity check for flightpath
 
+        self.valid_positions = ~np.isnan(G[:, 0])
+
         return G
 
     def compute_inverse_covariance(self, inv_prior_factor: float = 1.0):
@@ -191,9 +206,15 @@ class Posterior:
 
             G = self.para2obs  # parameter-to-observable map
 
+            # identify which entries need to be removed
+            valid_positions = self.valid_positions
+            # note: since each column of the measurement data is taken for the same flight, the nan entries
+            #  are at the same position in each column
+
             # save for use in derivative computation
+
             self.invNoiseCovG = self.inversion.apply_noise_covar_inv(G)
-            noise_observations = G.T @ self.invNoiseCovG  # squared noise norm
+            noise_observations = G[valid_positions, :].T @ self.invNoiseCovG[valid_positions, :]  # squared noise norm
             # G^T Sigma_noise^{-1} G
             self.covar_inv = noise_observations + inv_prior_factor * la.inv(
                 self.prior.prior_covar
@@ -309,61 +330,14 @@ class Posterior:
         return eigvectors
 
     def d_invPostCov_d_control(self):
-        """
-        computes the matrix derivative of the inverse posterior covariance
-        matrix with respect to each control parameter (returned as a list). The
-        matrix derivative is computed explicitly, which is likely inefficient
-        and can be optimized out. In the long term, this function is therefore
-        for testing purposes only, especially in case of high-dimensional
-        parameter spaces.
-
-        @return: list containing the matrix derivative of self.covar_inv w.r.t.
-            each control parameter
-        """
-        # TODO: check overlap with d_invPostdoc_d_position
-
-        if self.d_invCov_d_control is not None:
-            # avoid re-computation
-            return self.d_invCov_d_control
-
-        # derivative of the parameter-to-observable map
-        dG = np.empty(
-            (self.n_timesteps, self.n_parameters, self.n_controls)
-        )  # initialization
-
+        d_position = self.d_invPostCov_d_position()
+        d_pos_d_control = self.flight.d_position_d_control
+        test = np.zeros((self.n_controls, self.n_parameters, self.n_parameters))
+        valid = np.hstack([self.flight.valid_positions for i in range(self.n_spatial)])
         for i in range(self.n_parameters):
-            # TODO: if we only need the action of the matrix derivative, we
-            # should be able to optimize out this for-loop
-            dG[:, i, :] = self.drone.d_measurement_d_control(
-                flight=self.flight,
-                state=self.inversion.states[i],
-            )
-
-        self.d_G_d_control = dG  # save for future use, e.g., testing
-
-        # apply chain rule
-        self.d_invCov_d_control = np.array(
-            [
-                dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
-                for i in range(self.n_controls)
-            ]
-        )
-
-        # TODO: this list is very inefficient. There's probably a smarter way using tensor multiplications
-
-        # sanity check:
-        if len(self.d_invCov_d_control[0].shape) == 0:
-            # d_invPostCov_d_speed = np.array(np.array([d_invPostCov_d_speed]))
-
-            # instead of casting into the correct format we raise an error, because at this point I expect the code
-            # to be optimized enough that everything gets the correct shape just from being initialized correctly
-            raise RuntimeError(
-                "invalid shape = {} for d_invPostCov_d_speed".format(
-                    self.d_invCov_d_control[0].shape
-                )
-            )
-
-        return self.d_invCov_d_control
+            for j in range(self.n_parameters):
+                test[:, i, j] = (d_pos_d_control[valid, :].T @ d_position[valid, i, j])
+        return test
 
     def d_invPostCov_d_position(self):
         """
@@ -401,15 +375,14 @@ class Posterior:
             self.d_G_d_position = dG
 
         # apply chain rule
-        self.d_invCov_d_position = np.array(
-            [
-                dG[:, :, i].T @ self.invNoiseCovG + self.invNoiseCovG.T @ dG[:, :, i]
-                for i in range(self.n_spatial * self.n_timesteps)
-            ]
-        )
-
+        valid_positions = self.valid_positions
+        test = np.nan * np.ones((self.n_spatial * self.n_timesteps, self.n_parameters, self.n_parameters))
+        for i in range(self.n_spatial * self.n_timesteps):
+            test[i, :, :] = dG[valid_positions, :, i].T @ self.invNoiseCovG[valid_positions, :]
+            test[i, :, :] = test[i, :, :] + self.invNoiseCovG[valid_positions, :].T @ dG[valid_positions, :, i]
+        self.d_invCov_d_position = test
         # TODO: this list is very inefficient. There's probably a smarter way
-        # using tensor multiplications
+        #  using tensor multiplications
 
         # sanity check:
         if len(self.d_invCov_d_position[0].shape) == 0:
@@ -471,3 +444,21 @@ class Posterior:
             -PostCov @ covar_inv_derivative[i] @ PostCov
             for i in range(self.n_spatial * self.n_timesteps)
         ]
+
+    def d_PostCov_d_measurement(self):
+        # get the posterior covariance matrix
+        PostCov = self.compute_covariance()
+
+        invNoiseCovG = self.invNoiseCovG
+
+        d_invPostCov_d_measurement = np.zeros((self.n_parameters, self.n_timesteps), dtype=object)
+        d_PostCov_d_measurement = np.zeros((self.n_parameters, self.n_timesteps), dtype=object)
+        for i in range(self.n_parameters):
+            for j in range(self.n_timesteps):
+                d_measurement_d_measurement = np.zeros((self.n_timesteps, self.n_parameters))
+                d_measurement_d_measurement[j, i] = 1
+                yolo = invNoiseCovG[self.valid_positions, :].T @ d_measurement_d_measurement[self.valid_positions, :]
+                d_invPostCov_d_measurement[i, j] = yolo + yolo.T
+                d_PostCov_d_measurement[i, j] = -PostCov @ d_invPostCov_d_measurement[i, j] @ PostCov
+
+        return d_PostCov_d_measurement

@@ -77,6 +77,7 @@ class OEDUtility:
         @return: float
         """
         return sum(posterior.eigvals)
+        # return np.trace(posterior.compute_covariance())
 
     def eval_utility_D(self, posterior: Posterior) -> float:
         """
@@ -114,6 +115,8 @@ class OEDUtility:
         @param mode: string: "A", "D", "D-inverse", "E"
         @return: the derivative vector
         """
+        # der = self.d_utility_d_position(posterior=posterior, mode=mode)
+        # return der @ posterior.flight.d_position_d_control
 
         # use default mode if none is provided
         mode = mode if mode is not None else self.default_mode
@@ -285,9 +288,7 @@ class OEDUtility:
         """
         Compute the derivative of the OED-utility function for the given
         posterior w.r.t. the control parameters.
-        
-        
-        
+
         @param posterior: Posterior
         @param mode: string: "A", "D", "D-inverse", "E", "D-log"
         @return: derivative vector
@@ -337,7 +338,6 @@ class OEDUtility:
         @param posterior: posterior object
         @return: derivative vector
         """
-
         # get derivative information of the posterior covariance matrix
         der = posterior.d_PostCov_d_position()
 

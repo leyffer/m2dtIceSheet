@@ -12,7 +12,7 @@ from Detector import Detector
 from Flight import Flight
 from Navigation import Navigation
 from State import State
-
+from FullOrderModel import FullOrderModel
 
 class Drone:
     r"""! This is a class for accessing the "public" functionalities navigating
@@ -27,7 +27,7 @@ class Drone:
     specific.
     """
 
-    def __init__(self, navigation: "Navigation", detector: "Detector"):
+    def __init__(self, navigation: "Navigation", detector: "Detector", fom: "FullOrderModel"):
         """! Initialization for the drone class
 
         In most cases, the drone is already defined by the navigation system and
@@ -38,6 +38,7 @@ class Drone:
         @param navigation: for how the drone flies
         @param detector: for how the drone measures
         """
+        self.fom = fom
         self.navigation = navigation
         self.detector = detector
         self.grid_t = navigation.grid_t
@@ -75,11 +76,11 @@ class Drone:
         @return  Tuple of (position over flight path, corresponding time for
             each position)
         """
+        # todo: take out this function and make sure it does not get called anywhere
         raise DeprecationWarning(
             "Drone.get_trajectory is deprecated: should "
             "get flight and call flight.get_trajectory instead"
         )
-        # return self.navigation.get_trajectory(alpha, grid_t)
 
     def measure(self, flight: "Flight", state: State) -> np.ndarray:
         """! Method to take a measurement
