@@ -4,18 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="integrated DAE into Navigation class structure">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationDAE.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationDAE.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-DAE.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-DAE.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Constraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Constraints.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Navigation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Optimization/Optimization.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Optimization/Optimization.py" afterDir="false" />
-    </list>
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="added comments and markdowns to better explain what's happening" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -215,14 +204,6 @@
       <option name="presentableId" value="LOCAL-00016" />
       <option name="project" value="LOCAL" />
       <updated>1715099978137</updated>
-    </task>
-    <task id="LOCAL-00023" summary="started on convergence studies">
-      <option name="closed" value="true" />
-      <created>1715309106798</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1715309106798</updated>
     </task>
     <task id="LOCAL-00024" summary="corrected space for derivatives">
       <option name="closed" value="true" />
@@ -480,7 +461,15 @@
       <option name="project" value="LOCAL" />
       <updated>1728403997709</updated>
     </task>
-    <option name="localTasksCounter" value="56" />
+    <task id="LOCAL-00056" summary="added comments and markdowns to better explain what's happening">
+      <option name="closed" value="true" />
+      <created>1728432848768</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1728432848768</updated>
+    </task>
+    <option name="localTasksCounter" value="57" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -506,7 +495,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="measurement memory for time-dependent states" />
     <MESSAGE value="simplified code for derivative computations" />
     <MESSAGE value="gradient computed from memory terms" />
     <MESSAGE value="convergence plot for memory terms" />
@@ -531,7 +519,8 @@
     <MESSAGE value="renamed files" />
     <MESSAGE value="basic version of optimizer is cleaned up" />
     <MESSAGE value="integrated DAE into Navigation class structure" />
-    <option name="LAST_COMMIT_MESSAGE" value="integrated DAE into Navigation class structure" />
+    <MESSAGE value="added comments and markdowns to better explain what's happening" />
+    <option name="LAST_COMMIT_MESSAGE" value="added comments and markdowns to better explain what's happening" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">

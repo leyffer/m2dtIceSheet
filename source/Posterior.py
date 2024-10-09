@@ -115,15 +115,22 @@ class Posterior:
             # note: since each column of the measurement data is taken for the same flight, the nan entries
             #  are at the same position in each column
 
-            invNoiseCovarData = self.inversion.apply_noise_covar_inv(data)
-            mean = G[valid_positions, :].T @ invNoiseCovarData + la.solve(
+            prior_info = la.solve(
                 self.prior.prior_covar, self.prior.prior_mean
             )
+            if len(prior_info.shape) == 1:
+                prior_info = np.array([prior_info]).T
+
+            invNoiseCovarData = self.inversion.apply_noise_covar_inv(data)
+            mean = G[valid_positions, :].T @ invNoiseCovarData + prior_info
 
             covar_inv = self.compute_inverse_covariance()
             mean = la.solve(covar_inv, mean)
             # TODO: replace with solve that uses the action of the inverse
             # posterior covariance instead
+
+            if len(data.shape) == 1:
+                mean = mean[:, 0]
 
         else:
             # can't compute the posterior mean without data
