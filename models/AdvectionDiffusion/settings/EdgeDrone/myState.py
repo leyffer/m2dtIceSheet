@@ -1,5 +1,7 @@
 import sys
 
+from typing import Union
+
 sys.path.insert(0, "../source/")
 import fenics as dl
 import numpy as np
@@ -45,7 +47,7 @@ class myState(State):
         return self.Du
 
     def measure_pointwise(
-        self, position: np.ndarray, time: float | np.ndarray
+        self, position: np.ndarray, time: Union[float, np.ndarray]
     ) -> np.ndarray:
         """
         Given positions of type [x,y], return the value of the state at the positions

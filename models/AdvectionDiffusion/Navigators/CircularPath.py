@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal, Union
 
 from Path import Path
 
@@ -71,7 +71,7 @@ class CircularPath(Path):
         """
         return np.abs(self.alpha["angular velocity"]) <= self.linear_tolerance
 
-    def relative_position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def relative_position(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Get the position (x, y) relative to the initial position (at the initial time)
         given the parameters and time(s) t
@@ -116,7 +116,7 @@ class CircularPath(Path):
 
         return positions
 
-    def d_position_d_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_velocity(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Derivative of position with respect to velocity at time(s) t
         """
@@ -127,7 +127,7 @@ class CircularPath(Path):
         return deriv
 
     def d_position_d_angular_velocity(
-        self, t: float | np.ndarray[float, Any]
+        self, t: Union[float, np.ndarray]
     ) -> np.ndarray:
         """
         Derivative of position with respect to angular velocity at time(s) t
@@ -196,7 +196,7 @@ class CircularPath(Path):
         return deriv
 
     def d_position_d_alpha(
-        self, t: float | np.ndarray[float, Any]
+        self, t: Union[float, np.ndarray]
     ) -> Dict["str", np.ndarray]:
         """
         Derivative of position with respect to control parameters alpha at time(s) t

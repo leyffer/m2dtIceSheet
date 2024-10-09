@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, "../../../source/")
 
 import numpy as np
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal, Union
 from Navigation import Navigation
 
 
@@ -45,7 +45,7 @@ class Path(Navigation):
             }
         self.initial_time = initial_time
 
-    def relative_position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def relative_position(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Get the position relative to the initial position (x, y) given the parameters and time(s) t
 
@@ -61,7 +61,7 @@ class Path(Navigation):
 
         return rel_positions
 
-    def position(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def position(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Get the position (x, y) given the parameters and time(s) t
 
@@ -77,7 +77,7 @@ class Path(Navigation):
 
         return positions
 
-    def d_position_d_initial_x(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_initial_x(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Derivative of positions with respect to the initial x position at time(s) t
         """
@@ -88,7 +88,7 @@ class Path(Navigation):
         deriv[:, 1] = 0
         return deriv
 
-    def d_position_d_initial_y(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_initial_y(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Derivative of positions with respect to the initial x position at time(s) t
         """
@@ -100,7 +100,7 @@ class Path(Navigation):
         return deriv
 
     def d_position_d_initial_heading(
-        self, t: float | np.ndarray[float, Any]
+        self, t: Union[float, np.ndarray]
     ) -> np.ndarray:
         """
         Derivative of positions with respect to the initial heading at time(s) t
@@ -114,13 +114,13 @@ class Path(Navigation):
         deriv[:, 1] = rel_pos[:, 0]
         return deriv
 
-    def d_position_d_alpha(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_alpha(self, t: Union[float, np.ndarray]):
         """
         Derivative of positions with respect to parameters alpha at time(s) t
         """
         raise NotImplementedError
 
-    def heading(self, t: float | np.ndarray[float, Any]):
+    def heading(self, t: Union[float, np.ndarray]):
         """
         Heading in radians at time(s) t
         """
@@ -128,7 +128,7 @@ class Path(Navigation):
         headings = t * self.alpha["angular velocity"] + self.alpha["initial heading"]
         return headings
 
-    def heading_vector(self, t: float | np.ndarray[float, Any]):
+    def heading_vector(self, t: Union[float, np.ndarray]):
         """
         Unit vector of the heading at time(s) t
         """

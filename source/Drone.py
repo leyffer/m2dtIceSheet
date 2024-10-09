@@ -4,7 +4,7 @@ The `Drone` class has a `Navigation` and `Detector` class attached to it that
 move the measurement location and take measurements respectively.
 """
 
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -51,7 +51,7 @@ class Drone:
         # (see setup parameter bool_allow_multiple_attachments in Detector and
         # Navigation)
 
-    def get_position(self, t: float | np.ndarray, flight: "Flight"):
+    def get_position(self, t: Union[float, np.ndarray], flight: "Flight"):
         """! Get the position of the drone given the time and flying parameters
 
         @param t  The time at which to evaluate the position of the drone
