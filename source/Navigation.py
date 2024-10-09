@@ -165,3 +165,9 @@ class Navigation:
     @cached_property
     def positional_constraint_sparsity_pattern(self):
         raise NotImplementedError("Navigation.positional_constraint_sparsity_pattern: still needs to be implemented")
+
+    def regularize_control(self, alpha):
+        return 0
+
+    def d_regularize_control(self, alpha):
+        return np.zeros((self.n_controls))

@@ -42,12 +42,13 @@ class NavigationMultiSegment(Navigation):
             subcontrols = [3, 4]
         self.subcontrols = subcontrols
         self.n_subcontrols = len(subcontrols)
-        self.n_controls = 2 + self.n_subcontrols * self.n_segments
+        self.n_controls = 5 + self.n_subcontrols * (self.n_segments - 1)
 
     def fix_controls(self, fixed_control_indices, fixed_control_values):
         self.fixed_controls_indices = fixed_control_indices
         self.fixed_controls_values = fixed_control_values
         self.n_fixed_controls = len(fixed_control_indices)
+        self.n_controls = self.n_controls - self.n_fixed_controls
 
     def get_trajectory(
             self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None

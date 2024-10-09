@@ -48,6 +48,13 @@ class NavigationDAE(Navigation):
         self.n_constraints = 3 * self.n_timesteps
 
     def split_controls(self, alpha):
+        """
+        splits up the controls into
+        - initial position (x, y, heading) (3 entries)
+        - velocity (one entry for each time step)
+        - angular velocity (one entry for each time step)
+        """
+
         # todo: this split assumes we are in 2D. Generalize.
         n_timesteps = self.n_timesteps
 
@@ -58,6 +65,10 @@ class NavigationDAE(Navigation):
         return initial_position, velocity, angular_velocity
 
     def solve_DAE(self, alpha):
+        """
+        solves the DAE using forward Euler
+        """
+        # initializations
         initial_position, velocity, angular_velocity = self.split_controls(alpha)
         sol = np.zeros((self.n_timesteps, 3))
         dt = self.grid_t[1] - self.grid_t[0]
@@ -65,6 +76,7 @@ class NavigationDAE(Navigation):
         # initial position
         sol[0, :] = initial_position
 
+        # forward Euler time stepping
         for i in range(1, self.n_timesteps):
             sol[i, 0] = sol[i - 1, 0] + dt * velocity[i - 1] * np.cos(sol[i - 1, 2])
             sol[i, 1] = sol[i - 1, 1] + dt * velocity[i - 1] * np.sin(sol[i - 1, 2])
@@ -106,6 +118,12 @@ class NavigationDAE(Navigation):
         return deriv
 
     def derivative_sparsity_data(self, flight: Flight):
+        """
+        Computes the non-zero entries in the derivative of the position according to the DAE
+        with respect to all _other_ positional entries and the control, i.e., the derivative of
+        the rhs in the ODE
+        """
+
         dt = self.grid_t[1] - self.grid_t[0]
         x_y_theta = flight.flightpath
         theta = x_y_theta[:-1, 2]
@@ -123,6 +141,10 @@ class NavigationDAE(Navigation):
 
     @cached_property
     def derivative_sparsity_pattern(self):
+        """
+        sparsity pattern for the derivative. Convert to sparse matrix using sparse.coo_matrix if needed for debugging
+        """
+
         splits_row = [0, self.n_timesteps, 2 * self.n_timesteps, 3 * self.n_timesteps]
         splits_col = [0, self.n_timesteps, 2 * self.n_timesteps, 3 * self.n_timesteps,
                       3 + 3 * self.n_timesteps, 3 + 4 * self.n_timesteps, 3 + 5 * self.n_timesteps]
@@ -167,6 +189,10 @@ class NavigationDAE(Navigation):
 
     @cached_property
     def positional_constraint_sparsity_pattern(self):
+        """
+        sparsity pattern for the positional constraints. Same as derivative_sparsity_pattern except it also
+        includes the left-hand-side of the DAE
+        """
         rows, cols = self.derivative_sparsity_pattern
         extension = np.arange(3 * self.n_timesteps)
         rows_new = np.hstack([extension, rows])
@@ -174,33 +200,53 @@ class NavigationDAE(Navigation):
         return (rows_new, cols_new)
 
     def d_positional_constraint(self, flight: Flight):
+        """
+        Non-zero derivative data for the positional constraints
+        """
+        # derivative of the rhs
         data = self.derivative_sparsity_data(flight)
+
+        # derivative of lhs minus rhs
         data = np.hstack([np.ones(3 * self.n_timesteps), -data])
 
+        # return matrix form, just the data alone
         jacobian = sparse.coo_matrix((data, self.positional_constraint_sparsity_pattern),
                                      shape=(3 * self.n_timesteps, 5 * self.n_timesteps + 3))
+        # todo: do we really need to recast into matrix form?
 
         return jacobian
 
     def evaluate_positional_constraints(self, flightpath_1d, alpha):
+        """
+        evaluates the difference between the positional and heading values stacked in flightpath_1d compared to
+        what they should be according to the DAE using the controls in alpha
+        """
+        # split up into individual positions, heading, and individual controls
         pos_x = flightpath_1d[:self.n_timesteps]
         pos_y = flightpath_1d[self.n_timesteps:2 * self.n_timesteps]
         theta = flightpath_1d[2 * self.n_timesteps:3 * self.n_timesteps]
         initial_position, velocity, angular_velocity = self.split_controls(alpha)
         dt = self.grid_t[1] - self.grid_t[0]
 
+        # difference in the initial conditions
         diff = np.zeros((self.n_timesteps, 3))
         diff[0, 0] = pos_x[0] - initial_position[0]
         diff[0, 1] = pos_y[0] - initial_position[1]
         diff[0, 2] = theta[0] - initial_position[2]
 
+        # difference in each time step
         diff[1:, 0] = pos_x[1:] - pos_x[:-1] - dt * velocity[:-1] * np.cos(theta[:-1])
         diff[1:, 1] = pos_y[1:] - pos_y[:-1] - dt * velocity[:-1] * np.sin(theta[:-1])
         diff[1:, 2] = theta[1:] - theta[:-1] - dt * angular_velocity[:-1]
 
+        # stack up in the order: x-position, y-position, heading
         return np.hstack([diff[:, 0], diff[:, 1], diff[:, 2]])
 
     def set_control_bounds(self, control_min, control_max):
+        """
+        Set minima and maxima for initial x position, initial y position, initial heading,
+        velocity, and angular velocity (in this order)
+        """
         self.lower = np.hstack([control_min[:3],
                                 np.array([control_min[3]] * self.n_timesteps),
                                 np.array([control_min[4]] * self.n_timesteps)])
@@ -222,3 +268,69 @@ class NavigationDAE(Navigation):
             "NavigationDAE.d_position_d_control is not defined for DAE system, due to the dependence on the positions "
             "in each step. Use NavigationDAE.d_position_d_position_and_constrol instead."
         )
+
+    def regularize_control(self, alpha):
+        """
+        defines a regularization term for the controls. Specifically, we use the integral over the
+        squared derivative of the controls (acceleration and angular acceleration) computed via finite elements
+        """
+        # split up controls
+        initial_position, velocity, angular_velocity = self.split_controls(alpha)
+
+        # get stiffness matrix (to easier compute the integral of the derivatives)
+        stiffness = self.stiffness_matrix
+
+        # compute squared L2 norm of the derivatives
+        norm2_velocity = velocity.T @ stiffness @ velocity
+        norm2_angular = angular_velocity.T @ stiffness @ angular_velocity
+
+        # return the sum
+        return norm2_velocity + norm2_angular
+
+    def d_regularize_control(self, alpha):
+        """
+        returns the derivative of the self.regularize_control w.r.t. the control parameters
+        """
+        # split up controls
+        initial_position, velocity, angular_velocity = self.split_controls(alpha)
+
+        # get stiffness matrix
+        stiffness = self.stiffness_matrix
+
+        # compute derivatives
+        d_norm2_velocity = 2 * stiffness @ velocity
+        d_norm2_angular = 2 * stiffness @ angular_velocity
+
+        # stack up according to the order in the controls
+        return np.hstack([np.zeros(3, ), d_norm2_velocity, d_norm2_angular])
+
+    @cached_property
+    def stiffness_matrix(self) -> sparse.csr_matrix:
+        """! Diffusion matrix
+
+        Here, the diffusion matrix is similar to:
+        [[ 1 -1  0  0
+          -1  2 -1  0
+           0 -1  2 -1
+           0  0 -1  1]] * (1/delta_t)
+        The middle rows are finite difference forms of -delta_t * (d^2)/(dt^2).
+        The first and last rows are finite difference forms of -(d)/(dt) and
+        (d)/(dt) respectively.
+
+        @return  diffusion matrix (piece-wise linear finite elements)
+        """
+        delta_t = self.grid_t[1] - self.grid_t[0]
+        # TODO: don't assume uniform timestepping
+
+        A = sparse.diags(
+            [-1, 2, -1],
+            offsets=[-1, 0, 1],
+            shape=(self.n_timesteps, self.n_timesteps),
+        )
+        # Convert from a diagonal matrix to s CSR matrix (to allow assignment of [0,0] and [-1,-1])
+        A = sparse.csr_matrix(A)
+        A[0, 0] = 1
+        A[-1, -1] = 1
+        A /= delta_t
+
+        return A

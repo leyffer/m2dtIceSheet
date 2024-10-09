@@ -22,6 +22,7 @@ class NavigationSegment(Navigation):
 
         super().__init__(grid_t, *args, **kwargs)
         self.initial_time = self.grid_t[0]
+        self.n_controls = 5
 
     def get_trajectory(
             self, alpha: np.ndarray, grid_t: Optional[np.ndarray] = None, bool_ignore_validity_check=False,

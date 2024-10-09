@@ -16,7 +16,7 @@ class Optimization(cyipopt.Problem):
 
     """
 
-    reg_strength = 1
+    reg_strength = 1e-10
 
     def __init__(
             self, utility: OEDUtility, inverse_problem: InverseProblem, constraints,
@@ -111,8 +111,7 @@ class Optimization(cyipopt.Problem):
         @return np.ndarray  Regularization objective value
         """
         (flightpath_1d, controls) = self.var_splitter(combined_vars)
-        # todo: use navigation class to define a regularization term
-        return 0
+        return self.navigation.regularize_control(controls)
 
     def regularization_gradient(self, combined_vars: np.ndarray):
         """Regularization objective function gradient
@@ -123,8 +122,9 @@ class Optimization(cyipopt.Problem):
         @return np.ndarray  Gradient w.r.t. the regularization objective
         """
         (flightpath_1d, controls) = self.var_splitter(combined_vars)
-        # todo: use navigation class to define a regularization term
-        return np.zeros((self.n_dofs,))
+        d_reg_controls = self.navigation.d_regularize_control(controls)
+        d_reg = np.hstack([np.zeros(self.n_positions + self.n_auxiliary, ), d_reg_controls])
+        return d_reg
 
     def objective(self, combined_vars: np.ndarray) -> float:
         """Objective function
@@ -201,12 +201,15 @@ class Optimization(cyipopt.Problem):
         return self.my_constraints.upper_bounds
 
     def constraints(self, combined_vars):
+        """interfaces to the constraints in self.my_constraints"""
         (flightpath_1d, controls) = self.var_splitter(combined_vars)
         return self.my_constraints.evaluate_constraints(flightpath_1d=flightpath_1d, alpha=controls)
 
     def jacobian(self, combined_vars):
+        """interfaces to the jacobian in self.my_constraints"""
         (flightpath_1d, controls) = self.var_splitter(combined_vars)
         return self.my_constraints.evaluate_jacobian(flightpath_1d=flightpath_1d, alpha=controls)
 
     def jacobianstructure(self) -> tuple[np.ndarray, np.ndarray]:
-        return self.my_constraints.memorized_jac_structure
+        """interfaces to the jacobian structure in self.my_constraints"""
+        return self.my_constraints.jacobian_sparsity_structure

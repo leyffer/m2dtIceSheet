@@ -4,16 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="basic version of optimizer is cleaned up">
-      <change afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationDAE.py" afterDir="false" />
+    <list default="true" id="d7cfc118-c324-4fc8-90df-3b659941854d" name="Default Changelist" comment="integrated DAE into Navigation class structure">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/random_things.py" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/random_things.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationDAE.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationDAE.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationMultiSegment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/AdvectionDiffusion/Navigators/NavigationSegment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-DAE.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization-DAE.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/7_flightpath_characterization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/7_flightpath_characterization.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/8_DAE_optimization.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/8_optimizataion_v2.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/8_optimizataion_v2.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Constraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Constraints.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Detector.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Detector.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/Flight.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Flight.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Navigation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/source/Optimization/Optimization.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Optimization/Optimization.py" afterDir="false" />
     </list>
@@ -216,14 +215,6 @@
       <option name="presentableId" value="LOCAL-00016" />
       <option name="project" value="LOCAL" />
       <updated>1715099978137</updated>
-    </task>
-    <task id="LOCAL-00022" summary="consistent noise model (Dirichlet and Neumann BC)">
-      <option name="closed" value="true" />
-      <created>1715292613704</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1715292613704</updated>
     </task>
     <task id="LOCAL-00023" summary="started on convergence studies">
       <option name="closed" value="true" />
@@ -481,7 +472,15 @@
       <option name="project" value="LOCAL" />
       <updated>1727746009858</updated>
     </task>
-    <option name="localTasksCounter" value="55" />
+    <task id="LOCAL-00055" summary="integrated DAE into Navigation class structure">
+      <option name="closed" value="true" />
+      <created>1728403997708</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1728403997709</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -507,7 +506,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="tested measurement memory, made plans for next steps" />
     <MESSAGE value="measurement memory for time-dependent states" />
     <MESSAGE value="simplified code for derivative computations" />
     <MESSAGE value="gradient computed from memory terms" />
@@ -532,7 +530,8 @@
     <MESSAGE value="moved files" />
     <MESSAGE value="renamed files" />
     <MESSAGE value="basic version of optimizer is cleaned up" />
-    <option name="LAST_COMMIT_MESSAGE" value="basic version of optimizer is cleaned up" />
+    <MESSAGE value="integrated DAE into Navigation class structure" />
+    <option name="LAST_COMMIT_MESSAGE" value="integrated DAE into Navigation class structure" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
