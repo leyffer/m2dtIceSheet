@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, "../../../source/")
 
 import numpy as np
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal, Union
 
 from CircularPath import CircularPath
 from Navigation import Navigation
@@ -59,7 +59,7 @@ class CirclePath(CircularPath):
             alpha=converted_alpha, initial_time=self.grid_t[0]
         )
 
-    def d_position_d_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_velocity(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Derivative of position with respect to velocity at time(s) t
         """
@@ -79,7 +79,7 @@ class CirclePath(CircularPath):
         ) * (t - self.initial_time)
         return deriv
 
-    def d_position_d_radius(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_radius(self, t: Union[float, np.ndarray]):
         """
         Derivative of position with respect to radius at time(s) t
         """
@@ -97,7 +97,7 @@ class CirclePath(CircularPath):
         return deriv
 
     def d_position_d_alpha(
-        self, t: float | np.ndarray[float, Any]
+        self, t: Union[float, np.ndarray]
     ) -> Dict[str, np.ndarray]:
         """
         Derivative of position with respect to control parameters alpha at time(s) t

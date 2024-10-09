@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal, Union
 
 
 
@@ -78,7 +78,7 @@ class CombinedCircularPathSingleSpeed:
                 )
             )
 
-    def position(self, t: float | np.ndarray[float, Any]):
+    def position(self, t: Union[float, np.ndarray]):
         """
         Unlike the constituent paths, it is simpler to construct the absolute
         positions for this composite path and then get the relative positions
@@ -97,7 +97,7 @@ class CombinedCircularPathSingleSpeed:
         positions[indicator] = self.paths[-1].position(t[indicator])
         return positions
 
-    def relative_position(self, t: float | np.ndarray[float, Any]):
+    def relative_position(self, t: Union[float, np.ndarray]):
         """
         Positions relative to the initial position
         """
@@ -106,7 +106,7 @@ class CombinedCircularPathSingleSpeed:
         rel_positions[:, 1] -= self.initial_y
         return rel_positions
 
-    def d_position_d_initial_x(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_initial_x(self, t: Union[float, np.ndarray]):
         """
         Derivative of position with respect to initial x position at time(s) t
         """
@@ -117,7 +117,7 @@ class CombinedCircularPathSingleSpeed:
         deriv[:, 1] = 0
         return deriv
 
-    def d_position_d_initial_y(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_initial_y(self, t: Union[float, np.ndarray]):
         """
         Derivative of position with respect to initial y position at time(s) t
         """
@@ -128,7 +128,7 @@ class CombinedCircularPathSingleSpeed:
         deriv[:, 0] = 0
         return deriv
 
-    def d_position_d_initial_heading(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_initial_heading(self, t: Union[float, np.ndarray]):
         """
         Derivative of heading with respect to initial heading at time(s) t
         """
@@ -141,7 +141,7 @@ class CombinedCircularPathSingleSpeed:
         deriv[:, 1] = rel_pos[:, 0]
         return deriv
 
-    def d_position_d_velocity(self, t: float | np.ndarray[float, Any]) -> np.ndarray:
+    def d_position_d_velocity(self, t: Union[float, np.ndarray]) -> np.ndarray:
         """
         Derivative of position with respect to velocity at time(s) t
         """
@@ -151,7 +151,7 @@ class CombinedCircularPathSingleSpeed:
         deriv = self.relative_position(t) / self.speed
         return deriv
 
-    def d_position_d_angular_velocities(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_angular_velocities(self, t: Union[float, np.ndarray]):
         """
         Derivative of position with respect the various angular velocities provided at time(s) t
 
@@ -180,7 +180,7 @@ class CombinedCircularPathSingleSpeed:
 
         return deriv
 
-    def d_position_d_parameters(self, t: float | np.ndarray[float, Any]):
+    def d_position_d_parameters(self, t: Union[float, np.ndarray]):
         derivatives = {}
         if not isinstance(t, np.ndarray):
             t = np.array([t])

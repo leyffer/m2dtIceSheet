@@ -4,7 +4,7 @@ Holds information about an individual flight
 """
 
 from functools import cached_property
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -66,7 +66,7 @@ class Flight:
             self.flightpath = flightpath
             self.valid_positions = navigation.drone.fom.identify_valid_positions(flightpath)
 
-    def get_position(self, t: float | np.ndarray):
+    def get_position(self, t: Union[float, np.ndarray]):
         """! Get the position of the drone at a requested time(s)
 
         The reasons to call this function instead of evaluating flightpath at
